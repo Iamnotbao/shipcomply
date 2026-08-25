@@ -1,0 +1,32 @@
+export const TOOLBAR_ACTION_META = {
+  search: { tone: "neutral", icon: "search" },
+  add: { tone: "success", icon: "add" },
+  edit: { tone: "warning", icon: "edit" },
+  confirm: { tone: "primary", icon: "confirm" },
+  unconfirm: { tone: "neutral", icon: "undo" },
+  close: { tone: "neutral", icon: "close" },
+  cancel: { tone: "error", icon: "cancel" },
+  delete: { tone: "error", icon: "delete" },
+  export: { tone: "secondary", icon: "export" },
+  import: { tone: "primary", icon: "import" },
+  copy: { tone: "neutral", icon: "copy" },
+  link: { tone: "primary", icon: "link" },
+  refresh: { tone: "neutral", icon: "refresh" },
+  generate: { tone: "success", icon: "generate" },
+  calculate: { tone: "primary", icon: "calculate" },
+  report: { tone: "secondary", icon: "report" },
+  transfer: { tone: "warning", icon: "transfer" },
+  approve: { tone: "success", icon: "confirm" },
+  extend: { tone: "primary", icon: "extend" },
+  print: { tone: "secondary", icon: "print" },
+  select: { tone: "neutral", icon: "select" },
+  update: { tone: "primary", icon: "edit" },
+  restore: { tone: "neutral", icon: "restore" },
+  verify: { tone: "success", icon: "verify" },
+  clear: { tone: "warning", icon: "clear" },
+  plan: { tone: "warning", icon: "plan" },
+  auto: { tone: "warning", icon: "auto" },
+};
+
+export const getToolbarActionMeta = (actionKey) =>
+  TOOLBAR_ACTION_META[actionKey] || TOOLBAR_ACTION_META.select;
