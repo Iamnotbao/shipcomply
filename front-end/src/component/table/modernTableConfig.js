@@ -1,5 +1,4 @@
 export const MODERN_TABLE_PILOT = new Set([
-  "FACTORY",
   "PROGRAM",
   "AC_SHOE_M",
   "AC_PROD_M",
