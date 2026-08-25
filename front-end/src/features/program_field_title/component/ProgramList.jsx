@@ -1,44 +1,21 @@
-import {
-  Box,
-  Divider,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemText,
-  Typography,
-} from "@mui/material";
+import AppsRoundedIcon from "@mui/icons-material/AppsRounded";
+import SideSelectionList from "../../../component/table/SideSelectionList";
 
-const ProgramList = ({ data = [], selectRow, onSelectRow,getControlLabel,name }) => {
+const ProgramList = ({ data = [], selectRow, onSelectRow, getControlLabel, name }) => {
+  const items = data[0]?.data || [];
+
   return (
-    <Box>
-      <Typography variant="h6" fontWeight={"bold"} ml={1}>
-        *{getControlLabel("mtxt_program","Program")}
-      </Typography>
-      <List sx={{ padding: 0}}>
-        {data[0]?.data.map((pro) => (
-          <ListItem key={pro.program_code} disablePadding>
-            <ListItemButton
-              selected={selectRow?.program_code === pro.program_code}
-              onClick={() => onSelectRow(pro)}
-              sx={{
-                "&.Mui-selected": {
-                  backgroundColor: "yellow",
-                  color: "black",
-                },
-                "&.Mui-selected:hover": {
-                  backgroundColor: "#686868",
-                },
-              }}
-            >
-              <ListItemText
-                primary={pro.program_code}
-                secondary={pro[name]}
-              />
-            </ListItemButton>
-          </ListItem>
-        ))}
-      </List>
-    </Box>
+    <SideSelectionList
+      title={getControlLabel("mtxt_program", "Program")}
+      items={items}
+      getKey={(item) => item.program_code}
+      isSelected={(item) => selectRow?.program_code === item.program_code}
+      onSelect={onSelectRow}
+      getPrimary={(item) => item.program_code}
+      getSecondary={(item) => item[name]}
+      Icon={AppsRoundedIcon}
+    />
   );
 };
+
 export default ProgramList;
