@@ -1,27 +1,20 @@
-import {
-  Box,
-  Button,
-  Dialog,
-  DialogContent,
-  Grid,
-  Paper,
-  TextField,
-  Typography,
-} from "@mui/material";
-import { useTranslation } from "react-i18next";
-import CloseIcon from "@mui/icons-material/Close";
+import { Box, Stack, TextField } from "@mui/material";
+import { useEffect, useState } from "react";
 import Dropdown from "../../../component/dropdown/Dropdown";
+import FormDialogShell from "../../../component/form/FormDialogShell";
+import FormGrid from "../../../component/form/FormGrid";
+import FormSection from "../../../component/form/FormSection";
+import ReadOnlyField from "../../../component/form/ReadOnlyField";
+import {
+  fetchBasicDataByCate,
+  fetchBasicDataDropDownByCate,
+} from "../../../service/basic_data/basicDataService";
 import { fetchFactory } from "../../../service/factory/factoryService";
 import {
   fetchDepartmentByFac,
   fetchDepartments,
 } from "../../../service/factory_departments/FacDepartmentService";
-import { useEffect, useState } from "react";
 import { fnQuery } from "../../../utils/fnQuery";
-import {
-  fetchBasicDataByCate,
-  fetchBasicDataDropDownByCate,
-} from "../../../service/basic_data/basicDataService";
 
 const AddAcItemM = ({
   open,
@@ -33,12 +26,10 @@ const AddAcItemM = ({
   user,
   auth,
 }) => {
-  const today = new Date().toISOString().slice(0, 19).replace("T", " ");
-  const { t } = useTranslation();
-  const [selectFactory, setSelectFactory] = useState({});
-  const [selectDepartment, setSelectDepartment] = useState({});
-  const [factories, setFactories] = useState([]);
-  const [departments, setDepartments] = useState([]);
+  const [selectFactory] = useState({});
+  const [selectDepartment] = useState({});
+  const [, setFactories] = useState([]);
+  const [, setDepartments] = useState([]);
   const [dropdownData, setDropdownData] = useState({});
   const [dropdownValues, setDropdownValues] = useState({});
   const [loading, setLoading] = useState(true);
@@ -48,74 +39,77 @@ const AddAcItemM = ({
     unit: 1108,
   };
 
-  const nameBasedOnLanguage = {
-    DEPARTMENTS: {
-      en: "department_name_e",
-      vi: "department_name_l",
-      zh: "department_name_t",
-    },
-    FACTORY: {
-      en: "factory_name_e",
-      vi: "factory_name_l",
-      zh: "factory_name_t",
-    },
-  };
+  useEffect(() => {
+    const fetchAll = async () => {
+      const [fact, dept] = await fnQuery([
+        () => fetchFactory(),
+        () => fetchDepartments(),
+      ]);
 
-  const fetchAllDropdowns = async () => {
-    try {
-      const allow = Array.isArray(auth)
-        ? auth.find((item) => item.field === "query_level")?.title
-        : null;
-      console.log("check allow", allow);
-      setLoading(true);
-      const promises = Object.entries(mapDropdown).map(
-        async ([fieldName, categoryCode]) => {
-          try {
-            const response = await fetchBasicDataByCate(
-              user?.factory,
-              categoryCode,
-              user?.department,
-              user?.user_code,
-              allow,
-            );
-            return { fieldName, data: response?.data || [] };
-          } catch (error) {
-            console.error(
-              `Error fetching ${fieldName} (${categoryCode}):`,
-              error,
-            );
-            return { fieldName, data: [] };
-          }
-        },
-      );
-      const results = await Promise.all(promises);
-      const dataMap = {};
-      results.forEach(({ fieldName, data }) => {
-        dataMap[fieldName] = data;
-      });
-      setDropdownData(dataMap);
-    } catch (error) {
-      console.error("Error fetching dropdowns:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+      if (fact) setFactories([{ tableName: fact.tableName, data: fact.data }]);
+      if (dept) setDepartments([{ tableName: dept.tableName, data: dept.data }]);
+    };
 
-  const fetchAll = async () => {
-    const [fact, dept] = await fnQuery([
-      () => fetchFactory(),
-      () => fetchDepartments(),
-    ]);
+    fetchAll();
+  }, []);
 
-    if (fact) {
-      setFactories([{ tableName: fact.tableName, data: fact.data }]);
+  useEffect(() => {
+    if (!selectFactory?.factory_code) return;
+
+    const handleDeptByFactory = async () => {
+      const response = await fetchDepartmentByFac(selectFactory.factory_code);
+      if (response) {
+        setDepartments([{ tableName: response.tableName, data: response.data }]);
+      }
+    };
+
+    handleDeptByFactory();
+  }, [selectFactory]);
+
+  useEffect(() => {
+    if (!open) {
+      setDropdownValues({});
+      return;
     }
-    if (dept) {
-      setDepartments([{ tableName: dept.tableName, data: dept.data }]);
-    }
-  };
-  const createDropdownCallback = (categoryCode) => {
-    return async (page, pageSize, searchText) => {
+
+    const fetchAllDropdowns = async () => {
+      try {
+        const allow = Array.isArray(auth)
+          ? auth.find((item) => item.field === "query_level")?.title
+          : null;
+        setLoading(true);
+        const results = await Promise.all(
+          Object.entries(mapDropdown).map(async ([fieldName, categoryCode]) => {
+            try {
+              const response = await fetchBasicDataByCate(
+                user?.factory,
+                categoryCode,
+                user?.department,
+                user?.user_code,
+                allow,
+              );
+              return { fieldName, data: response?.data || [] };
+            } catch (error) {
+              console.error(`Error fetching ${fieldName}:`, error);
+              return { fieldName, data: [] };
+            }
+          }),
+        );
+        setDropdownData(
+          Object.fromEntries(results.map(({ fieldName, data }) => [fieldName, data])),
+        );
+      } catch (error) {
+        console.error("Error fetching dropdowns:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAllDropdowns();
+  }, [auth, open, user?.department, user?.factory, user?.user_code]);
+
+  const createDropdownCallback = (categoryCode) =>
+    async (page, pageSize, searchText) => {
       try {
         const allow = Array.isArray(auth)
           ? auth.find((item) => item.field === "query_level")?.title
@@ -139,80 +133,38 @@ const AddAcItemM = ({
         };
       } catch (error) {
         console.error(`Error fetching dropdown ${categoryCode}:`, error);
-        return {
-          data: [],
-          total: 0,
-          pageSize: pageSize,
-        };
+        return { data: [], total: 0, pageSize };
       }
     };
-  };
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    handleAdd(e, selectFactory.factory_code, selectDepartment.department_code);
-  };
 
-  const handleDeptByFactory = async () => {
-    const response = await fetchDepartmentByFac(selectFactory.factory_code);
-    if (response) {
-      setDepartments([{ tableName: response.tableName, data: response.data }]);
-    }
-  };
-
-  useEffect(() => {
-    fetchAll();
-  }, []);
-
-  useEffect(() => {
-    if (selectFactory && selectFactory.factory_code) {
-      handleDeptByFactory();
-    }
-  }, [selectFactory]);
-
-  useEffect(() => {
-    if (!open) {
-      setDropdownValues({});
-    } else {
-      fetchAllDropdowns();
-    }
-  }, [open]);
   const handleDecimalInput =
     (decimals = 8) =>
-    (e) => {
-      e.target.value = e.target.value.replace(
+    (event) => {
+      event.target.value = event.target.value.replace(
         new RegExp(`(\\.\\d{${decimals}})\\d+`),
         "$1",
       );
     };
 
-  const renderField = (
-    fieldName,
-    label,
-    gridSize = 2.4,
-    extraProps = {},
-    type = "text",
-  ) => {
-    const hasDropdown = mapDropdown.hasOwnProperty(fieldName);
-
-    if (hasDropdown) {
+  const renderField = (fieldName, label, extraProps = {}, type = "text") => {
+    if (Object.prototype.hasOwnProperty.call(mapDropdown, fieldName)) {
       const categoryCode = mapDropdown[fieldName];
-
       return (
-        <Grid item xs={gridSize}>
+        <Box key={fieldName} sx={{ minWidth: 0 }}>
           <Dropdown
             onFetchData={createDropdownCallback(categoryCode)}
             onSelect={(selectedItem) => {
-              console.log(`Selected ${fieldName}:`, selectedItem);
               setDropdownValues((prev) => ({
                 ...prev,
                 [fieldName]: selectedItem?.code_no || "",
               }));
             }}
             select={dropdownValues[fieldName] || extraProps.defaultValue || ""}
+            data={dropdownData[fieldName] || []}
             table="BASIC_DATA"
             option="basic_data"
             getControlLabel={getControlLabel}
-            language={user?.language || "en"}
+            language={language || user?.language || "en"}
             field={getColumnLabel(fieldName, label)}
             totalItems={0}
             pageSize={10}
@@ -222,203 +174,135 @@ const AddAcItemM = ({
             name={fieldName}
             value={dropdownValues[fieldName] || extraProps.defaultValue || ""}
           />
-        </Grid>
+        </Box>
       );
     }
 
     return (
-      <Grid item xs={gridSize} key={fieldName}>
-        <TextField
-          fullWidth
-          InputLabelProps={{ shrink: true }}
-          label={getColumnLabel(fieldName, label)}
-          name={fieldName}
-          type={type}
-          inputProps={
-            type === "number"
-              ? {
-                  step: "0.00000001",
-                  min: 0,
-                  onInput: handleDecimalInput(8),
-                  ...extraProps.inputProps,
-                }
-              : extraProps.inputProps
-          }
-          {...extraProps}
-        />
-      </Grid>
+      <TextField
+        key={fieldName}
+        fullWidth
+        InputLabelProps={{ shrink: true }}
+        label={getColumnLabel(fieldName, label)}
+        name={fieldName}
+        type={type}
+        inputProps={
+          type === "number"
+            ? {
+                step: "0.00000001",
+                min: 0,
+                onInput: handleDecimalInput(8),
+                ...extraProps.inputProps,
+              }
+            : extraProps.inputProps
+        }
+        {...extraProps}
+      />
+    );
+  };
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    handleAdd(
+      event,
+      selectFactory.factory_code,
+      selectDepartment.department_code,
     );
   };
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="lg" fullWidth>
-      <DialogContent>
-        <Paper sx={{ maxWidth: "1200px", mx: "auto", p: 3 }}>
-          <Box
-            display={"flex"}
-            alignItems={"center"}
-            justifyContent={"center"}
-            mb={2}
-          >
-            <Typography
-              variant="h4"
-              textTransform={"uppercase"}
-              fontWeight={600}
-              gutterBottom
-              textAlign={"center"}
-              flex={1}
-              mb={"0"}
-            >
-              {getControlLabel(
-                "ttl_m_1_add",
-                "Add Ac Item Material Information",
-              )}
-            </Typography>
-            <Button onClick={handleClose} variant="contained" color="error">
-              <CloseIcon />
-            </Button>
-          </Box>
-          <Box component="form" onSubmit={handleSubmit}>
-            <fieldset
-              style={{
-                border: "1px solid #ccc",
-                borderRadius: "8px",
-                padding: "16px",
-                marginBottom: "24px",
-              }}
-            >
-              <legend style={{ padding: "0 8px", fontWeight: "bold" }}>
-                {getControlLabel(
-                  "ftxt_m_fac_dept",
-                  "Factory and Department Information",
-                )}
-              </legend>
-              <Grid container spacing={2}>
-                <Grid item xs={6}>
-                  <TextField
-                    type="text"
-                    fullWidth
-                    label={getControlLabel("txt_factory_code", "factory_code")}
-                    name="factory_code"
-                    value={user.factory}
-                    InputLabelProps={{ shrink: true }}
-                    disabled
-                  />
-                </Grid>
-                <Grid item xs={6}>
-                  <TextField
-                    type="text"
-                    fullWidth
-                    label={getControlLabel(
-                      "txt_department_code",
-                      "department_code",
-                    )}
-                    name="department_code"
-                    value={user.department}
-                    InputLabelProps={{ shrink: true }}
-                    disabled
-                  />
-                </Grid>
-              </Grid>
-            </fieldset>
-            <Box mt={4}>
-              <Grid container spacing={2}>
-                <Grid item xs={6}>
-                  <TextField
-                    fullWidth
-                    label={getControlLabel("txt_item_acno", "item_acno")}
-                    name="item_acno"
-                    required
-                  />
-                </Grid>
-                <Grid item xs={6}>
-                  <TextField
-                    fullWidth
-                    label={getControlLabel(
-                      "txt_item_acname_t",
-                      "item_acname_t",
-                    )}
-                    name="item_acname_t"
-                  />
-                </Grid>
-                <Grid item xs={6}>
-                  <TextField
-                    fullWidth
-                    label={getControlLabel(
-                      "txt_item_acname_e",
-                      "item_acname_e",
-                    )}
-                    name="item_acname_e"
-                  />
-                </Grid>
-                <Grid item xs={6}>
-                  <TextField
-                    fullWidth
-                    label={getControlLabel(
-                      "txt_item_acname_l",
-                      "item_acname_l",
-                    )}
-                    name="item_acname_l"
-                  />
-                </Grid>
-              </Grid>
-            </Box>
-            <Box mt={4}>
-              <Grid container spacing={2}>
-                <Grid item xs={6}>
-                  <TextField
-                    fullWidth
-                    label={getColumnLabel("ac_item", "ac_item")}
-                    name="ac_item"
-                  />
-                </Grid>
-                <Grid item xs={6}>
-                  {renderField("unit", "Unit")}
-                </Grid>
-                <Grid item xs={6}>
-                  {renderField(
-                    "tax_per",
-                    "Tax Percent%",
-                    2.4,
-                    {
-                      inputProps: {
-                        step: "0.01",
-                        min: 0,
-                        onInput: handleDecimalInput(2),
-                      },
-                    },
-                    "number",
-                  )}
-                </Grid>
-                <Grid item xs={6}>
-                  {renderField(
-                    "loss_per",
-                    "Loss Percent%",
-                    2.4,
-                    {
-                      inputProps: {
-                        step: "0.01",
-                        min: 0,
-                        onInput: handleDecimalInput(2),
-                      },
-                    },
-                    "number",
-                  )}
-                </Grid>
-                <Grid item xs={6}>
-                  {renderField("ac_type", "Ac Type")}
-                </Grid>
-              </Grid>
-            </Box>
-            <Box mt={4}>
-              <Button type="submit" variant="contained" color="primary">
-                {getControlLabel("btn_save", "Save")}
-              </Button>
-            </Box>
-          </Box>
-        </Paper>
-      </DialogContent>
-    </Dialog>
+    <FormDialogShell
+      open={open}
+      onClose={handleClose}
+      onSubmit={handleSubmit}
+      title={getControlLabel("ttl_m_1_add", "Add Ac Item Material Information")}
+      submitLabel={getControlLabel("btn_save", "Save")}
+      cancelLabel={getControlLabel("btn_cancel", "Cancel")}
+      submitDisabled={loading}
+      maxWidth="lg"
+    >
+      <Stack spacing={2}>
+        <FormSection
+          title={getControlLabel(
+            "ftxt_m_fac_dept",
+            "Factory and Department Information",
+          )}
+        >
+          <FormGrid>
+            <ReadOnlyField
+              label={getControlLabel("txt_factory_code", "factory_code")}
+              value={user?.factory}
+            />
+            <ReadOnlyField
+              label={getControlLabel("txt_department_code", "department_code")}
+              value={user?.department}
+            />
+          </FormGrid>
+        </FormSection>
+
+        <FormSection title="Item identity and names">
+          <FormGrid columns={3}>
+            <TextField
+              fullWidth
+              label={getControlLabel("txt_item_acno", "item_acno")}
+              name="item_acno"
+              required
+            />
+            <TextField
+              fullWidth
+              label={getControlLabel("txt_item_acname_t", "item_acname_t")}
+              name="item_acname_t"
+            />
+            <TextField
+              fullWidth
+              label={getControlLabel("txt_item_acname_e", "item_acname_e")}
+              name="item_acname_e"
+            />
+            <TextField
+              fullWidth
+              label={getControlLabel("txt_item_acname_l", "item_acname_l")}
+              name="item_acname_l"
+            />
+          </FormGrid>
+        </FormSection>
+
+        <FormSection title="Customs and usage information">
+          <FormGrid columns={3}>
+            <TextField
+              fullWidth
+              label={getColumnLabel("ac_item", "ac_item")}
+              name="ac_item"
+            />
+            {renderField("unit", "Unit")}
+            {renderField(
+              "tax_per",
+              "Tax Percent%",
+              {
+                inputProps: {
+                  step: "0.01",
+                  min: 0,
+                  onInput: handleDecimalInput(2),
+                },
+              },
+              "number",
+            )}
+            {renderField(
+              "loss_per",
+              "Loss Percent%",
+              {
+                inputProps: {
+                  step: "0.01",
+                  min: 0,
+                  onInput: handleDecimalInput(2),
+                },
+              },
+              "number",
+            )}
+            {renderField("ac_type", "Ac Type")}
+          </FormGrid>
+        </FormSection>
+      </Stack>
+    </FormDialogShell>
   );
 };
 
