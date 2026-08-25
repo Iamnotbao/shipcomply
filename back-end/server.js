@@ -96,6 +96,7 @@ const sseRouter = require("./modules/sse/sse.routes");
 require("./core/association");
 
 const app = express();
+const PORT = Number(process.env.PORT) || 3002;
 
 app.use(morgan("dev"));
 app.use(monitorMiddleware);
@@ -110,13 +111,14 @@ app.use(
       "http://10.1.1.134:8080",
       "http://localhost:5173",
       "http://localhost:5174",
+      "http://localhost:5175",
       "https://adidas-website-roan.vercel.app",
     ],
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     credentials: true,
   }),
 );
-app.use("/api/sse",sseRouter)
+app.use("/api/sse", sseRouter);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -153,7 +155,6 @@ app.use("/api/ac_shoe_m", acShoeMRouter);
 app.use("/api/ac_shoe_ref", acShoeRefRouter);
 app.use("/api/ac_prod_m", acProdMRouter);
 
-
 app.use("/api/rd_size_d", rdSizeDRouter);
 app.use("/api/rd_size_m", rdSizeMRouter);
 app.use("/api/mm_item", mMItemRouter);
@@ -171,7 +172,6 @@ app.use("/api/ac_cont_m", authMiddleware, acContMRouter);
 app.use("/api/ac_inm_m", acInmMRouter);
 app.use("/api/ac_inm_d", acInmDRouter);
 app.use("/api/ac_chg_m", acChgMRouter);
-
 app.use("/api/ac_chg_d", acChgDRouter);
 app.use("/api/ac_chg_a", acChgARouter);
 app.use("/api/ac_proc_m", acProcMRouter);
@@ -226,7 +226,7 @@ app.use("/api/vw_ac_sum", vwAcSumRouter);
 app.use("/api/vw_ac_chg", vwAcChgRouter);
 app.use("/api/vw_ac_chk_t", vwAcChkTRouter);
 
-app.listen(3002, "0.0.0.0", () => {
-  console.log("Server running on http://localhost:3002");
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server running on http://0.0.0.0:${PORT}`);
 });
 module.exports = { app };
