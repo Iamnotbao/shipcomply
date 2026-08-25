@@ -1,45 +1,21 @@
-import {
-  Box,
-  Divider,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemText,
-  Typography,
-} from "@mui/material";
+import BusinessRoundedIcon from "@mui/icons-material/BusinessRounded";
+import SideSelectionList from "../../../../component/table/SideSelectionList";
 
-const FactoryList = ({ data = [], selectRow, onSelectRow,getControlLabel,name }) => {
-  
+const FactoryList = ({ data = [], selectRow, onSelectRow, getControlLabel, name }) => {
+  const items = data[0]?.data || [];
+
   return (
-    <Box>
-      <Typography variant="h6" fontWeight={"bold"} ml={1}>
-        *{getControlLabel("mtxt_factory","Factory")}
-      </Typography>
-      <List sx={{ padding: 0}}>
-        {data[0]?.data.map((fac) => (
-          <ListItem key={fac.factory_code} disablePadding>
-            <ListItemButton
-              selected={selectRow?.factory_code === fac.factory_code}
-              onClick={() => onSelectRow(fac)}
-              sx={{
-                "&.Mui-selected": {
-                  backgroundColor: "yellow",
-                  color: "black",
-                },
-                "&.Mui-selected:hover": {
-                  backgroundColor: "#686868",
-                },
-              }}
-            >
-              <ListItemText
-                primary={fac.factory_code}
-                secondary={fac[name]}
-              />
-            </ListItemButton>
-          </ListItem>
-        ))}
-      </List>
-    </Box>
+    <SideSelectionList
+      title={getControlLabel("mtxt_factory", "Factory")}
+      items={items}
+      getKey={(item) => item.factory_code}
+      isSelected={(item) => selectRow?.factory_code === item.factory_code}
+      onSelect={onSelectRow}
+      getPrimary={(item) => item.factory_code}
+      getSecondary={(item) => item[name]}
+      Icon={BusinessRoundedIcon}
+    />
   );
 };
+
 export default FactoryList;
