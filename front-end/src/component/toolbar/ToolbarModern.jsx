@@ -1,4 +1,4 @@
-import { forwardRef, useImperativeHandle, useMemo, useState } from "react";
+import { forwardRef, useImperativeHandle, useState } from "react";
 import { Box, Divider, Toolbar } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import ToolbarSearchFields from "./ToolbarSearchFields";
@@ -73,110 +73,9 @@ const ToolbarModern = forwardRef((props, ref) => {
     });
   };
 
-  const actions = useMemo(() => {
-    const baseActions = createBaseToolbarActions({
-      getControlLabel,
-      onSearch: handleSearch,
-      onAdd,
-      onEdit,
-      onConfirm,
-      onUnconfirm,
-      onPDF,
-      onCancel,
-      onClose,
-    });
-
-    const extraActions = [];
-
-    if (table === "PERMISSION") {
-      extraActions.push(
-        createToolbarAction(
-          "copy",
-          getControlLabel("btn_copy", "Copy"),
-          onCopy,
-        ),
-      );
-    }
-
-    if (table === "AC_IMP_MATERIAL_TRACKING") {
-      extraActions.push(
-        createToolbarAction(
-          "export",
-          getControlLabel("btn_export_custom", "Export Custom"),
-          onCustomExport,
-        ),
-        createToolbarAction(
-          "export",
-          getControlLabel("btn_export_material", "Export Material"),
-          onMaterialExport,
-        ),
-        createToolbarAction(
-          "import",
-          getControlLabel("btn_import_link", "Import Link"),
-          onImportLink,
-        ),
-      );
-    }
-
-    if (table === "AC_ITEM_M") {
-      extraActions.push(
-        createToolbarAction(
-          "link",
-          getControlLabel("btn_link", "Link"),
-          onLink,
-        ),
-        createToolbarAction(
-          "import",
-          getControlLabel("btn_import", "Import Order"),
-          () => fileInputRef?.current?.click(),
-        ),
-      );
-    }
-
-    if (table === "AC_SHOE_M") {
-      extraActions.push(
-        createToolbarAction(
-          "generate",
-          getControlLabel("btn_bom", "BOM"),
-          onBom,
-          { loading: isLoadingBom },
-        ),
-        createToolbarAction(
-          "import",
-          getControlLabel("btn_import", "Import Order"),
-          () => fileInputRef?.current?.click(),
-        ),
-      );
-    }
-
-    if (table === "AC_PLAN_SIZE") {
-      extraActions.push(
-        createToolbarAction(
-          "generate",
-          getControlLabel("btn_generate_shoe", "Generate Shoe"),
-          onGeneratePM,
-        ),
-      );
-    }
-
-    if (["AC_ITEM_REF", "AC_SHOE_REF"].includes(table)) {
-      extraActions.push(
-        createToolbarAction(
-          "delete",
-          getControlLabel("btn_delete", "Delete"),
-          onDelete,
-        ),
-      );
-    }
-
-    return filterHiddenToolbarActions(
-      [...baseActions, ...extraActions],
-      tableConfig.hideButtons,
-    ).filter((item) => typeof item.onClick === "function");
-  }, [
-    table,
-    tableConfig.hideButtons,
+  const baseActions = createBaseToolbarActions({
     getControlLabel,
+    onSearch: handleSearch,
     onAdd,
     onEdit,
     onConfirm,
@@ -184,18 +83,95 @@ const ToolbarModern = forwardRef((props, ref) => {
     onPDF,
     onCancel,
     onClose,
-    onCopy,
-    onCustomExport,
-    onMaterialExport,
-    onImportLink,
-    onLink,
-    onBom,
-    onDelete,
-    onGeneratePM,
-    fileInputRef,
-    isLoadingBom,
-    searchValue,
-  ]);
+  });
+
+  const extraActions = [];
+
+  if (table === "PERMISSION") {
+    extraActions.push(
+      createToolbarAction(
+        "copy",
+        getControlLabel("btn_copy", "Copy"),
+        onCopy,
+      ),
+    );
+  }
+
+  if (table === "AC_IMP_MATERIAL_TRACKING") {
+    extraActions.push(
+      createToolbarAction(
+        "export",
+        getControlLabel("btn_export_custom", "Export Custom"),
+        onCustomExport,
+      ),
+      createToolbarAction(
+        "export",
+        getControlLabel("btn_export_material", "Export Material"),
+        onMaterialExport,
+      ),
+      createToolbarAction(
+        "import",
+        getControlLabel("btn_import_link", "Import Link"),
+        onImportLink,
+      ),
+    );
+  }
+
+  if (table === "AC_ITEM_M") {
+    extraActions.push(
+      createToolbarAction(
+        "link",
+        getControlLabel("btn_link", "Link"),
+        onLink,
+      ),
+      createToolbarAction(
+        "import",
+        getControlLabel("btn_import", "Import Order"),
+        () => fileInputRef?.current?.click(),
+      ),
+    );
+  }
+
+  if (table === "AC_SHOE_M") {
+    extraActions.push(
+      createToolbarAction(
+        "generate",
+        getControlLabel("btn_bom", "BOM"),
+        onBom,
+        { loading: isLoadingBom },
+      ),
+      createToolbarAction(
+        "import",
+        getControlLabel("btn_import", "Import Order"),
+        () => fileInputRef?.current?.click(),
+      ),
+    );
+  }
+
+  if (table === "AC_PLAN_SIZE") {
+    extraActions.push(
+      createToolbarAction(
+        "generate",
+        getControlLabel("btn_generate_shoe", "Generate Shoe"),
+        onGeneratePM,
+      ),
+    );
+  }
+
+  if (["AC_ITEM_REF", "AC_SHOE_REF"].includes(table)) {
+    extraActions.push(
+      createToolbarAction(
+        "delete",
+        getControlLabel("btn_delete", "Delete"),
+        onDelete,
+      ),
+    );
+  }
+
+  const actions = filterHiddenToolbarActions(
+    [...baseActions, ...extraActions],
+    tableConfig.hideButtons,
+  ).filter((item) => typeof item.onClick === "function");
 
   return (
     <Toolbar
