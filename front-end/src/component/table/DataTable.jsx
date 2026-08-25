@@ -1,3 +1,11 @@
-import DataTable from "./DataTableLegacy";
+import DataTableLegacy from "./DataTableLegacy";
+import DataTableModern from "./DataTableModern";
+import { canUseModernDataTable } from "./modernTableConfig";
 
-export default DataTable;
+export default function DataTable(props) {
+  return canUseModernDataTable(props) ? (
+    <DataTableModern {...props} />
+  ) : (
+    <DataTableLegacy {...props} />
+  );
+}
