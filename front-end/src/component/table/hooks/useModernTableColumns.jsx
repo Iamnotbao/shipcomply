@@ -9,6 +9,7 @@ export default function useModernTableColumns({
   language,
   columnTranslations = [],
   getColumnLabel,
+  showAllLanguages = false,
 }) {
   return useMemo(() => {
     const baseColumns = TableColumns[tableName] || [];
@@ -36,6 +37,14 @@ export default function useModernTableColumns({
       };
     });
 
-    return filterColumnsByLanguage(translatedColumns, language);
-  }, [columnTranslations, getColumnLabel, language, tableName]);
+    return showAllLanguages
+      ? translatedColumns
+      : filterColumnsByLanguage(translatedColumns, language);
+  }, [
+    columnTranslations,
+    getColumnLabel,
+    language,
+    showAllLanguages,
+    tableName,
+  ]);
 }
