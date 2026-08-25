@@ -1,4 +1,11 @@
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
+
+const sameIdList = (left = [], right = []) => {
+  if (left.length !== right.length) return false;
+
+  const rightSet = new Set(right);
+  return left.every((id) => rightSet.has(id));
+};
 
 export default function useTableSelection({
   rows = [],
@@ -15,6 +22,11 @@ export default function useTableSelection({
   focusIndexRef,
   setFocusIndex,
 }) {
+  const selectedIds = useMemo(
+    () => (selectRows || []).filter(Boolean).map((row) => getRowId(row)),
+    [getRowId, selectRows],
+  );
+
   const handleRowClick = useCallback(
     (params) => {
       if (!isSubTable) {
@@ -32,8 +44,12 @@ export default function useTableSelection({
         setFocusIndex(rowIndex);
       }
 
-      const isSelected = selectRows.some((row) => getRowId(row) === id);
-      onSelectChange(isSelected ? selectRows : [params.row]);
+      // Do not call the controlled parent setter again when the clicked row is
+      // already the active row. This keeps DataGrid/parent selection sync from
+      // becoming a render feedback loop.
+      if (selectedIds.includes(id)) return;
+
+      onSelectChange?.([params.row]);
     },
     [
       focusContextRef,
@@ -43,7 +59,7 @@ export default function useTableSelection({
       isSubTable,
       onSelectChange,
       rows,
-      selectRows,
+      selectedIds,
       setFocusContext,
       setFocusIndex,
       setIsFocused,
@@ -65,6 +81,11 @@ export default function useTableSelection({
             : rows.filter((row) => !excludedIds.has(getRowId(row)));
       } else if (newSelection?.type === "include") {
         const includedIds = Array.from(newSelection.ids || []);
+
+        // DataGrid can re-emit a controlled selection model while props are
+        // synchronizing. Ignore it when the actual ids have not changed.
+        if (sameIdList(includedIds, selectedIds)) return;
+
         const includedSet = new Set(includedIds);
         const previousRows = selectCheckRef?.current || [];
 
@@ -85,18 +106,17 @@ export default function useTableSelection({
         onSelectionChange(selectedObjects);
       }
     },
-    [getRowId, onSelectionChange, rows, selectCheckRef],
+    [getRowId, onSelectionChange, rows, selectCheckRef, selectedIds],
   );
 
   const getRowClassName = useCallback(
     (params) =>
-      selectRows.some((row) => getRowId(row) === getRowId(params.row))
-        ? "Mui-selected-row"
-        : "",
-    [getRowId, selectRows],
+      selectedIds.includes(getRowId(params.row)) ? "Mui-selected-row" : "",
+    [getRowId, selectedIds],
   );
 
   return {
+    selectedIds,
     handleRowClick,
     handleRowSelectionChange,
     getRowClassName,
