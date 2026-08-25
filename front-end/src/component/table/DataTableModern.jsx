@@ -1,13 +1,6 @@
-import {
-  Box,
-  IconButton,
-  MenuItem,
-  Select,
-  Stack,
-  Typography,
-} from "@mui/material";
-import ChevronLeftRounded from "@mui/icons-material/ChevronLeftRounded";
-import ChevronRightRounded from "@mui/icons-material/ChevronRightRounded";
+import { Box, IconButton, MenuItem, Select, Typography } from "@mui/material";
+import ChevronLeftRoundedIcon from "@mui/icons-material/ChevronLeftRounded";
+import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import { DataGrid } from "@mui/x-data-grid";
 import React, { useCallback, useMemo, useRef, useState } from "react";
 import moment from "moment/moment";
@@ -19,18 +12,17 @@ import useTableData from "./hooks/useTableData";
 import useTableSelection from "./hooks/useTableSelection";
 import useTablePagination from "./hooks/useTablePagination";
 import useTableKeyboardNavigation from "./hooks/useTableKeyboardNavigation";
-import useModernTableColumns from "./hooks/useModernTableColumns";
+import useModernTableColumns from "./hooks/useModernTableColumns.jsx";
 
 function ModernFooter({
-  tableName,
   selectedRow,
   getColumnLabel,
   paginationModel,
   rowsLength,
   totalData,
   hasMore,
-  isSearch,
-  onPaginationChange,
+  tableName,
+  onPaginationModelChange,
 }) {
   const fields = [
     ["grt_dept", "grt_dept"],
@@ -40,23 +32,17 @@ function ModernFooter({
     ["last_date", "last_date"],
   ];
   const pageSizeOptions = getPageSizeOptions(tableName);
-  const { page, pageSize } = paginationModel;
-  const totalPages =
-    totalData > 0
-      ? Math.ceil(totalData / pageSize)
-      : hasMore
-        ? page + 2
-        : rowsLength === 0
-          ? 0
-          : page + 1;
-  const canNext =
-    totalPages > 0 &&
-    (hasMore || (totalData > 0 ? page < totalPages - 1 : false));
+  const currentPage = paginationModel.page;
+  const currentPageSize = paginationModel.pageSize;
+  const knownPageCount = totalData > 0 ? Math.ceil(totalData / currentPageSize) : null;
+  const canGoNext = knownPageCount
+    ? currentPage < knownPageCount - 1
+    : hasMore || rowsLength >= currentPageSize;
 
   return (
     <Box
       sx={{
-        minHeight: 50,
+        minHeight: 48,
         px: 1.25,
         py: 0.75,
         display: "flex",
@@ -78,7 +64,7 @@ function ModernFooter({
               : rawValue || "—";
 
           return (
-            <Box key={key} sx={{ minWidth: 105 }}>
+            <Box key={key} sx={{ minWidth: 110 }}>
               <Typography
                 variant="caption"
                 sx={{ display: "block", color: "text.secondary", fontWeight: 700 }}
@@ -89,7 +75,7 @@ function ModernFooter({
                 variant="body2"
                 noWrap
                 title={String(value)}
-                sx={{ fontSize: "0.75rem", color: "text.primary", maxWidth: 170 }}
+                sx={{ fontSize: "0.75rem", color: "text.primary", maxWidth: 180 }}
               >
                 {value}
               </Typography>
@@ -98,47 +84,48 @@ function ModernFooter({
         })}
       </Box>
 
-      <Stack direction="row" alignItems="center" spacing={0.75}>
+      <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+        <IconButton
+          size="small"
+          disabled={currentPage === 0}
+          onClick={() =>
+            onPaginationModelChange({
+              page: currentPage - 1,
+              pageSize: currentPageSize,
+            })
+          }
+        >
+          <ChevronLeftRoundedIcon fontSize="small" />
+        </IconButton>
+
         <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 700 }}>
-          {rowsLength === 0 ? 0 : page + 1} / {totalPages || 0}
+          {rowsLength === 0 ? 0 : currentPage + 1}
+          {knownPageCount ? ` of ${knownPageCount}` : ""}
         </Typography>
 
         <IconButton
           size="small"
-          disabled={page <= 0}
+          disabled={!canGoNext}
           onClick={() =>
-            onPaginationChange({
-              page: Math.max(page - 1, 0),
-              pageSize,
+            onPaginationModelChange({
+              page: currentPage + 1,
+              pageSize: currentPageSize,
             })
           }
         >
-          <ChevronLeftRounded fontSize="small" />
-        </IconButton>
-
-        <IconButton
-          size="small"
-          disabled={!canNext}
-          onClick={() =>
-            onPaginationChange({
-              page: page + 1,
-              pageSize,
-            })
-          }
-        >
-          <ChevronRightRounded fontSize="small" />
+          <ChevronRightRoundedIcon fontSize="small" />
         </IconButton>
 
         <Select
           size="small"
-          value={pageSize}
+          value={currentPageSize}
           onChange={(event) =>
-            onPaginationChange({
+            onPaginationModelChange({
               page: 0,
               pageSize: Number(event.target.value),
             })
           }
-          sx={{ minWidth: 72, height: 32, fontSize: "0.76rem" }}
+          sx={{ minWidth: 72, fontSize: "0.76rem" }}
         >
           {pageSizeOptions.map((size) => (
             <MenuItem key={size} value={size}>
@@ -149,9 +136,9 @@ function ModernFooter({
 
         <Typography variant="caption" sx={{ color: "text.secondary" }}>
           {rowsLength} row{rowsLength === 1 ? "" : "s"}
-          {isSearch && totalData ? ` / ${totalData}` : ""}
+          {totalData ? ` / ${totalData}` : ""}
         </Typography>
-      </Stack>
+      </Box>
     </Box>
   );
 }
@@ -293,22 +280,26 @@ export default function DataTableModern(props) {
     setFocusIndex,
   });
 
-  const { handleRowClick, handleRowSelectionChange, getRowClassName } =
-    useTableSelection({
-      rows,
-      selectRows,
-      getRowId,
-      onSelectChange,
-      onSelectionChange,
-      selectCheckRef,
-      isSubTable: false,
-      gridRef,
-      setFocusContext,
-      setIsFocused,
-      focusContextRef,
-      focusIndexRef,
-      setFocusIndex,
-    });
+  const {
+    selectedIds,
+    handleRowClick,
+    handleRowSelectionChange,
+    getRowClassName,
+  } = useTableSelection({
+    rows,
+    selectRows,
+    getRowId,
+    onSelectChange,
+    onSelectionChange,
+    selectCheckRef,
+    isSubTable: false,
+    gridRef,
+    setFocusContext,
+    setIsFocused,
+    focusContextRef,
+    focusIndexRef,
+    setFocusIndex,
+  });
 
   const { handleKeyDown } = useTableKeyboardNavigation({
     rows,
@@ -330,12 +321,13 @@ export default function DataTableModern(props) {
     gridRef,
   });
 
+  const selectionKey = selectedIds.join("\u001f");
   const rowSelectionModel = useMemo(
     () => ({
       type: "include",
-      ids: new Set((selectRows || []).filter(Boolean).map((row) => getRowId(row))),
+      ids: new Set(selectionKey ? selectionKey.split("\u001f") : []),
     }),
-    [getRowId, selectRows],
+    [selectionKey],
   );
 
   const selectedRow = selectRows?.[0] || null;
@@ -486,15 +478,14 @@ export default function DataTableModern(props) {
           slots={{
             footer: () => (
               <ModernFooter
-                tableName={tableName}
                 selectedRow={selectedRow}
                 getColumnLabel={getColumnLabel}
                 paginationModel={paginationModel}
                 rowsLength={rows.length}
                 totalData={totalData}
                 hasMore={hasMore}
-                isSearch={isSearch}
-                onPaginationChange={handlePaginationModelChange}
+                tableName={tableName}
+                onPaginationModelChange={handlePaginationModelChange}
               />
             ),
           }}
