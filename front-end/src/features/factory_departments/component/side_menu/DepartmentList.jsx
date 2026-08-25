@@ -1,38 +1,24 @@
-import { List, ListItem, ListItemButton, ListItemText, Typography } from "@mui/material";
+import AccountTreeRoundedIcon from "@mui/icons-material/AccountTreeRounded";
+import SideSelectionList from "../../../../component/table/SideSelectionList";
 
-const DepartmentList = ({ data = [], selectRow, onSelectRow,getControlLabel,name }) => {
+const DepartmentList = ({ data = [], selectRow, onSelectRow, getControlLabel, name }) => {
+  const items = data[0]?.data || [];
+
   return (
-    <>
-      <Typography variant="h6" fontWeight={"bold"} ml={1}>
-        *{getControlLabel("mtxt_department","Department")}
-      </Typography>
-      <List sx={{ padding: 0 }}>
-        {data[0] &&
-          data[0]?.data.length > 0 &&
-          data[0]?.data.map((item, index) => (
-            <ListItem key={`${item?.factory_code}-${item.department_code}`}>
-              <ListItemButton
-                selected={`${selectRow?.factory_code}-${selectRow?.department_code}` === `${item?.factory_code}-${item?.department_code}` }
-                onClick={() => onSelectRow(item)}
-                sx={{
-                  "&.Mui-selected": {
-                    backgroundColor: "yellow",
-                    color: "black",
-                  },
-                  "&.Mui-selected:hover": {
-                    backgroundColor: "#686868",
-                  },
-                }}
-              >
-                <ListItemText
-                  primary={item.department_code}
-                  secondary={item[name]}
-                />
-              </ListItemButton>
-            </ListItem>
-          ))}
-      </List>
-    </>
+    <SideSelectionList
+      title={getControlLabel("mtxt_department", "Department")}
+      items={items}
+      getKey={(item) => `${item.factory_code}-${item.department_code}`}
+      isSelected={(item) =>
+        `${selectRow?.factory_code}-${selectRow?.department_code}` ===
+        `${item.factory_code}-${item.department_code}`
+      }
+      onSelect={onSelectRow}
+      getPrimary={(item) => item.department_code}
+      getSecondary={(item) => item[name]}
+      Icon={AccountTreeRoundedIcon}
+    />
   );
 };
+
 export default DepartmentList;
