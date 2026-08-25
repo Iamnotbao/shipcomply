@@ -1,23 +1,20 @@
+import { useEffect, useState } from "react";
 import {
   Box,
-  Button,
   Checkbox,
-  Dialog,
-  DialogContent,
   FormControlLabel,
-  Grid,
-  Paper,
+  Stack,
   TextField,
-  Typography,
 } from "@mui/material";
-import { useForm, Controller } from "react-hook-form";
-import CloseIcon from "@mui/icons-material/Close";
-import { useEffect, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import Dropdown from "../../../component/dropdown/Dropdown";
+import FormDialogShell from "../../../component/form/FormDialogShell";
+import FormGrid from "../../../component/form/FormGrid";
+import FormSection from "../../../component/form/FormSection";
 import {
   fetchBasicDataByCate,
   fetchBasicDataDropDownByCate,
 } from "../../../service/basic_data/basicDataService";
-import Dropdown from "../../../component/dropdown/Dropdown";
 
 const EditAcImpMaterialTrackingPage = ({
   open,
@@ -51,75 +48,85 @@ const EditAcImpMaterialTrackingPage = ({
     import_delay_reason: 2120,
   };
 
-  useEffect(() => {
-    if (open) {
-      fetchAllDropdowns();
-    }
-  }, [open]);
-
-  useEffect(() => {
-    if (acImp) {
-      const statusText = getStatusText(acImp.status);
-      reset({
-        ...acImp,
-        statusText: statusText,
-        is_ac: acImp.is_ac === "Y" || acImp.is_ac === true,
-        estimated_arrival_date: acImp?.estimated_arrival_date?.split("T")[0] || "",
-        actual_arrival_date: acImp?.actual_arrival_date?.split("T")[0] || "",
-        record_date: acImp?.record_date?.split("T")[0] || "",
-        departure_date: acImp?.departure_date?.split("T")[0] || "",
-        estimated_delivery_date: acImp?.estimated_delivery_date?.split("T")[0] || "",
-        actual_delivery_date: acImp?.actual_delivery_date?.split("T")[0] || "",
-        date_completion_procedures: acImp?.date_completion_procedures?.split("T")[0] || "",
-        declaration_retrieve_date: acImp?.declaration_retrieve_date?.split("T")[0] || "",
-      });
-
-      const initialDropdownValues = {};
-      Object.keys(mapDropdown).forEach((fieldName) => {
-        if (acImp[fieldName]) {
-          initialDropdownValues[fieldName] = acImp[fieldName];
-        }
-      });
-      setDropdownValues(initialDropdownValues);
-    }
-  }, [acImp, reset]);
-
-  const fetchAllDropdowns = async () => {
-    try {
-      const allow = Array.isArray(auth)
-        ? auth.find((item) => item.field === "query_level")?.title
-        : null;
-
-      setLoading(true);
-      const promises = Object.entries(mapDropdown).map(
-        async ([fieldName, categoryCode]) => {
-          try {
-            const response = await fetchBasicDataByCate(
-              user?.factory,
-              categoryCode,
-              user?.department,
-              user?.user_code,
-              allow
-            );
-            return { fieldName, data: response?.data || [] };
-          } catch (error) {
-            console.error(`Error fetching ${fieldName}:`, error);
-            return { fieldName, data: [] };
-          }
-        }
-      );
-      const results = await Promise.all(promises);
-      const dataMap = {};
-      results.forEach(({ fieldName, data }) => {
-        dataMap[fieldName] = data;
-      });
-      setDropdownData(dataMap);
-    } catch (error) {
-      console.error("Error fetching dropdowns:", error);
-    } finally {
-      setLoading(false);
-    }
+  const getStatusText = (status) => {
+    if (status === 1) return "New-1";
+    if (status === 2) return "Checked-2";
+    if (status === 0) return "Cancel-0";
+    if (status === 7) return "Confirm-7";
+    if (status === 9) return "Close-9";
+    return "New-1";
   };
+
+  useEffect(() => {
+    if (!open) return;
+
+    const fetchAllDropdowns = async () => {
+      try {
+        const allow = Array.isArray(auth)
+          ? auth.find((item) => item.field === "query_level")?.title
+          : null;
+
+        setLoading(true);
+        const promises = Object.entries(mapDropdown).map(
+          async ([fieldName, categoryCode]) => {
+            try {
+              const response = await fetchBasicDataByCate(
+                user?.factory,
+                categoryCode,
+                user?.department,
+                user?.user_code,
+                allow,
+              );
+              return { fieldName, data: response?.data || [] };
+            } catch (error) {
+              console.error(`Error fetching ${fieldName}:`, error);
+              return { fieldName, data: [] };
+            }
+          },
+        );
+        const results = await Promise.all(promises);
+        const dataMap = {};
+        results.forEach(({ fieldName, data }) => {
+          dataMap[fieldName] = data;
+        });
+        setDropdownData(dataMap);
+      } catch (error) {
+        console.error("Error fetching dropdowns:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAllDropdowns();
+  }, [auth, open, user?.department, user?.factory, user?.user_code]);
+
+  useEffect(() => {
+    if (!acImp) return;
+
+    reset({
+      ...acImp,
+      statusText: getStatusText(acImp.status),
+      is_ac: acImp.is_ac === "Y" || acImp.is_ac === true,
+      estimated_arrival_date: acImp?.estimated_arrival_date?.split("T")[0] || "",
+      actual_arrival_date: acImp?.actual_arrival_date?.split("T")[0] || "",
+      record_date: acImp?.record_date?.split("T")[0] || "",
+      departure_date: acImp?.departure_date?.split("T")[0] || "",
+      estimated_delivery_date: acImp?.estimated_delivery_date?.split("T")[0] || "",
+      actual_delivery_date: acImp?.actual_delivery_date?.split("T")[0] || "",
+      date_completion_procedures:
+        acImp?.date_completion_procedures?.split("T")[0] || "",
+      declaration_retrieve_date:
+        acImp?.declaration_retrieve_date?.split("T")[0] || "",
+    });
+
+    const initialDropdownValues = {};
+    Object.keys(mapDropdown).forEach((fieldName) => {
+      if (acImp[fieldName]) {
+        initialDropdownValues[fieldName] = acImp[fieldName];
+      }
+    });
+    setDropdownValues(initialDropdownValues);
+  }, [acImp, reset]);
 
   const createDropdownCallback = (categoryCode) => {
     return async (page, pageSize, searchText) => {
@@ -137,7 +144,7 @@ const EditAcImpMaterialTrackingPage = ({
           pageSize,
           searchText,
           true,
-          language
+          language,
         );
         return {
           data: result?.data || [],
@@ -146,38 +153,36 @@ const EditAcImpMaterialTrackingPage = ({
         };
       } catch (error) {
         console.error(`Error fetching dropdown ${categoryCode}:`, error);
-        return { data: [], total: 0, pageSize: pageSize };
+        return { data: [], total: 0, pageSize };
       }
     };
   };
 
   const handleDecimalInput =
     (decimals = 8) =>
-    (e) => {
-      e.target.value = e.target.value.replace(
+    (event) => {
+      event.target.value = event.target.value.replace(
         new RegExp(`(\\.\\d{${decimals}})\\d+`),
-        "$1"
+        "$1",
       );
     };
 
-  const onSubmit = (data) => {
-    const finalData = {
-      ...data,
-      ...dropdownValues,
-      //  Chuyển boolean → "Y"/"N" trước khi gửi lên server
-      is_ac: data.is_ac ? "Y" : "N",
-      locked_information: acImp?.locked_information,
-    };
-    handleEdit(finalData);
-  };
+  const numericRegister = (fieldName) =>
+    register(fieldName, {
+      setValueAs: (value) =>
+        value === "" || value === undefined ? null : Number(value),
+    });
 
-  const renderField = (fieldName, label, gridSize = 2.4, extraProps = {}) => {
-    const hasDropdown = mapDropdown.hasOwnProperty(fieldName);
+  const renderField = (fieldName, label, extraProps = {}) => {
+    const hasDropdown = Object.prototype.hasOwnProperty.call(
+      mapDropdown,
+      fieldName,
+    );
 
     if (hasDropdown) {
       const categoryCode = mapDropdown[fieldName];
       return (
-        <Grid item xs={gridSize} key={fieldName}>
+        <Box key={fieldName} sx={{ minWidth: 0 }}>
           <Dropdown
             onFetchData={createDropdownCallback(categoryCode)}
             onSelect={(selectedItem) => {
@@ -186,6 +191,7 @@ const EditAcImpMaterialTrackingPage = ({
               setValue(fieldName, value);
             }}
             select={dropdownValues[fieldName] || ""}
+            data={dropdownData[fieldName] || []}
             table="BASIC_DATA"
             option="basic_data"
             getControlLabel={getControlLabel}
@@ -194,284 +200,242 @@ const EditAcImpMaterialTrackingPage = ({
             totalItems={0}
             pageSize={10}
           />
-        </Grid>
+        </Box>
       );
     }
 
     return (
-      <Grid item xs={gridSize} key={fieldName}>
-        <TextField
-          fullWidth
-          label={getColumnLabel(fieldName, label)}
-          {...register(fieldName)}
-          {...extraProps}
-        />
-      </Grid>
+      <TextField
+        key={fieldName}
+        fullWidth
+        label={getColumnLabel(fieldName, label)}
+        {...register(fieldName)}
+        {...extraProps}
+      />
     );
   };
 
-  const getStatusText = (status) => {
-    if (status === 1) return "New-1";
-    if (status === 2) return "Checked-2";
-    if (status === 0) return "Cancel-0";
-    if (status === 7) return "Confirm-7";
-    if (status === 9) return "Close-9";
-    return "New-1";
+  const onSubmit = (data) => {
+    const finalData = {
+      ...data,
+      ...dropdownValues,
+      is_ac: data.is_ac ? "Y" : "N",
+      locked_information: acImp?.locked_information,
+    };
+    handleEdit(finalData);
   };
 
+  const submitForm = handleSubmit(onSubmit);
+
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="xl" fullWidth>
-      <DialogContent>
-        <Paper sx={{ maxWidth: "1400px", mx: "auto", p: 3 }}>
-          <Box
-            display="flex"
-            alignItems="center"
-            justifyContent="center"
-            mb={2}
-          >
-            <Typography
-              variant="h4"
-              textTransform="uppercase"
-              fontWeight={600}
-              textAlign="center"
-              flex={1}
-              mb={0}
-            >
-              {getControlLabel("ttl_edit", "Edit Material Tracking")}
-            </Typography>
-            <Button onClick={() => onClose(null)} variant="contained" color="error">
-              <CloseIcon />
-            </Button>
-          </Box>
+    <FormDialogShell
+      open={open}
+      onClose={() => onClose(null)}
+      onSubmit={submitForm}
+      title={getControlLabel("ttl_edit", "Edit Material Tracking")}
+      submitLabel={getControlLabel("btn_save", "Save")}
+      cancelLabel={getControlLabel("btn_cancel", "Cancel")}
+      submitDisabled={loading}
+      maxWidth="xl"
+    >
+      <Stack spacing={2}>
+        <FormSection title="Declaration information">
+          <FormGrid columns={3}>
+            <TextField
+              fullWidth
+              label={getColumnLabel("factory_code", "Factory Code")}
+              {...register("factory_code")}
+              disabled
+            />
+            <TextField
+              fullWidth
+              label={getColumnLabel("invoice_no", "Invoice No")}
+              {...register("invoice_no")}
+              disabled
+            />
+            <TextField
+              fullWidth
+              label={getColumnLabel("sort", "Sort")}
+              {...register("sort")}
+              disabled
+            />
+            {renderField("declaration_category", "Declaration Category")}
+            {renderField("loading_way", "Loading Way")}
+            {renderField("exporting_countries", "Exporting Countries")}
+          </FormGrid>
+        </FormSection>
 
-          <Box component="form" onSubmit={handleSubmit(onSubmit)}>
-            {/* Row 1 */}
-            <Grid container spacing={2} mb={3}>
-              <Grid item xs={2.4}>
-                <TextField
-                  fullWidth
-                  label={getColumnLabel("factory_code", "Factory Code")}
-                  {...register("factory_code")}
-                  disabled
-                />
-              </Grid>
-              <Grid item xs={2.4}>
-                <TextField
-                  fullWidth
-                  label={getColumnLabel("invoice_no", "Invoice No")}
-                  {...register("invoice_no")}
-                  disabled
-                />
-              </Grid>
-              <Grid item xs={2.4}>
-                <TextField
-                  fullWidth
-                  label={getColumnLabel("sort", "Sort")}
-                  {...register("sort")}
-                  disabled
-                />
-              </Grid>
-              {renderField("declaration_category", "Declaration Category")}
-            </Grid>
+        <FormSection title="Shipment information">
+          <FormGrid columns={3}>
+            {renderField("b_l", "B/L")}
+            {renderField("loading_port", "Loading Port")}
+            {renderField("unloading_port", "Unloading Port")}
+            <TextField
+              fullWidth
+              label={getColumnLabel("bill_of_lading_no", "Bill of Lading No")}
+              {...register("bill_of_lading_no")}
+            />
+            {renderField("shipside", "Shipside")}
+            <TextField
+              fullWidth
+              label={getColumnLabel(
+                "shipping_payment_way",
+                "Shipping Payment Way",
+              )}
+              {...register("shipping_payment_way")}
+            />
+          </FormGrid>
+        </FormSection>
 
-            {/* Row 2 */}
-            <Grid container spacing={2} mb={3}>
-              {renderField("loading_way", "Loading Way")}
-              {renderField("exporting_countries", "Exporting Countries")}
-              {renderField("b_l", "B/L")}
-              {renderField("loading_port", "Loading Port")}
-              {renderField("unloading_port", "Unloading Port")}
-            </Grid>
+        <FormSection title="Quantity, package and value">
+          <FormGrid columns={3}>
+            <TextField
+              fullWidth
+              label={getColumnLabel("qty_of_pieces", "Qty of Pieces")}
+              {...numericRegister("qty_of_pieces")}
+              type="number"
+              inputProps={{
+                step: "0.01",
+                min: 0,
+                onChange: handleDecimalInput(2),
+              }}
+            />
+            <TextField
+              fullWidth
+              label={getColumnLabel("gross_weight", "Gross Weight")}
+              {...numericRegister("gross_weight")}
+              type="number"
+              inputProps={{
+                step: "0.01",
+                min: 0,
+                onChange: handleDecimalInput(2),
+              }}
+            />
+            {renderField("packaging_unit", "Packaging Unit")}
+            <TextField
+              fullWidth
+              label={getColumnLabel(
+                "material_description",
+                "Material Description",
+              )}
+              {...register("material_description")}
+            />
+            <TextField
+              fullWidth
+              label={getColumnLabel("factory_materials", "Factory Materials")}
+              {...register("factory_materials")}
+            />
+            <TextField
+              fullWidth
+              label={getColumnLabel("container_quantity", "Container Quantity")}
+              {...numericRegister("container_quantity")}
+              type="number"
+              inputProps={{
+                step: "0.00000001",
+                min: 0,
+                onChange: handleDecimalInput(8),
+              }}
+            />
+            <TextField
+              fullWidth
+              label={getColumnLabel("invoice_amount", "Invoice Amount")}
+              {...numericRegister("invoice_amount")}
+              type="number"
+              inputProps={{
+                step: "0.0001",
+                min: 0,
+                onChange: handleDecimalInput(4),
+              }}
+            />
+            {renderField("currency", "Currency")}
+            <TextField
+              fullWidth
+              label={getColumnLabel("exchange_rate", "Exchange Rate")}
+              {...numericRegister("exchange_rate")}
+              type="number"
+              inputProps={{
+                step: "0.00000001",
+                min: 0,
+                onChange: handleDecimalInput(8),
+              }}
+            />
+          </FormGrid>
+        </FormSection>
 
-            {/* Row 3 */}
-            <Grid container spacing={2} mb={3}>
-              <Grid item xs={2.4}>
-                <TextField
-                  fullWidth
-                  label={getColumnLabel("qty_of_pieces", "Qty of Pieces")}
-                  {...register("qty_of_pieces", {
-                    setValueAs: (v) =>
-                      v === "" || v === undefined ? null : Number(v),
-                  })}
-                  type="number"
-                  inputProps={{ step: "0.01", min: 0, onChange: handleDecimalInput(2) }}
-                />
-              </Grid>
-              <Grid item xs={2.4}>
-                <TextField
-                  fullWidth
-                  label={getColumnLabel("gross_weight", "Gross Weight")}
-                  {...register("gross_weight", {
-                    setValueAs: (v) =>
-                      v === "" || v === undefined ? null : Number(v),
-                  })}
-                  type="number"
-                  inputProps={{ step: "0.01", min: 0, onChange: handleDecimalInput(2) }}
-                />
-              </Grid>
-              {renderField("packaging_unit", "Packaging Unit")}
-              <Grid item xs={2.4}>
-                <TextField
-                  fullWidth
-                  label={getColumnLabel("material_description", "Material Description")}
-                  {...register("material_description")}
-                />
-              </Grid>
-              <Grid item xs={2.4}>
-                <TextField
-                  fullWidth
-                  label={getColumnLabel("factory_materials", "Factory Materials")}
-                  {...register("factory_materials")}
-                />
-              </Grid>
-            </Grid>
+        <FormSection title="Schedule and delivery dates">
+          <FormGrid columns={3}>
+            {[
+              ["estimated_arrival_date", "Est. Arrival Date"],
+              ["actual_arrival_date", "Actual Arrival Date"],
+              ["record_date", "Record Date"],
+              ["departure_date", "Departure Date"],
+              ["estimated_delivery_date", "Est. Delivery Date"],
+              ["actual_delivery_date", "Actual Delivery Date"],
+            ].map(([name, label]) => (
+              <TextField
+                key={name}
+                fullWidth
+                label={getColumnLabel(name, label)}
+                {...register(name)}
+                type="date"
+                InputLabelProps={{ shrink: true }}
+              />
+            ))}
+          </FormGrid>
+        </FormSection>
 
-            {/* Row 4 */}
-            <Grid container spacing={2} mb={3}>
-              <Grid item xs={2.4}>
-                <TextField
-                  fullWidth
-                  label={getColumnLabel("bill_of_lading_no", "Bill of Lading No")}
-                  {...register("bill_of_lading_no")}
-                />
-              </Grid>
-              {renderField("shipside", "Shipside")}
-              <Grid item xs={2.4}>
-                <TextField
-                  fullWidth
-                  label={getColumnLabel("invoice_amount", "Invoice Amount")}
-                  {...register("invoice_amount", {
-                    setValueAs: (v) =>
-                      v === "" || v === undefined ? null : Number(v),
-                  })}
-                  type="number"
-                  inputProps={{ step: "0.0001", min: 0, onChange: handleDecimalInput(4) }}
-                />
-              </Grid>
-              {renderField("currency", "Currency")}
-              <Grid item xs={2.4}>
-                <TextField
-                  fullWidth
-                  label={getColumnLabel("exchange_rate", "Exchange Rate")}
-                  {...register("exchange_rate", {
-                    setValueAs: (v) =>
-                      v === "" || v === undefined ? null : Number(v),
-                  })}
-                  type="number"
-                  inputProps={{ step: "0.00000001", min: 0, onChange: handleDecimalInput(8) }}
-                />
-              </Grid>
-            </Grid>
-
-            {/* Row 5 - Dates */}
-            <Grid container spacing={2} mb={3}>
-              {[
-                ["estimated_arrival_date", "Est. Arrival Date"],
-                ["actual_arrival_date", "Actual Arrival Date"],
-                ["record_date", "Record Date"],
-                ["departure_date", "Departure Date"],
-                ["estimated_delivery_date", "Est. Delivery Date"],
-                ["actual_delivery_date", "Actual Delivery Date"],
-              ].map(([name, label]) => (
-                <Grid item xs={2.4} key={name}>
-                  <TextField
-                    fullWidth
-                    label={getColumnLabel(name, label)}
-                    {...register(name)}
-                    type="date"
-                    InputLabelProps={{ shrink: true }}
-                  />
-                </Grid>
-              ))}
-            </Grid>
-
-            {/* Row 6 */}
-            <Grid container spacing={2} mb={3} alignItems="center">
-              <Grid item xs={2.4}>
-                <TextField
-                  fullWidth
-                  label={getColumnLabel("shipping_payment_way", "Shipping Payment Way")}
-                  {...register("shipping_payment_way")}
-                />
-              </Grid>
-              {renderField("import_delay_reason", "Import Delay Reason")}
-              <Grid item xs={2.4}>
-                <TextField
-                  fullWidth
-                  label={getColumnLabel("container_quantity", "Container Quantity")}
-                  {...register("container_quantity", {
-                    setValueAs: (v) =>
-                      v === "" || v === undefined ? null : Number(v),
-                  })}
-                  type="number"
-                  inputProps={{ step: "0.00000001", min: 0, onChange: handleDecimalInput(8) }}
-                />
-              </Grid>
-              <Grid item xs={2.4}>
-                <TextField
-                  fullWidth
-                  label={getColumnLabel("date_completion_procedures", "Date Completion")}
-                  {...register("date_completion_procedures")}
-                  type="date"
-                  InputLabelProps={{ shrink: true }}
-                />
-              </Grid>
-              <Grid item xs={2.4}>
-                <TextField
-                  fullWidth
-                  label={getColumnLabel("declaration_retrieve_date", "Declaration Retrieve Date")}
-                  {...register("declaration_retrieve_date")}
-                  type="date"
-                  InputLabelProps={{ shrink: true }}
-                />
-              </Grid>
-
-              {/*  is_ac — Checkbox dùng Controller để tích hợp với react-hook-form */}
-              <Grid item xs={2.4}>
-                <Controller
-                  name="is_ac"
-                  control={control}
-                  render={({ field }) => (
-                    <FormControlLabel
-                      control={
-                        <Checkbox
-                          checked={!!field.value}
-                          onChange={(e) => field.onChange(e.target.checked)}
-                          color="primary"
-                        />
-                      }
-                      label={getColumnLabel("is_ac", "IS AC")}
-                      sx={{
-                        border: "1px solid rgba(0,0,0,0.23)",
-                        borderRadius: 1,
-                        px: 1.5,
-                        py: 0.5,
-                        width: "100%",
-                        m: 0,
-                        height: "56px",
-                      }}
+        <FormSection title="Completion and control">
+          <FormGrid columns={3}>
+            {renderField("import_delay_reason", "Import Delay Reason")}
+            <TextField
+              fullWidth
+              label={getColumnLabel(
+                "date_completion_procedures",
+                "Date Completion",
+              )}
+              {...register("date_completion_procedures")}
+              type="date"
+              InputLabelProps={{ shrink: true }}
+            />
+            <TextField
+              fullWidth
+              label={getColumnLabel(
+                "declaration_retrieve_date",
+                "Declaration Retrieve Date",
+              )}
+              {...register("declaration_retrieve_date")}
+              type="date"
+              InputLabelProps={{ shrink: true }}
+            />
+            <Controller
+              name="is_ac"
+              control={control}
+              render={({ field }) => (
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={!!field.value}
+                      onChange={(event) => field.onChange(event.target.checked)}
+                      color="primary"
                     />
-                  )}
+                  }
+                  label={getColumnLabel("is_ac", "IS AC")}
+                  sx={{
+                    minHeight: 40,
+                    px: 1,
+                    m: 0,
+                    border: "1px solid",
+                    borderColor: "divider",
+                    borderRadius: 1.5,
+                    bgcolor: "background.paper",
+                  }}
                 />
-              </Grid>
-            </Grid>
-
-            {/* Submit Button */}
-            <Box mt={4} display="flex" justifyContent="center">
-              <Button
-                type="submit"
-                variant="contained"
-                color="primary"
-                size="large"
-                disabled={loading}
-              >
-                {getControlLabel("btn_save", "Save")}
-              </Button>
-            </Box>
-          </Box>
-        </Paper>
-      </DialogContent>
-    </Dialog>
+              )}
+            />
+          </FormGrid>
+        </FormSection>
+      </Stack>
+    </FormDialogShell>
   );
 };
 
