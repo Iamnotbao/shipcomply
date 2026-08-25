@@ -1,11 +1,13 @@
-import { Box, Button, Grid, Paper, TextField, Typography } from "@mui/material";
-import { addShoe, editShoe } from "../../../service/ac_shoe_m/ShoesService";
-import { toast } from "react-toastify";
+import { TextField } from "@mui/material";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
-import KeyboardBackspaceIcon from "@mui/icons-material/KeyboardBackspace";
-import useAuth from "../../../hooks/useAuth";
+import { toast } from "react-toastify";
 import { useTranslation } from "react-i18next";
+import FormGrid from "../../../component/form/FormGrid";
+import FormPageShell from "../../../component/form/FormPageShell";
+import FormSection from "../../../component/form/FormSection";
+import useAuth from "../../../hooks/useAuth";
+import { editShoe } from "../../../service/ac_shoe_m/ShoesService";
 
 const AcShoeMEditPage = () => {
   const { factory_code, customs_shoe_id } = useParams();
@@ -15,233 +17,116 @@ const AcShoeMEditPage = () => {
   const { user } = useAuth();
   const navigation = useNavigate();
   const { t } = useTranslation();
+
   const handleEditShoe = async (data) => {
     try {
       const response = await editShoe(
         factory_code,
         customs_shoe_id,
         data,
-        user.access_token
+        user.access_token,
       );
 
       if (response.success) {
         toast.success(
-          `Edit shoe with factory code(${factory_code}) successfully !!!`
+          `Edit shoe with factory code(${factory_code}) successfully !!!`,
         );
       }
     } catch (error) {
       console.log("data has been problem", error);
     }
   };
+
   return (
-    <Paper sx={{ maxWidth: "1200px", mx: "auto", p: 3 }}>
-      <Box
-        display={"flex"}
-        alignItems={"center"}
-        justifyContent={"center"}
-        mb={2}
-      >
-        <Button
-          onClick={() => navigation("/ac_shoe_m")}
-          variant="contained"
-          color="warning"
-        >
-          <KeyboardBackspaceIcon />
-        </Button>
-        <Typography
-          variant="h4"
-          textTransform={"uppercase"}
-          fontWeight={600}
-          gutterBottom
-          textAlign={"center"}
-          sx={{ flex: 1 }}
-          mb={"0"}
-        >
-          {t("Edit Shoe Information")}
-        </Typography>
-      </Box>
-      <Box component="form" onSubmit={handleSubmit(handleEditShoe)}>
-        <fieldset
-          style={{
-            border: "1px solid #ccc",
-            borderRadius: "8px",
-            padding: "16px",
-            marginBottom: "24px",
-          }}
-        >
-          <legend style={{ padding: "0 8px", fontWeight: "bold" }}>
-            {t("Main Information")}
-          </legend>
-          <Grid container spacing={2}>
-            <Grid item xs={6}>
-              <TextField
-                fullWidth
-                label="Factory Code"
-                name="factory_code"
-                value={factory_code}
-                disabled
-              />
-            </Grid>
-            <Grid item xs={6}>
-              <TextField
-                fullWidth
-                label="Cutoms Shoe ID"
-                name="customs_shoe_id"
-                value={customs_shoe_id}
-                disabled
-              />
-            </Grid>
-            <Grid item xs={6}>
-              <TextField
-                fullWidth
-                label="Cutoms Shoe Name L"
-                name="customs_shoe_name_l"
-                {...register("customs_shoe_name_l")}
-              />
-            </Grid>
-            <Grid item xs={6}>
-              <TextField
-                fullWidth
-                label="Cutoms Shoe Name T"
-                name="customs_shoe_name_t"
-                {...register("customs_shoe_name_t")}
-              />
-            </Grid>
-            <Grid item xs={6}>
-              <TextField
-                fullWidth
-                label="Cutoms Shoe Name E"
-                name="customs_shoe_name_e"
-                {...register("customs_shoe_name_e")}
-              />
-            </Grid>
-          </Grid>
-        </fieldset>
-        <Box mt={4}>
-          <fieldset
-            style={{
-              border: "1px solid #ccc",
-              borderRadius: "8px",
-              padding: "16px",
-              marginBottom: "24px",
-            }}
-          >
-            {" "}
-            <legend style={{ padding: "0 8px", fontWeight: "bold" }}>
-              {t("Tax Information")}
-            </legend>
-            <Grid container spacing={2}>
-              <Grid item xs={6}>
-                <TextField
-                  fullWidth
-                  label="Cutom tariff"
-                  name="customs_tariff"
-                  {...register("customs_tariff")}
-                />
-              </Grid>
-              <Grid item xs={6}>
-                <TextField
-                  fullWidth
-                  label="Size Type"
-                  name="size_type"
-                  {...register("size_type")}
-                />
-              </Grid>
-              <Grid item xs={6}>
-                <TextField
-                  fullWidth
-                  label="Unit"
-                  name="unit"
-                  {...register("unit")}
-                />
-              </Grid>
-              <Grid item xs={6}>
-                <TextField
-                  fullWidth
-                  label="Tax Per"
-                  name="tax_per"
-                  {...register("tax_per")}
-                />
-              </Grid>
-              <Grid item xs={6}>
-                <TextField
-                  fullWidth
-                  label="Status"
-                  name="status"
-                  {...register("status")}
-                />
-              </Grid>
-            </Grid>
-          </fieldset>
-        </Box>
-        <Box mt={4}>
-          <fieldset
-            style={{
-              border: "1px solid #ccc",
-              borderRadius: "8px",
-              padding: "16px",
-              marginBottom: "24px",
-            }}
-          >
-            {" "}
-            <legend style={{ padding: "0 8px", fontWeight: "bold" }}>
-              {t("Audit Information")}
-            </legend>
-            <Grid container spacing={2}>
-              <Grid item xs={6}>
-                <TextField
-                  fullWidth
-                  label="GRT Dept"
-                  name="grt_dept"
-                  {...register("grt_dept")}
-                />
-              </Grid>
-              <Grid item xs={6}>
-                <TextField
-                  fullWidth
-                  label="GRT User"
-                  name="grt_user"
-                  disabled
-                  {...register("grt_user")}
-                />
-              </Grid>
-              <Grid item xs={6}>
-                <TextField
-                  fullWidth
-                  label="GRT Date"
-                  name="grt_date"
-                  disabled
-                  {...register("grt_date")}
-                />
-              </Grid>
-              <Grid item xs={6}>
-                <TextField
-                  fullWidth
-                  label="Last User"
-                  name="last_user"
-                  disabled
-                  {...register("last_user")}
-                />
-              </Grid>
-              <Grid item xs={6}>
-                <TextField
-                  fullWidth
-                  label="Last Date"
-                  name="last_date"
-                  disabled
-                  {...register("last_date")}
-                />
-              </Grid>
-            </Grid>
-          </fieldset>
-        </Box>
-        <Box mt={4} display={"flex"} gap={"6px"}>
-          <Button type="submit" variant="contained" color="primary">
-            {t("Save")}
-          </Button>
-        </Box>
-      </Box>
-    </Paper>
+    <FormPageShell
+      title={t("Edit Shoe Information")}
+      onBack={() => navigation("/ac_shoe_m")}
+      onSubmit={handleSubmit(handleEditShoe)}
+      submitLabel={t("Save")}
+    >
+      <FormSection title={t("Main Information")}>
+        <FormGrid columns={3}>
+          <TextField
+            fullWidth
+            label="Factory Code"
+            value={factory_code || ""}
+            InputLabelProps={{ shrink: true }}
+            disabled
+          />
+          <TextField
+            fullWidth
+            label="Customs Shoe ID"
+            value={customs_shoe_id || ""}
+            InputLabelProps={{ shrink: true }}
+            disabled
+          />
+          <TextField
+            fullWidth
+            label="Customs Shoe Name L"
+            {...register("customs_shoe_name_l")}
+          />
+          <TextField
+            fullWidth
+            label="Customs Shoe Name T"
+            {...register("customs_shoe_name_t")}
+          />
+          <TextField
+            fullWidth
+            label="Customs Shoe Name E"
+            {...register("customs_shoe_name_e")}
+          />
+        </FormGrid>
+      </FormSection>
+
+      <FormSection title={t("Tax Information")}>
+        <FormGrid columns={3}>
+          <TextField
+            fullWidth
+            label="Customs Tariff"
+            {...register("customs_tariff")}
+          />
+          <TextField fullWidth label="Size Type" {...register("size_type")} />
+          <TextField fullWidth label="Unit" {...register("unit")} />
+          <TextField fullWidth label="Tax Per" {...register("tax_per")} />
+          <TextField fullWidth label="Status" {...register("status")} />
+        </FormGrid>
+      </FormSection>
+
+      <FormSection title={t("Audit Information")}>
+        <FormGrid columns={3}>
+          <TextField fullWidth label="GRT Dept" {...register("grt_dept")} />
+          <TextField
+            fullWidth
+            label="GRT User"
+            {...register("grt_user")}
+            InputLabelProps={{ shrink: true }}
+            disabled
+          />
+          <TextField
+            fullWidth
+            label="GRT Date"
+            {...register("grt_date")}
+            InputLabelProps={{ shrink: true }}
+            disabled
+          />
+          <TextField
+            fullWidth
+            label="Last User"
+            {...register("last_user")}
+            InputLabelProps={{ shrink: true }}
+            disabled
+          />
+          <TextField
+            fullWidth
+            label="Last Date"
+            {...register("last_date")}
+            InputLabelProps={{ shrink: true }}
+            disabled
+          />
+        </FormGrid>
+      </FormSection>
+    </FormPageShell>
   );
 };
+
 export default AcShoeMEditPage;
