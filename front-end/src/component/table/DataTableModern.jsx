@@ -1,10 +1,20 @@
-import { Box, Typography } from "@mui/material";
+import {
+  Box,
+  IconButton,
+  MenuItem,
+  Select,
+  Stack,
+  Typography,
+} from "@mui/material";
+import ChevronLeftRounded from "@mui/icons-material/ChevronLeftRounded";
+import ChevronRightRounded from "@mui/icons-material/ChevronRightRounded";
 import { DataGrid } from "@mui/x-data-grid";
 import React, { useCallback, useMemo, useRef, useState } from "react";
 import moment from "moment/moment";
 import ToolbarKit from "../toolbar/Toolbar";
 import { getRowId as getRowIdUtil } from "../../utils/table";
-import { getTableHeight } from "../../constants/table";
+import { getPageSizeOptions, getTableHeight } from "../../constants/table";
+import useAuth from "../../hooks/useAuth";
 import useTableData from "./hooks/useTableData";
 import useTableSelection from "./hooks/useTableSelection";
 import useTablePagination from "./hooks/useTablePagination";
@@ -12,11 +22,15 @@ import useTableKeyboardNavigation from "./hooks/useTableKeyboardNavigation";
 import useModernTableColumns from "./hooks/useModernTableColumns";
 
 function ModernFooter({
+  tableName,
   selectedRow,
   getColumnLabel,
   paginationModel,
   rowsLength,
   totalData,
+  hasMore,
+  isSearch,
+  onPaginationChange,
 }) {
   const fields = [
     ["grt_dept", "grt_dept"],
@@ -25,11 +39,24 @@ function ModernFooter({
     ["last_user", "last_user"],
     ["last_date", "last_date"],
   ];
+  const pageSizeOptions = getPageSizeOptions(tableName);
+  const { page, pageSize } = paginationModel;
+  const totalPages =
+    totalData > 0
+      ? Math.ceil(totalData / pageSize)
+      : hasMore
+        ? page + 2
+        : rowsLength === 0
+          ? 0
+          : page + 1;
+  const canNext =
+    totalPages > 0 &&
+    (hasMore || (totalData > 0 ? page < totalPages - 1 : false));
 
   return (
     <Box
       sx={{
-        minHeight: 48,
+        minHeight: 50,
         px: 1.25,
         py: 0.75,
         display: "flex",
@@ -51,7 +78,7 @@ function ModernFooter({
               : rawValue || "—";
 
           return (
-            <Box key={key} sx={{ minWidth: 110 }}>
+            <Box key={key} sx={{ minWidth: 105 }}>
               <Typography
                 variant="caption"
                 sx={{ display: "block", color: "text.secondary", fontWeight: 700 }}
@@ -62,7 +89,7 @@ function ModernFooter({
                 variant="body2"
                 noWrap
                 title={String(value)}
-                sx={{ fontSize: "0.75rem", color: "text.primary", maxWidth: 180 }}
+                sx={{ fontSize: "0.75rem", color: "text.primary", maxWidth: 170 }}
               >
                 {value}
               </Typography>
@@ -71,11 +98,60 @@ function ModernFooter({
         })}
       </Box>
 
-      <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 700 }}>
-        Page {rowsLength === 0 ? 0 : paginationModel.page + 1} · {rowsLength} row
-        {rowsLength === 1 ? "" : "s"}
-        {totalData ? ` / ${totalData}` : ""}
-      </Typography>
+      <Stack direction="row" alignItems="center" spacing={0.75}>
+        <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 700 }}>
+          {rowsLength === 0 ? 0 : page + 1} / {totalPages || 0}
+        </Typography>
+
+        <IconButton
+          size="small"
+          disabled={page <= 0}
+          onClick={() =>
+            onPaginationChange({
+              page: Math.max(page - 1, 0),
+              pageSize,
+            })
+          }
+        >
+          <ChevronLeftRounded fontSize="small" />
+        </IconButton>
+
+        <IconButton
+          size="small"
+          disabled={!canNext}
+          onClick={() =>
+            onPaginationChange({
+              page: page + 1,
+              pageSize,
+            })
+          }
+        >
+          <ChevronRightRounded fontSize="small" />
+        </IconButton>
+
+        <Select
+          size="small"
+          value={pageSize}
+          onChange={(event) =>
+            onPaginationChange({
+              page: 0,
+              pageSize: Number(event.target.value),
+            })
+          }
+          sx={{ minWidth: 72, height: 32, fontSize: "0.76rem" }}
+        >
+          {pageSizeOptions.map((size) => (
+            <MenuItem key={size} value={size}>
+              {size}
+            </MenuItem>
+          ))}
+        </Select>
+
+        <Typography variant="caption" sx={{ color: "text.secondary" }}>
+          {rowsLength} row{rowsLength === 1 ? "" : "s"}
+          {isSearch && totalData ? ` / ${totalData}` : ""}
+        </Typography>
+      </Stack>
     </Box>
   );
 }
@@ -98,7 +174,6 @@ export default function DataTableModern(props) {
     onDetail,
     onCheck,
     onSelectChange,
-    popupOpen,
     selectRows = [],
     subTable = false,
     subTableName,
@@ -132,7 +207,7 @@ export default function DataTableModern(props) {
     onConfirmAll,
     onApprove,
     onAddContractNumber,
-    totalData,
+    totalData = 0,
     currentPage,
     currentPageSize,
     isLoadingBom,
@@ -188,6 +263,7 @@ export default function DataTableModern(props) {
     onImportLink,
   } = props;
 
+  const { user } = useAuth();
   const title = tableName === "USER_PERMISSION_DEPARTMENT" ? "PERMISSION" : tableName;
   const gridRef = useRef(null);
   const focusIndexRef = useRef(0);
@@ -203,12 +279,10 @@ export default function DataTableModern(props) {
     language,
     columnTranslations,
     getColumnLabel,
+    showAllLanguages: user?.user_code === "admin",
   });
 
-  const {
-    paginationModel,
-    handlePaginationModelChange,
-  } = useTablePagination({
+  const { paginationModel, handlePaginationModelChange } = useTablePagination({
     title,
     tableName,
     currentPage,
@@ -219,25 +293,22 @@ export default function DataTableModern(props) {
     setFocusIndex,
   });
 
-  const {
-    handleRowClick,
-    handleRowSelectionChange,
-    getRowClassName,
-  } = useTableSelection({
-    rows,
-    selectRows,
-    getRowId,
-    onSelectChange,
-    onSelectionChange,
-    selectCheckRef,
-    isSubTable: false,
-    gridRef,
-    setFocusContext,
-    setIsFocused,
-    focusContextRef,
-    focusIndexRef,
-    setFocusIndex,
-  });
+  const { handleRowClick, handleRowSelectionChange, getRowClassName } =
+    useTableSelection({
+      rows,
+      selectRows,
+      getRowId,
+      onSelectChange,
+      onSelectionChange,
+      selectCheckRef,
+      isSubTable: false,
+      gridRef,
+      setFocusContext,
+      setIsFocused,
+      focusContextRef,
+      focusIndexRef,
+      setFocusIndex,
+    });
 
   const { handleKeyDown } = useTableKeyboardNavigation({
     rows,
@@ -262,20 +333,30 @@ export default function DataTableModern(props) {
   const rowSelectionModel = useMemo(
     () => ({
       type: "include",
-      ids: new Set(
-        (selectRows || [])
-          .filter(Boolean)
-          .map((row) => getRowId(row)),
-      ),
+      ids: new Set((selectRows || []).filter(Boolean).map((row) => getRowId(row))),
     }),
     [getRowId, selectRows],
   );
 
   const selectedRow = selectRows?.[0] || null;
   const tableHeight = getTableHeight(title);
+  const effectiveRowCount =
+    totalData > 0
+      ? totalData
+      : hasMore
+        ? (paginationModel.page + 2) * paginationModel.pageSize
+        : paginationModel.page * paginationModel.pageSize + rows.length;
 
   return (
-    <Box sx={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", gap: 1 }}>
+    <Box
+      sx={{
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        gap: 1,
+      }}
+    >
       {isToolbar && (
         <ToolbarKit
           table={title}
@@ -401,15 +482,19 @@ export default function DataTableModern(props) {
           paginationMode="server"
           paginationModel={paginationModel}
           onPaginationModelChange={handlePaginationModelChange}
-          rowCount={totalData || rows.length}
+          rowCount={effectiveRowCount}
           slots={{
             footer: () => (
               <ModernFooter
+                tableName={tableName}
                 selectedRow={selectedRow}
                 getColumnLabel={getColumnLabel}
                 paginationModel={paginationModel}
                 rowsLength={rows.length}
                 totalData={totalData}
+                hasMore={hasMore}
+                isSearch={isSearch}
+                onPaginationChange={handlePaginationModelChange}
               />
             ),
           }}
