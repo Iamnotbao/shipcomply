@@ -13,6 +13,9 @@ export default function FormGrid({ children, columns = 2, sx }) {
         },
         gap: 1.5,
         alignItems: "start",
+        "& > *": {
+          minWidth: 0,
+        },
         "& > .MuiFormControl-root, & > .MuiAutocomplete-root": {
           width: "100%",
         },
