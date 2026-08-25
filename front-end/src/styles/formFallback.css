@@ -1,0 +1,63 @@
+/* Fallback polish for Add/Edit screens that have not yet moved to the shared form shells. */
+.MuiDialog-root .MuiDialog-paper {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+  background-image: none;
+  box-shadow: 0 18px 55px rgba(15, 23, 42, 0.18);
+}
+
+.MuiDialog-root .MuiDialogContent-root {
+  padding: 20px 24px;
+}
+
+.MuiDialog-root .MuiDialogContent-root > .MuiPaper-root {
+  box-shadow: none;
+  border: 0;
+  padding: 0;
+  max-width: none;
+}
+
+.MuiDialog-root form fieldset,
+main form fieldset {
+  margin: 0 0 16px;
+  padding: 16px;
+  min-width: 0;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 10px !important;
+  background: #fff;
+}
+
+.MuiDialog-root form fieldset legend,
+main form fieldset legend {
+  padding: 0 8px !important;
+  color: #0f172a;
+  font-size: 0.82rem;
+  font-weight: 700 !important;
+}
+
+.MuiDialog-root form .MuiTextField-root,
+.MuiDialog-root form .MuiFormControl-root,
+main form .MuiTextField-root,
+main form .MuiFormControl-root {
+  min-width: 0;
+}
+
+.MuiDialog-root .MuiTypography-h4,
+main form .MuiTypography-h4 {
+  font-size: 1.15rem;
+  line-height: 1.35;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+@media (max-width: 900px) {
+  .MuiDialog-root .MuiDialogContent-root {
+    padding: 16px;
+  }
+
+  .MuiDialog-root form fieldset,
+  main form fieldset {
+    padding: 14px;
+  }
+}
