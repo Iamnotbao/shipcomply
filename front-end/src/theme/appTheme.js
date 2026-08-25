@@ -63,35 +63,35 @@ const appTheme = createTheme({
           backgroundColor: palette.surface,
           fontSize: "0.82rem",
           boxShadow: "0 1px 2px rgba(15, 23, 42, 0.04)",
-          "& .MuiDataGrid-columnHeaders": {
-            backgroundColor: "#f8fafc",
+          "&& .MuiDataGrid-columnHeaders": {
+            backgroundColor: `${palette.canvas} !important`,
             borderBottom: `1px solid ${palette.border}`,
           },
-          "& .MuiDataGrid-columnHeader": {
-            backgroundColor: "#f8fafc !important",
-            borderRight: `1px solid ${palette.border}`,
+          "&& .MuiDataGrid-columnHeader": {
+            backgroundColor: `${palette.canvas} !important`,
+            borderRight: `1px solid ${palette.border} !important`,
           },
-          "& .MuiDataGrid-columnHeaderTitle": {
+          "&& .MuiDataGrid-columnHeaderTitle": {
             color: `${palette.navy} !important`,
             fontSize: "0.78rem !important",
             fontWeight: "700 !important",
             letterSpacing: "0.01em",
           },
-          "& .MuiDataGrid-cell": {
+          "&& .MuiDataGrid-cell": {
             borderRight: `1px solid ${palette.border} !important`,
             borderBottom: `1px solid ${palette.border} !important`,
             color: palette.navy,
           },
-          "& .MuiDataGrid-row:hover": {
+          "&& .MuiDataGrid-row:hover": {
             backgroundColor: `${palette.hover} !important`,
           },
-          "& .MuiDataGrid-row.Mui-selected, & .Mui-selected-row": {
+          "&& .MuiDataGrid-row.Mui-selected, && .Mui-selected-row": {
             backgroundColor: `${palette.selected} !important`,
           },
-          "& .MuiDataGrid-row.Mui-selected:hover, & .Mui-selected-row:hover": {
+          "&& .MuiDataGrid-row.Mui-selected:hover, && .Mui-selected-row:hover": {
             backgroundColor: `${palette.primarySoft} !important`,
           },
-          "& .MuiDataGrid-footerContainer": {
+          "&& .MuiDataGrid-footerContainer": {
             minHeight: 46,
             borderTop: `1px solid ${palette.border}`,
             backgroundColor: "#fbfdff",
