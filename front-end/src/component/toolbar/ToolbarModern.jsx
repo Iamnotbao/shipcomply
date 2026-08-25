@@ -1,5 +1,7 @@
 import { forwardRef, useImperativeHandle, useState } from "react";
-import { Box, Divider, Toolbar } from "@mui/material";
+import { Box, Divider, Toolbar, Typography } from "@mui/material";
+import TuneRoundedIcon from "@mui/icons-material/TuneRounded";
+import BoltRoundedIcon from "@mui/icons-material/BoltRounded";
 import { useTranslation } from "react-i18next";
 import ToolbarSearchFields from "./ToolbarSearchFields";
 import ToolbarActionGroup from "./ToolbarActionGroup";
@@ -173,69 +175,149 @@ const ToolbarModern = forwardRef((props, ref) => {
     tableConfig.hideButtons,
   ).filter((item) => typeof item.onClick === "function");
 
+  const hasFilters = tableConfig.filters.length > 0;
+
   return (
-    <Toolbar
+    <Box
       sx={{
-        minHeight: "auto !important",
-        maxHeight: 260,
-        overflow: "auto",
-        display: "flex",
-        alignItems: "stretch",
-        gap: 2,
-        py: tableConfig.filters.length ? 1.25 : 0.75,
-        px: 1.25,
+        mx: 0.5,
+        mb: 1,
+        border: "1px solid",
+        borderColor: "divider",
+        borderRadius: 2,
+        backgroundColor: "background.paper",
+        boxShadow: "0 1px 3px rgba(15, 23, 42, 0.05)",
+        overflow: "hidden",
       }}
     >
-      {tableConfig.filters.length > 0 && (
+      <Toolbar
+        sx={{
+          minHeight: "auto !important",
+          maxHeight: 280,
+          overflow: "auto",
+          display: "flex",
+          alignItems: "stretch",
+          gap: 1.5,
+          py: 1.25,
+          px: 1.5,
+          "&::-webkit-scrollbar": { height: 8, width: 8 },
+          "&::-webkit-scrollbar-thumb": {
+            backgroundColor: "#cbd5e1",
+            borderRadius: 8,
+          },
+        }}
+      >
+        {hasFilters && (
+          <Box
+            sx={{
+              flex: "1 1 auto",
+              minWidth: 0,
+              display: "flex",
+              flexDirection: "column",
+              gap: 0.9,
+            }}
+          >
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 0.65,
+                color: "text.secondary",
+              }}
+            >
+              <TuneRoundedIcon sx={{ fontSize: 16 }} />
+              <Typography
+                variant="caption"
+                sx={{
+                  fontWeight: 750,
+                  letterSpacing: "0.04em",
+                  textTransform: "uppercase",
+                }}
+              >
+                Filters
+              </Typography>
+            </Box>
+
+            <Box
+              sx={{
+                display: "flex",
+                flexWrap: "wrap",
+                alignItems: "center",
+                gap: 1,
+              }}
+            >
+              <ToolbarSearchFields
+                filters={tableConfig.filters}
+                table={table}
+                searchValue={searchValue}
+                setSearchValue={setSearchValue}
+                getControlLabel={getControlLabel}
+                language={language}
+                getFetchData={getFetchData}
+                dropDownValues={dropDownValues}
+                setDropdownValues={setDropdownValues}
+                isCheckMax={isCheckMax}
+                onCheckMax={onCheckMax}
+              />
+            </Box>
+          </Box>
+        )}
+
+        {hasFilters && <Divider orientation="vertical" flexItem />}
+
         <Box
           sx={{
-            flex: "1 1 auto",
-            minWidth: 0,
+            flex: "0 0 auto",
             display: "flex",
-            flexWrap: "wrap",
-            alignItems: "center",
-            gap: 1.25,
+            flexDirection: "column",
+            gap: 0.9,
+            minWidth: { xs: "100%", md: 260 },
+            maxWidth: { xs: "100%", xl: 680 },
           }}
         >
-          <ToolbarSearchFields
-            filters={tableConfig.filters}
-            table={table}
-            searchValue={searchValue}
-            setSearchValue={setSearchValue}
-            getControlLabel={getControlLabel}
-            language={language}
-            getFetchData={getFetchData}
-            dropDownValues={dropDownValues}
-            setDropdownValues={setDropdownValues}
-            isCheckMax={isCheckMax}
-            onCheckMax={onCheckMax}
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 0.65,
+              color: "text.secondary",
+            }}
+          >
+            <BoltRoundedIcon sx={{ fontSize: 16 }} />
+            <Typography
+              variant="caption"
+              sx={{
+                fontWeight: 750,
+                letterSpacing: "0.04em",
+                textTransform: "uppercase",
+              }}
+            >
+              Actions
+            </Typography>
+          </Box>
+
+          <ToolbarActionGroup
+            actions={actions.map((item) => ({ ...item, label: t(item.label) }))}
+            sx={{
+              justifyContent: "flex-start",
+              alignContent: "flex-start",
+            }}
           />
         </Box>
-      )}
 
-      {tableConfig.filters.length > 0 && <Divider orientation="vertical" flexItem />}
-
-      <ToolbarActionGroup
-        actions={actions.map((item) => ({ ...item, label: t(item.label) }))}
-        sx={{
-          flex: "0 0 auto",
-          alignContent: "flex-start",
-          maxWidth: { xs: "100%", lg: 620 },
-        }}
-      />
-
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".xlsx,.xls"
-        style={{ display: "none" }}
-        onChange={(event) => {
-          const file = event.target.files?.[0];
-          if (file) onImport?.(file);
-          event.target.value = "";
-        }}
-      />
-    </Toolbar>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".xlsx,.xls"
+          style={{ display: "none" }}
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            if (file) onImport?.(file);
+            event.target.value = "";
+          }}
+        />
+      </Toolbar>
+    </Box>
   );
 });
 
