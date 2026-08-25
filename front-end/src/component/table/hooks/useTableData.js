@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo } from "react";
 
 export const getStatusText = (status) => {
   const value = String(status ?? "");
@@ -20,15 +20,7 @@ export const getStatusText = (status) => {
 };
 
 export default function useTableData(data = []) {
-  const [tableData, setTableData] = useState(Array.isArray(data) ? data : []);
-  const prevDataRef = useRef(data);
-
-  useEffect(() => {
-    if (prevDataRef.current === data) return;
-
-    setTableData(Array.isArray(data) ? [...data] : []);
-    prevDataRef.current = data;
-  }, [data]);
+  const tableData = Array.isArray(data) ? data : [];
 
   const rows = useMemo(
     () =>
@@ -45,7 +37,6 @@ export default function useTableData(data = []) {
 
   return {
     tableData,
-    setTableData,
     rows,
   };
 }
