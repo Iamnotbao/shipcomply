@@ -1,0 +1,36 @@
+const Joi = require("joi");
+
+const createIvTransDTwSchema = Joi.object({
+  factory_code: Joi.string().max(30).required(),
+  trans_no: Joi.string().max(120).required(),
+  trans_seq: Joi.string().max(120).required(),
+  lot_no: Joi.string().max(70).required(),
+  src_seq: Joi.number().precision(4).allow(null).empty('').optional(),
+  trans_qty: Joi.number().precision(4).allow(null).empty('').optional(),
+  in_qty: Joi.number().precision(4).allow(null).empty('').optional(),
+  out_qty: Joi.number().precision(4).allow(null).empty('').optional(),
+  in_piece: Joi.number().precision(4).allow(null).empty('').optional(),
+  in_weight: Joi.number().precision(4).allow(null).empty('').optional(),
+  price: Joi.number().precision(8).allow(null).empty('').optional(),
+  amount: Joi.number().precision(4).allow(null).empty('').optional(),
+  item_no: Joi.string().max(200).allow(null).empty('').optional(),
+  unit: Joi.string().max(30).allow(null).empty('').optional(),
+  currency: Joi.string().max(30).allow(null).empty('').optional(),
+  store: Joi.string().max(30).allow(null).empty('').optional(),
+  col1: Joi.string().max(200).allow(null).empty('').optional(),
+  col2: Joi.string().max(200).allow(null).empty('').optional(),
+  col3: Joi.string().max(200).allow(null).empty('').optional(),
+  col4: Joi.string().max(200).allow(null).empty('').optional(),
+  is_size: Joi.string().max(1).allow(null).empty('').optional(),
+  col5: Joi.string().max(200).allow(null).empty('').optional(),
+  col6: Joi.string().max(200).allow(null).empty('').optional(),
+  vend_no: Joi.string().max(200).allow(null).empty('').optional(),
+  stoc_no: Joi.string().max(200).allow(null).empty('').optional(),
+  trans_type: Joi.string().max(200).allow(null).empty('').optional(),
+  fact_no: Joi.string().max(30).allow(null).empty('').optional(),
+  item_text: Joi.string().max(200).allow(null).empty('').optional(),
+  trans_date: Joi.date().allow(null).empty('').optional(),
+  locked_information: Joi.string().max(600).allow(null).empty('').default(null).optional(),
+});
+
+module.exports = createIvTransDTwSchema;

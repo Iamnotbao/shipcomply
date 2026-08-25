@@ -1,0 +1,43 @@
+const Joi = require("joi");
+
+const createSePlanOrdSchema = Joi.object({
+  factory_code: Joi.string().max(30).required(),
+  se_id: Joi.string().max(30).required(),
+  se_ver: Joi.number().precision(2).required(),
+  se_seq: Joi.string().max(20).required(),
+  pack_gu: Joi.number().precision(2).required(),
+  ship_seq: Joi.number().precision(2).required(),
+  send_addr: Joi.string().max(600).allow(null, "").default(null).optional(),
+  send_type: Joi.string().max(600).allow(null, "").default(null).optional(),
+  ship_comp: Joi.string().max(600).allow(null, "").default(null).optional(),
+  cbm: Joi.number().precision(4).allow(null, "").default(null).optional(),
+  p_shipdate: Joi.date().allow(null).empty("").default(null).optional(),
+  p_shipqty: Joi.number().precision(4).allow(null, "").default(null).optional(),
+  p_exdate: Joi.date().allow(null).empty("").default(null).optional(),
+  f_exdate: Joi.date().allow(null).empty("").default(null).optional(),
+  ex_note: Joi.string().max(600).allow(null, "").default(null).optional(),
+  ex_status: Joi.string().max(1).allow(null, "").default(null).optional(),
+  sales_id: Joi.number().integer().allow(null, "").default(null).optional(),
+  col5: Joi.string().max(600).allow(null, "").default(null).optional(),
+  col6: Joi.string().max(600).allow(null, "").default(null).optional(),
+  column1: Joi.string().max(600).allow(null, "").default(null).optional(),
+  column2: Joi.string().max(600).allow(null, "").default(null).optional(),
+  column3: Joi.string().max(600).allow(null, "").default("N").optional(),
+  column4: Joi.date().allow(null).empty("").default(null).optional(),
+  book_no: Joi.string().max(600).allow(null, "").default(null).optional(),
+  qc_status: Joi.number().integer().allow(null, "").default(null).optional(),
+  qc_user: Joi.string().max(600).allow(null, "").default(null).optional(),
+  col7: Joi.string().max(600).allow(null, "").default("7").optional(),
+  remark: Joi.string().max(600).allow(null, "").default(null).optional(),
+  status: Joi.number().integer().default(1).optional(),
+  grt_dept: Joi.string().max(30).allow(null).empty("").default(null).optional(),
+  grt_user: Joi.string().max(30).allow(null).empty("").default(null).optional(),
+  grt_date: Joi.date().allow(null).empty("").default(null).optional(),
+  last_user: Joi.string().max(30).allow(null).empty("").default(null).optional(),
+  last_date: Joi.date().allow(null).empty("").default(null).optional(),
+  locked_information: Joi.string().max(600).allow(null).empty("").default(null).optional(),
+});
+
+module.exports = {
+  createSePlanOrdSchema,
+};

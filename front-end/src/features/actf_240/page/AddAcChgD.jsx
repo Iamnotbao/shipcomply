@@ -1,0 +1,655 @@
+import { useEffect, useState } from "react";
+import {
+  Box,
+  Button,
+  Dialog,
+  DialogContent,
+  Grid,
+  Paper,
+  TextField,
+  Typography,
+} from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
+import { Controller, useForm } from "react-hook-form";
+import Dropdown from "../../../component/dropdown/Dropdown";
+import { fetchBasicDataDropDownByCate } from "../../../service/basic_data/basicDataService";
+import {
+  fetchGoodsCodeListDropdownWithFunc,
+  fetchContPrice,
+} from "../../../service/ac_cont_d/AcContDService";
+import {
+  fetchGroupFieldDropdown,
+  fetchFieldWithFunction,
+} from "../../../service/ac_item_m/AcItemMService";
+
+const AddAcChgD = ({
+  open,
+  onClose,
+  handleAdd,
+  getControlLabel,
+  getColumnLabel,
+  user,
+  auth,
+  selectRows,
+  language,
+}) => {
+  const { register, handleSubmit, reset, setValue, control, watch } = useForm({
+    defaultValues: {
+      factory_code: user?.factory || "",
+      ac_no: selectRows?.[0]?.ac_no || "",
+      seq: "",
+      ac_itemno: "",
+      color: "",
+      country: "",
+      unit: "",
+      price: 0,
+      qty: 0,
+      breadth: "",
+      tax_rate: 0,
+      tax: 0,
+      money: 0,
+      atax_rate: 0,
+      add_tax: 0,
+      shoe_id: "",
+      remark: "",
+      in_qty: 0,
+      in_unit: "",
+      ac_item: "",
+      over_qty: 0,
+      is_ref: "",
+      cmoney: 0,
+      req_no: "",
+      ref_price: 0,
+    },
+  });
+
+  const [dropdownValues, setDropdownValues] = useState({
+    ac_itemno: "",
+    country: "",
+    in_unit: "",
+    ac_item: "",
+    price: "",
+  });
+
+  // Watch for fields that trigger calculations
+  const qty = watch("qty");
+  const price = watch("price");
+  const money = watch("money");
+  const tax_rate = watch("tax_rate");
+  const cmoney = watch("cmoney");
+  const atax_rate = watch("atax_rate");
+  const ac_itemno = watch("ac_itemno");
+
+  const ac_chg_m = selectRows?.[0] || {};
+
+  useEffect(() => {
+    if (open) {
+      setValue("factory_code", user?.factory);
+      setValue("ac_no", ac_chg_m?.ac_no || "");
+    } else {
+      reset();
+      setDropdownValues({
+        ac_itemno: "",
+        country: "",
+        in_unit: "",
+        ac_item: "",
+        price: "",
+      });
+    }
+  }, [open, reset]);
+
+  // Auto-calculate MONEY = QTY * PRICE
+  useEffect(() => {
+    const calculatedMoney = (qty || 0) * (price || 0);
+    setValue("money", calculatedMoney);
+  }, [qty, price]);
+
+  // Auto-calculate TAX = ROUND(CURR_RATE * MONEY * TAX_RATE / 100)
+  useEffect(() => {
+    const currRate = ac_chg_m?.curr_rate || 1;
+    const calculatedTax = Math.round(
+      (currRate * (money || 0) * (tax_rate || 1)) / 100,
+    );
+    setValue("tax", calculatedTax);
+  }, [money, tax_rate, ac_chg_m?.curr_rate]);
+
+  // Auto-calculate CMONEY = ROUND(CURR_RATE * MONEY)
+  useEffect(() => {
+    const currRate = ac_chg_m?.curr_rate || 1;
+    const calculatedCMoney = Math.round(currRate * (money || 0));
+    setValue("cmoney", calculatedCMoney);
+  }, [money, ac_chg_m?.curr_rate]);
+
+  // Auto-calculate ADD_TAX = ROUND(CMONEY * ATAX_RATE / 100)
+  useEffect(() => {
+    const calculatedAddTax = Math.round(
+      ((cmoney || 0) * (atax_rate || 1)) / 100,
+    );
+    setValue("add_tax", calculatedAddTax);
+  }, [cmoney, atax_rate]);
+
+  // Auto-calculate REF_PRICE = ROUND(PRICE * REQ_QTY * CURR_RATE, 2)
+  useEffect(() => {
+    const reqQty = ac_chg_m?.req_qty || 0;
+    const currRate = ac_chg_m?.curr_rate || 1;
+    const calculatedRefPrice =
+      Math.round((price || 0) * reqQty * currRate * 100) / 100;
+    setValue("ref_price", calculatedRefPrice);
+  }, [price, ac_chg_m?.req_qty, ac_chg_m?.curr_rate]);
+
+  // Fetch UNIT when AC_ITEMNO changes
+  useEffect(() => {
+    const fetchUnit = async () => {
+      if (ac_itemno) {
+        try {
+          const unitResult = await fetchFieldWithFunction(
+            user?.factory,
+            ac_itemno,
+            user?.department,
+            user?.user_code,
+            auth?.find((item) => item.field === "query_level")?.title,
+            "unit",
+          );
+          setValue("unit", unitResult?.data?.unit || "");
+        } catch (error) {
+          console.error("Error fetching unit:", error);
+        }
+      }
+    };
+    fetchUnit();
+  }, [ac_itemno]);
+
+  // Fetch TAX_RATE when AC_ITEMNO changes
+  useEffect(() => {
+    const fetchTaxRate = async () => {
+      if (ac_itemno) {
+        try {
+          const taxRateResult = await fetchFieldWithFunction(
+            user?.factory,
+            ac_itemno,
+            user?.department,
+            user?.user_code,
+            auth?.find((item) => item.field === "query_level")?.title,
+            "tax_rate",
+          );
+          setValue("tax_rate", taxRateResult?.data?.tax_rate || 0);
+        } catch (error) {
+          console.error("Error fetching tax_rate:", error);
+        }
+      }
+    };
+    fetchTaxRate();
+  }, [ac_itemno]);
+
+  // Callback functions for dropdowns
+  const createAcItemnoCallback = () => {
+    return async (page, pageSize, searchText) => {
+      try {
+        const allow =
+          auth?.find((item) => item.field === "query_level")?.title || "1";
+        const result = await fetchGoodsCodeListDropdownWithFunc(
+          user?.access_token,
+          user?.factory,
+          ac_chg_m?.cont_no,
+          user?.department,
+          user?.user_code,
+          allow,
+          language,
+          page,
+          pageSize,
+          searchText,
+        );
+        return {
+          data: result?.data || [],
+          total: result?.total || 0,
+          pageSize: result?.pageSize || pageSize,
+        };
+      } catch (error) {
+        console.error("Error fetching ac_itemno:", error);
+        return { data: [], total: 0, pageSize };
+      }
+    };
+  };
+
+  const createCountryCallback = () => {
+    return async (page, pageSize, searchText) => {
+      try {
+        const allow =
+          auth?.find((item) => item.field === "query_level")?.title || "1";
+        const result = await fetchBasicDataDropDownByCate(
+          user?.factory,
+          "5006",
+          user?.department,
+          user?.user_code,
+          allow,
+          page,
+          pageSize,
+          searchText,
+        );
+        return {
+          data: result?.data || [],
+          total: result?.total || 0,
+          pageSize: result?.pageSize || pageSize,
+        };
+      } catch (error) {
+        console.error("Error fetching country:", error);
+        return { data: [], total: 0, pageSize };
+      }
+    };
+  };
+
+  const createInUnitCallback = () => {
+    return async (page, pageSize, searchText) => {
+      try {
+        const allow =
+          auth?.find((item) => item.field === "query_level")?.title || "1";
+        const result = await fetchBasicDataDropDownByCate(
+          user?.factory,
+          "1108",
+          user?.department,
+          user?.user_code,
+          allow,
+          page,
+          pageSize,
+          searchText,
+        );
+        return {
+          data: result?.data || [],
+          total: result?.total || 0,
+          pageSize: result?.pageSize || pageSize,
+        };
+      } catch (error) {
+        console.error("Error fetching in_unit:", error);
+        return { data: [], total: 0, pageSize };
+      }
+    };
+  };
+
+  const createAcItemCallback = () => {
+    return async (page, pageSize, searchText) => {
+      try {
+        const allow =
+          auth?.find((item) => item.field === "query_level")?.title || "1";
+        const result = await fetchGroupFieldDropdown(
+          user?.factory,
+          ac_itemno,
+          user?.department,
+          user?.user_code,
+          allow,
+          page,
+          pageSize,
+          searchText,
+        );
+        return {
+          data: result?.data || [],
+          total: result?.total || 0,
+          pageSize: result?.pageSize || pageSize,
+        };
+      } catch (error) {
+        console.error("Error fetching ac_item:", error);
+        return { data: [], total: 0, pageSize };
+      }
+    };
+  };
+
+  const renderField = (
+    fieldName,
+    label,
+    gridSize = 3,
+    extraProps = {},
+    type = "text",
+  ) => {
+    // AC_ITEMNO dropdown
+    if (fieldName === "ac_itemno") {
+      return (
+        <Grid item xs={gridSize} key={fieldName}>
+          <Controller
+            name={fieldName}
+            control={control}
+            render={({ field }) => (
+              <Dropdown
+                onFetchData={createAcItemnoCallback()}
+                onSelect={(selectedItem) => {
+                  const value = selectedItem?.goods_code || "";
+                  field.onChange(value);
+                  setDropdownValues((prev) => ({ ...prev, ac_itemno: value }));
+                }}
+                select={field.value || dropdownValues.ac_itemno || ""}
+                table="AC_CONT_D"
+                option="goods_code"
+                getControlLabel={getControlLabel}
+                language={user?.language || "en"}
+                field={getColumnLabel(fieldName, label)}
+                totalItems={0}
+                pageSize={10}
+                {...extraProps}
+              />
+            )}
+          />
+        </Grid>
+      );
+    }
+
+    // COUNTRY dropdown
+    if (fieldName === "country") {
+      return (
+        <Grid item xs={gridSize} key={fieldName}>
+          <Controller
+            name={fieldName}
+            control={control}
+            render={({ field }) => (
+              <Dropdown
+                onFetchData={createCountryCallback()}
+                onSelect={(selectedItem) => {
+                  const value = selectedItem?.code_no || "";
+                  field.onChange(value);
+                  setDropdownValues((prev) => ({ ...prev, country: value }));
+                }}
+                select={field.value || dropdownValues.country || ""}
+                table="BASIC_DATA"
+                option="basic_data"
+                getControlLabel={getControlLabel}
+                language={user?.language || "en"}
+                field={getColumnLabel(fieldName, label)}
+                totalItems={0}
+                pageSize={10}
+                {...extraProps}
+              />
+            )}
+          />
+        </Grid>
+      );
+    }
+
+    // IN_UNIT dropdown
+    if (fieldName === "in_unit") {
+      return (
+        <Grid item xs={gridSize} key={fieldName}>
+          <Controller
+            name={fieldName}
+            control={control}
+            render={({ field }) => (
+              <Dropdown
+                onFetchData={createInUnitCallback()}
+                onSelect={(selectedItem) => {
+                  const value = selectedItem?.code_no || "";
+                  field.onChange(value);
+                  setDropdownValues((prev) => ({ ...prev, in_unit: value }));
+                }}
+                select={field.value || dropdownValues.in_unit || ""}
+                table="BASIC_DATA"
+                option="basic_data"
+                getControlLabel={getControlLabel}
+                language={user?.language || "en"}
+                field={getColumnLabel(fieldName, label)}
+                totalItems={0}
+                pageSize={10}
+                {...extraProps}
+              />
+            )}
+          />
+        </Grid>
+      );
+    }
+
+    // AC_ITEM dropdown
+    if (fieldName === "ac_item") {
+      return (
+        <Grid item xs={gridSize} key={fieldName}>
+          <Controller
+            name={fieldName}
+            control={control}
+            render={({ field }) => (
+              <Dropdown
+                onFetchData={createAcItemCallback()}
+                onSelect={(selectedItem) => {
+                  // Display value: ac_item-item_acno-itemnm
+                  const displayValue = selectedItem
+                    ? `${selectedItem.ac_item || ""}-${selectedItem.item_acno || ""}-${selectedItem.itemnm || ""}`
+                    : "";
+
+                  // Save value: only ac_item
+                  const saveValue = selectedItem?.ac_item || "";
+
+                  // Update form value (what gets saved)
+                  field.onChange(saveValue);
+
+                  // Update display value
+                  setDropdownValues((prev) => ({
+                    ...prev,
+                    ac_item: displayValue,
+                    ac_item_save: saveValue,
+                  }));
+                }}
+                select={dropdownValues.ac_item || ""}
+                table="AC_ITEM_M"
+                option="ac_item"
+                getControlLabel={getControlLabel}
+                language={user?.language || "en"}
+                field={getColumnLabel(fieldName, label)}
+                totalItems={0}
+                pageSize={10}
+                disabled={!ac_itemno}
+                helperText={!ac_itemno ? "Please select AC Item No first" : ""}
+                {...extraProps}
+              />
+            )}
+          />
+        </Grid>
+      );
+    }
+
+    // Regular fields
+    return (
+      <Grid item xs={gridSize} key={fieldName}>
+        <TextField
+          fullWidth
+          label={getColumnLabel(fieldName, label)}
+          type={type}
+          InputLabelProps={{ shrink: true }}
+          inputProps={
+            type === "number"
+              ? { step: "0.01", min: 0, ...extraProps.inputProps }
+              : extraProps.inputProps
+          }
+          {...register(fieldName, {
+            valueAsNumber: type === "number",
+          })}
+          {...extraProps}
+        />
+      </Grid>
+    );
+  };
+
+  const onSubmit = (data) => {
+    handleAdd(data);
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="xl" fullWidth>
+      <DialogContent>
+        <Paper sx={{ maxWidth: "1400px", mx: "auto", p: 3 }}>
+          <Box
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            mb={2}
+          >
+            <Typography
+              variant="h4"
+              textTransform="uppercase"
+              fontWeight={600}
+              textAlign="center"
+              flex={1}
+              mb={0}
+            >
+              {getControlLabel("ttl_d_1_add", "Add AC_CHG_D")}
+            </Typography>
+            <Button onClick={onClose} variant="contained" color="error">
+              <CloseIcon />
+            </Button>
+          </Box>
+
+          <Box component="form" onSubmit={handleSubmit(onSubmit)}>
+            {/* Row 1 */}
+            <Grid container spacing={2} mb={2}>
+              <Grid item xs={3}>
+                <TextField
+                  fullWidth
+                  label={getColumnLabel("factory_code", "Factory Code")}
+                  value={user?.factory}
+                  InputLabelProps={{ shrink: true }}
+                  disabled
+                />
+              </Grid>
+              <Grid item xs={3}>
+                <TextField
+                  fullWidth
+                  label={getColumnLabel("ac_no", "AC No")}
+                  value={ac_chg_m?.ac_no || ""}
+                  InputLabelProps={{ shrink: true }}
+                  disabled
+                />
+              </Grid>
+              {renderField("seq", "Seq", 3, {}, "number")}
+              {renderField("ac_itemno", "AC Item No", 3)}
+            </Grid>
+
+            {/* Row 2 */}
+            <Grid container spacing={2} mb={2}>
+              {renderField("color", "Color", 3)}
+              {renderField("country", "Country", 3)}
+              {renderField("unit", "Unit", 3, {
+                inputProps: { readOnly: true },
+                helperText: "Auto from AC_ITEMNO",
+              })}
+              {renderField(
+                "price",
+                "Price",
+                3,
+                {
+                  inputProps: { readOnly: true },
+                  helperText: "Auto from CONT_NO & AC_ITEMNO",
+                },
+                "number",
+              )}
+            </Grid>
+
+            {/* Row 3 */}
+            <Grid container spacing={2} mb={2}>
+              {renderField("qty", "Quantity", 3, {}, "number")}
+              {renderField("breadth", "Breadth", 3)}
+              {renderField(
+                "tax_rate",
+                "Tax Rate (%)",
+                3,
+                {
+                  inputProps: { readOnly: true },
+                  helperText: "Auto from AC_ITEMNO",
+                },
+                "number",
+              )}
+              {renderField(
+                "tax",
+                "Tax",
+                3,
+                {
+                  inputProps: { readOnly: true },
+                  helperText: "Auto calculated",
+                },
+                "number",
+              )}
+            </Grid>
+
+            {/* Row 4 */}
+            <Grid container spacing={2} mb={2}>
+              {renderField(
+                "money",
+                "Money",
+                3,
+                {
+                  inputProps: { readOnly: true },
+                  helperText: "Auto: QTY * PRICE",
+                },
+                "number",
+              )}
+              {renderField(
+                "atax_rate",
+                "Additional Tax Rate (%)",
+                3,
+                {},
+                "number",
+              )}
+              {renderField(
+                "add_tax",
+                "Additional Tax",
+                3,
+                {
+                  inputProps: { readOnly: true },
+                  helperText: "Auto calculated",
+                },
+                "number",
+              )}
+              {renderField("shoe_id", "Shoe ID", 3)}
+            </Grid>
+
+            {/* Row 5 */}
+            <Grid container spacing={2} mb={2}>
+              {renderField("remark", "Remark", 6)}
+              {renderField("in_qty", "In Quantity", 3, {}, "number")}
+              {renderField("in_unit", "In Unit", 3)}
+            </Grid>
+
+            {/* Row 6 */}
+            <Grid container spacing={2} mb={2}>
+              {renderField("ac_item", "AC Item", 3)}
+              {renderField("over_qty", "Over Quantity", 3, {}, "number")}
+              {renderField("is_ref", "Is Ref", 3)}
+              {renderField(
+                "cmoney",
+                "CMoney",
+                3,
+                {
+                  inputProps: { readOnly: true },
+                  helperText: "Auto calculated",
+                },
+                "number",
+              )}
+            </Grid>
+
+            {/* Row 7 */}
+            <Grid container spacing={2} mb={2}>
+              {renderField("req_no", "Request No", 3)}
+              {renderField(
+                "ref_price",
+                "Reference Price",
+                3,
+                {
+                  inputProps: { readOnly: true },
+                  helperText: "Auto calculated",
+                },
+                "number",
+              )}
+            </Grid>
+
+            {/* Submit Button */}
+            <Grid container spacing={2} justifyContent="flex-end" mt={3}>
+              <Grid item>
+                <Button variant="outlined" onClick={onClose}>
+                  {getControlLabel("btn_cancel", "Cancel")}
+                </Button>
+              </Grid>
+              <Grid item>
+                <Button type="submit" variant="contained" color="primary">
+                  {getControlLabel("btn_save", "Save")}
+                </Button>
+              </Grid>
+            </Grid>
+          </Box>
+        </Paper>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+export default AddAcChgD;

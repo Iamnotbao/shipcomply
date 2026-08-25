@@ -1,0 +1,26 @@
+const Joi = require("joi");
+const createUsersPermissionSchema = Joi.object({
+  department_code: Joi.string().required(),
+  factory_code: Joi.string().required(),
+  user_code: Joi.string().required(),
+  program_code: Joi.string().required(),
+  query_level: Joi.string().optional(),
+  modify_level: Joi.string().optional(),
+  allow_query: Joi.string().optional(),
+  allow_add: Joi.string().optional(),
+  allow_modify: Joi.string().optional(),
+  allow_delete: Joi.string().optional(),
+  allow_cancel: Joi.string().optional(),
+  allow_confirm: Joi.string().optional(),
+  allow_unconfirm: Joi.string().optional(),
+  allow_check: Joi.string().optional(),
+  allow_uncheck: Joi.string().optional(),
+  allow_close: Joi.string().optional(),
+  status: Joi.number().optional(),
+  grt_dept: Joi.string().allow(null).allow(null, "").optional(),
+  grt_user: Joi.string().allow(null).allow(null, "").optional(),
+  grt_date: Joi.date().allow(null).allow(null, "").optional(),
+  last_user: Joi.string().allow(null).allow(null, "").optional(),
+  last_date: Joi.date().allow(null).allow(null, "").optional(),
+});
+module.exports = createUsersPermissionSchema;

@@ -1,0 +1,41 @@
+// Table heights configuration for different table types
+export const TABLE_HEIGHTS = {
+  USER_PERMISSION_DEPARTMENT: "calc(100vh - 500px)",
+  BASIC_DATA_CATEGORY: "350px",
+  AC_ITEM_M: "350px",
+  AC_SHOE_M: "350px",
+  AC_PROD_M: "350px",
+  AC_BOM_M: "350px",
+  RD_SIZE_D: "350px",
+  FACTORY: "calc(100vh - 600px)",
+  USER: "calc(100vh - 430px)",
+  DEPARTMENTS: "calc(100vh - 430px)",
+  USER_PERMISSION: "calc(100vh - 730px)",
+  BASIC_DATA: "200px",
+  PROGRAM: "calc(100vh - 480px)",
+  PROGRAM_FIELD_TITLE: "calc(100vh - 380px)",
+  AC_IMP_MATERIAL_TRACKING: "300px",
+  AC_ITEM_REF: "200px",
+  AC_SHOE_REF: "200px",
+  VW_AC_SHOEBOM: "200px",
+  AC_VEND_BASE: "200px",
+  AC_SEND_BASE: "200px",
+  AC_REQ_M: "calc(100vh - 620px)",
+  AC_SRCORDER_M:"calc(100vh-120px)",
+  AC_REQ_ORDER: "200px",
+  AC_INM_M:"200px",
+  AC_INM_D:"200px",
+  VW_CONT_IMP:"200px",
+  AC_CONT_D:"200px",
+  VW_CONT_USE:"200px",
+  VW_CHG_M:"calc(100vh-120px)",
+  AC_CHG_D: "calc(100vh-120px)",
+  AC_REQ_M:"calc(100vh-120px)",
+  AC_CHG_A: "200px", 
+  VW_ACREQ_D: "200px",
+  DEFAULT: "200px",
+};
+
+export const getTableHeight = (tableName) => {
+  return TABLE_HEIGHTS[tableName] || TABLE_HEIGHTS.DEFAULT;
+};

@@ -1,0 +1,40 @@
+const Joi = require("joi");
+
+const createAcProcDSchema = Joi.object({
+  factory_code: Joi.string().max(30).required(),
+  ac_no: Joi.string().max(200).required(),
+  seq: Joi.number().precision(2).optional(),
+  ac_itemno: Joi.string().max(200).allow(null).empty('').default(null).optional(),
+  color: Joi.string().max(30).allow(null).empty('').default(null).optional(),
+  country: Joi.string().max(30).allow(null).empty('').default(null).optional(),
+  unit: Joi.string().max(30).allow(null).empty('').default(null).optional(),
+  price: Joi.number().precision(8).allow(null).empty('').default(null).optional(),
+  qty: Joi.number().precision(4).allow(null).empty('').default(null).optional(),
+  breadth: Joi.string().max(600).allow(null).empty('').default(null).optional(),
+  tax_rate: Joi.number().precision(4).allow(null).empty('').default(null).optional(),
+  tax: Joi.number().precision(4).allow(null).empty('').default(null).optional(),
+  money: Joi.number().precision(4).allow(null).empty('').default(null).optional(),
+  atax_rate: Joi.number().precision(4).allow(null).empty('').default(null).optional(),
+  add_tax: Joi.number().precision(4).allow(null).empty('').default(null).optional(),
+  rb_money: Joi.number().precision(4).allow(null).empty('').default(null).optional(),
+  in_unit: Joi.string().max(30).allow(null).empty('').default(null).optional(),
+  ac_qty: Joi.number().precision(4).allow(null).empty('').default(null).optional(),
+  breadth: Joi.string().max(600).allow(null).empty('').default(null).optional(),
+  over_qty: Joi.number().precision(4).allow(null).empty('').default(null).optional(),
+  out_unit: Joi.string().max(30).allow(null).empty('').default(null).optional(),
+  req_no: Joi.string().max(200).allow(null).empty('').default(null).optional(),
+  ref_price: Joi.number().precision(4).allow(null).empty('').default(null).optional(),
+  ac_item: Joi.string().max(200).allow(null).empty('').default(null).optional(),
+  in_crate: Joi.number().precision(4).allow(null).empty('').default(null).optional(),
+  grt_dept: Joi.string().max(30).allow(null).empty('').default(null).optional(),
+  grt_user: Joi.string().max(20).allow(null).empty('').default(null).optional(),
+  grt_date: Joi.date().allow(null).empty('').default(null).optional(),
+  last_user: Joi.string().max(30).allow(null).empty('').default(null).optional(),
+  last_date: Joi.date().allow(null).empty('').default(null).optional(),
+  status: Joi.number().integer().default(1).optional(),
+  locked_information: Joi.string().max(600).allow(null).empty('').default(null).optional(),
+});
+
+module.exports = {
+  createAcProcDSchema,
+};

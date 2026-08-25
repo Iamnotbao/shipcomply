@@ -1,0 +1,83 @@
+const Joi = require("joi");
+
+const createAcChgMSchema = Joi.object({
+  factory_code: Joi.string().max(30).required(),
+  ac_no: Joi.string().max(200).required(),
+  ac_chgno: Joi.string().max(200).allow(null, "").default(null).optional(),
+  ac_chgn: Joi.string().max(60).allow(null, "").default(null).optional(),
+  ac_chgo: Joi.string().max(60).allow(null, "").default(null).optional(),
+  ac_chgs: Joi.string().max(60).allow(null, "").default(null).optional(),
+  ac_type: Joi.string().max(1).allow(null, "").default(null).optional(),
+  ac_unit: Joi.string().max(30).allow(null, "").default(null).optional(),
+  ac_addr: Joi.string().max(600).allow(null, "").default(null).optional(),
+  org_tax: Joi.string().max(200).allow(null, "").default(null).optional(),
+  org_addr: Joi.string().max(600).allow(null, "").default(null).optional(),
+  cust_tax: Joi.string().max(200).allow(null, "").default(null).optional(),
+  cust_addr: Joi.string().max(600).allow(null, "").default(null).optional(),
+  rec_addr: Joi.string().max(600).allow(null, "").default(null).optional(),
+  agent_make: Joi.string().max(30).allow(null, "").default(null).optional(),
+  chg_type: Joi.string().max(30).allow(null, "").default(null).optional(),
+  license: Joi.string().max(30).allow(null, "").default(null).optional(),
+  lic_date: Joi.date().allow(null).empty("").default(null).optional(),
+  lic_edate: Joi.date().allow(null).empty("").default(null).optional(),
+  cont_no: Joi.string().max(200).allow(null, "").default(null).optional(),
+  com_invoice: Joi.string().max(200).allow(null, "").default(null).optional(),
+  trans_name: Joi.string().max(200).allow(null, "").default(null).optional(),
+  vehicle_no: Joi.string().max(200).allow(null, "").default(null).optional(),
+  arr_date: Joi.date().allow(null).empty("").default(null).optional(),
+  deliver: Joi.string().max(600).allow(null, "").default(null).optional(),
+  trans_type: Joi.string().max(200).allow(null, "").default(null).optional(),
+  trans_date: Joi.date().allow(null).empty("").default(null).optional(),
+  in_port: Joi.string().max(30).allow(null, "").default(null).optional(),
+  unload_port: Joi.string().max(30).allow(null, "").default(null).optional(),
+  out_date: Joi.date().allow(null).empty("").default(null).optional(),
+  out_port: Joi.string().max(30).allow(null, "").default(null).optional(),
+  curr_no: Joi.string().max(30).allow(null, "").default(null).optional(),
+  curr_rate: Joi.number().precision(8).allow(null).default(null).optional(),
+  payment: Joi.string().max(30).allow(null, "").default(null).optional(),
+  tax: Joi.number().precision(4).allow(null).default(null).optional(),
+  add_tax: Joi.number().precision(4).allow(null).default(null).optional(),
+  oth_cost: Joi.number().precision(4).allow(null).default(null).optional(),
+  peice: Joi.number().precision(4).allow(null).default(null).optional(),
+  sum_qty: Joi.number().precision(4).allow(null).default(null).optional(),
+  suttle: Joi.number().precision(4).allow(null).default(null).optional(),
+  gross: Joi.number().precision(4).allow(null).default(null).optional(),
+  sum_money: Joi.number().precision(4).allow(null).default(null).optional(),
+  trade: Joi.string().max(30).allow(null, "").default(null).optional(),
+  min_cont: Joi.string().max(200).allow(null, "").default(null).optional(),
+  in_country: Joi.string().max(60).allow(null, "").default(null).optional(),
+  ac_row: Joi.string().max(600).allow(null, "").default(null).optional(),
+  ac_bom: Joi.string().max(600).allow(null, "").default(null).optional(),
+  shoe_id: Joi.string().max(30).allow(null, "").default(null).optional(),
+  status: Joi.number().integer().default(1).optional(),
+  grt_dept: Joi.string().max(30).allow(null).empty("").default(null).optional(),
+  grt_user: Joi.string().max(20).allow(null).empty("").default(null).optional(),
+  grt_date: Joi.date().allow(null).empty("").default(null).optional(),
+  last_user: Joi.string()
+    .max(30)
+    .allow(null)
+    .empty("")
+    .default(null)
+    .optional(),
+  last_date: Joi.date().allow(null).empty("").default(null).optional(),
+  out_country: Joi.string().max(30).allow(null, "").default(null).optional(),
+  b_unit: Joi.string().max(30).allow(null, "").default(null).optional(),
+  com_date: Joi.date().allow(null).empty("").default(null).optional(),
+  sort: Joi.string().max(200).allow(null, "").default(null).optional(),
+  old_no: Joi.string().max(20).allow(null, "").default(null).optional(),
+  lation: Joi.string().max(200).allow(null, "").default(null).optional(),
+  js_no: Joi.string().max(200).allow(null, "").default(null).optional(),
+  js_date: Joi.date().allow(null).empty("").default(null).optional(),
+  soso: Joi.string().max(200).allow(null, "").default(null).optional(),
+  complete_type: Joi.string().max(1).allow(null, "").default(null).optional(),
+  d_type: Joi.string().max(1).allow(null, "").default(null).optional(),
+  pass_date: Joi.date().allow(null).empty("").default(null).optional(),
+  stoc_type: Joi.string().max(1).allow(null, "").default(null).optional(),
+  locked_information: Joi.string()
+    .max(600)
+    .allow(null, "")
+    .default(null)
+    .optional(),
+});
+
+module.exports = createAcChgMSchema;
