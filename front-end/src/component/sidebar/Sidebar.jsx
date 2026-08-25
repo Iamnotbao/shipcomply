@@ -38,7 +38,7 @@ import HomeRoundedIcon from "@mui/icons-material/HomeRounded";
 import NavigateNextRoundedIcon from "@mui/icons-material/NavigateNextRounded";
 import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
 import CircleIcon from "@mui/icons-material/Circle";
-import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import useAuth from "../../hooks/useAuth";
 import { useColumnTranslation } from "../../context/ColumnTranslationContext";
 import { fnQuery } from "../../utils/fnQuery";
@@ -72,10 +72,17 @@ const isRouteActive = (pathname, item) => {
   return pathname === path || pathname.startsWith(`${path}/`);
 };
 
+const hardNavigate = (path) => {
+  if (window.location.pathname === path) {
+    window.location.reload();
+    return;
+  }
+  window.location.assign(path);
+};
+
 export default function Sidebar() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
-  const navigate = useNavigate();
   const location = useLocation();
   const { logout, user, getDefaultRoute } = useAuth();
   const { fetchTableControlTranslations, language } = useColumnTranslation();
@@ -210,8 +217,8 @@ export default function Sidebar() {
   };
 
   const goTo = (item) => {
-    navigate(getNavigationPath(item));
     if (isMobile) setMobileOpen(false);
+    hardNavigate(getNavigationPath(item));
   };
 
   const toggleGroup = (item) => {
@@ -390,7 +397,10 @@ export default function Sidebar() {
             </Box>
           </Box>
         )}
-        <Tooltip title={!desktopOpen && !isMobile ? getControlLabel("lbl_logout", "Log out") : ""} placement="right">
+        <Tooltip
+          title={!desktopOpen && !isMobile ? getControlLabel("lbl_logout", "Log out") : ""}
+          placement="right"
+        >
           <ListItemButton
             onClick={logout}
             sx={{
@@ -402,7 +412,13 @@ export default function Sidebar() {
               "&:hover": { color: "#fecaca", bgcolor: "rgba(239,68,68,0.10)" },
             }}
           >
-            <ListItemIcon sx={{ minWidth: 0, mr: desktopOpen || isMobile ? 1.5 : 0, color: "inherit" }}>
+            <ListItemIcon
+              sx={{
+                minWidth: 0,
+                mr: desktopOpen || isMobile ? 1.5 : 0,
+                color: "inherit",
+              }}
+            >
               <LogoutRoundedIcon fontSize="small" />
             </ListItemIcon>
             {(desktopOpen || isMobile) && (
@@ -476,8 +492,20 @@ export default function Sidebar() {
             </Box>
 
             <Box sx={{ display: { xs: "none", lg: "flex" }, alignItems: "center", gap: 0.75 }}>
-              {user?.factory && <Chip size="small" variant="outlined" label={`${getControlLabel("txt_factory_code", "Factory")}: ${user.factory}`} />}
-              {user?.department && <Chip size="small" variant="outlined" label={`${getControlLabel("txt_department_code", "Department")}: ${user.department}`} />}
+              {user?.factory && (
+                <Chip
+                  size="small"
+                  variant="outlined"
+                  label={`${getControlLabel("txt_factory_code", "Factory")}: ${user.factory}`}
+                />
+              )}
+              {user?.department && (
+                <Chip
+                  size="small"
+                  variant="outlined"
+                  label={`${getControlLabel("txt_department_code", "Department")}: ${user.department}`}
+                />
+              )}
               <Chip
                 size="small"
                 label={envLabel}
@@ -490,7 +518,13 @@ export default function Sidebar() {
               />
             </Box>
 
-            <Box sx={{ display: { xs: "none", sm: "block" }, textAlign: "right", minWidth: 112 }}>
+            <Box
+              sx={{
+                display: { xs: "none", sm: "block" },
+                textAlign: "right",
+                minWidth: 112,
+              }}
+            >
               <Typography sx={{ fontSize: "0.72rem", fontWeight: 700 }}>
                 {currentTime.toLocaleDateString("vi-VN")}
               </Typography>
@@ -518,7 +552,7 @@ export default function Sidebar() {
             <Box
               component="button"
               type="button"
-              onClick={() => navigate(homePath)}
+              onClick={() => hardNavigate(homePath)}
               sx={{
                 border: 0,
                 p: 0,
