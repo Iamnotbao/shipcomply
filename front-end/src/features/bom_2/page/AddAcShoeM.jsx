@@ -1,21 +1,14 @@
+import { Box, Stack, TextField } from "@mui/material";
 import { useEffect, useState } from "react";
-import {
-  Box,
-  Button,
-  Dialog,
-  DialogContent,
-  Grid,
-  MenuItem,
-  Paper,
-  TextField,
-  Typography,
-} from "@mui/material";
-import CloseIcon from "@mui/icons-material/Close";
+import Dropdown from "../../../component/dropdown/Dropdown";
+import FormDialogShell from "../../../component/form/FormDialogShell";
+import FormGrid from "../../../component/form/FormGrid";
+import FormSection from "../../../component/form/FormSection";
+import ReadOnlyField from "../../../component/form/ReadOnlyField";
 import {
   fetchBasicDataByCate,
   fetchBasicDataDropDownByCate,
 } from "../../../service/basic_data/basicDataService";
-import Dropdown from "../../../component/dropdown/Dropdown";
 import { fetchFieldDropdown } from "../../../service/rd_size_m/RdSizeM";
 
 const AddAcShoeM = ({
@@ -32,63 +25,39 @@ const AddAcShoeM = ({
   const [dropdownValues, setDropdownValues] = useState({});
   const [loading, setLoading] = useState(true);
 
-  const mapDropdown = {
-    unit: 1108,
-  };
-
-  useEffect(() => {
-    if (open) {
-      fetchAllDropdowns();
-    }
-  }, [open]);
-
   useEffect(() => {
     if (!open) {
       setDropdownValues({});
+      return;
     }
-  }, [open]);
 
-  const fetchAllDropdowns = async () => {
-    try {
-      const allow = Array.isArray(auth)
-        ? auth.find((item) => item.field === "query_level")?.title
-        : null;
-      console.log("check allow", allow);
-      setLoading(true);
-      const promises = Object.entries(mapDropdown).map(
-        async ([fieldName, categoryCode]) => {
-          try {
-            const response = await fetchBasicDataByCate(
-              user?.factory,
-              categoryCode,
-              user?.department,
-              user?.user_code,
-              allow,
-            );
-            return { fieldName, data: response?.data || [] };
-          } catch (error) {
-            console.error(
-              `Error fetching ${fieldName} (${categoryCode}):`,
-              error,
-            );
-            return { fieldName, data: [] };
-          }
-        },
-      );
-      const results = await Promise.all(promises);
-      const dataMap = {};
-      results.forEach(({ fieldName, data }) => {
-        dataMap[fieldName] = data;
-      });
-      setDropdownData(dataMap);
-    } catch (error) {
-      console.error("Error fetching dropdowns:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-  const createDropdownCallback = (categoryCode) => {
-    return async (page, pageSize, searchText) => {
+    const fetchAllDropdowns = async () => {
+      try {
+        const allow = Array.isArray(auth)
+          ? auth.find((item) => item.field === "query_level")?.title
+          : null;
+        setLoading(true);
+        const response = await fetchBasicDataByCate(
+          user?.factory,
+          1108,
+          user?.department,
+          user?.user_code,
+          allow,
+        );
+        setDropdownData({ unit: response?.data || [] });
+      } catch (error) {
+        console.error("Error fetching dropdowns:", error);
+        setDropdownData({ unit: [] });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAllDropdowns();
+  }, [auth, open, user?.department, user?.factory, user?.user_code]);
+
+  const createDropdownCallback = (categoryCode) =>
+    async (page, pageSize, searchText) => {
       try {
         const allow = Array.isArray(auth)
           ? auth.find((item) => item.field === "query_level")?.title
@@ -103,7 +72,7 @@ const AddAcShoeM = ({
           pageSize,
           searchText,
           true,
-          language
+          language,
         );
         return {
           data: result?.data || [],
@@ -112,20 +81,13 @@ const AddAcShoeM = ({
         };
       } catch (error) {
         console.error(`Error fetching dropdown ${categoryCode}:`, error);
-        return {
-          data: [],
-          total: 0,
-          pageSize: pageSize,
-        };
+        return { data: [], total: 0, pageSize };
       }
     };
-  };
-  const createSizeCallback = (categoryCode) => {
-    return async (page, pageSize, searchText) => {
+
+  const createSizeCallback = () =>
+    async (page, pageSize, searchText) => {
       try {
-        const allow = Array.isArray(auth)
-          ? auth.find((item) => item.field === "query_level")?.title
-          : "1";
         const result = await fetchFieldDropdown(
           user?.factory,
           language,
@@ -139,204 +101,122 @@ const AddAcShoeM = ({
           pageSize: result?.pageSize || pageSize,
         };
       } catch (error) {
-        console.error(`Error fetching dropdown ${categoryCode}:`, error);
-        return {
-          data: [],
-          total: 0,
-          pageSize: pageSize,
-        };
+        console.error("Error fetching size type:", error);
+        return { data: [], total: 0, pageSize };
       }
     };
-  };
-  const renderField = (fieldName, label, gridSize = 3, extraProps = {}) => {
-    const hasDropdown = mapDropdown.hasOwnProperty(fieldName);
-    if (hasDropdown) {
-      const categoryCode = mapDropdown[fieldName];
-      return (
-        <Grid item xs={gridSize} key={fieldName}>
-          <Dropdown
-            onFetchData={createDropdownCallback(categoryCode)}
-            onSelect={(selectedItem) => {
-              console.log(`Dropdown ${fieldName} selected:`, selectedItem);
-              setDropdownValues((prev) => {
-                const newValues = {
-                  ...prev,
-                  [fieldName]: selectedItem?.code_no || "",
-                };
-                console.log("Updated dropdown values:", newValues);
-                return newValues;
-              });
-            }}
-            select={dropdownValues[fieldName] || extraProps.defaultValue || ""}
-            table="BASIC_DATA"
-            option={"basic_data"}
-            getControlLabel={getControlLabel}
-            language={user?.language || "en"}
-            field={getColumnLabel(fieldName, label)}
-            totalItems={0}
-            pageSize={10}
-          />
-          {/* Hidden input để form submit */}
-          <input
-            type="hidden"
-            name={fieldName}
-            value={dropdownValues[fieldName] || extraProps.defaultValue || ""}
-          />
-        </Grid>
-      );
-    }
-    if (fieldName === "size_type") {
-      const categoryCode = mapDropdown[fieldName];
-      return (
-        <Grid item xs={gridSize} key={fieldName}>
-          <Dropdown
-            onFetchData={createSizeCallback()}
-            onSelect={(selectedItem) => {
-              console.log(`Dropdown ${fieldName} selected:`, selectedItem);
-              setDropdownValues((prev) => {
-                const newValues = {
-                  ...prev,
-                  [fieldName]: selectedItem?.size_type || "",
-                };
-                console.log("Updated dropdown values:", newValues);
-                return newValues;
-              });
-            }}
-            select={dropdownValues[fieldName] || extraProps.defaultValue || ""}
-            table="RD_SIZE_M"
-            option={"size_type"}
-            getControlLabel={getControlLabel}
-            language={user?.language || "en"}
-            field={getColumnLabel(fieldName, label)}
-            totalItems={0}
-            pageSize={10}
-          />
-          {/* Hidden input để form submit */}
-          <input
-            type="hidden"
-            name={fieldName}
-            value={dropdownValues[fieldName] || extraProps.defaultValue || ""}
-          />
-        </Grid>
-      );
-    }
-    return (
-      <Grid item xs={gridSize}>
-        <TextField
-          fullWidth
-          label={getColumnLabel(fieldName, label)}
-          name={fieldName}
-          {...extraProps}
-        />
-      </Grid>
-    );
-  };
+
+  const renderUnit = () => (
+    <Box sx={{ minWidth: 0 }}>
+      <Dropdown
+        onFetchData={createDropdownCallback(1108)}
+        onSelect={(selectedItem) => {
+          setDropdownValues((prev) => ({
+            ...prev,
+            unit: selectedItem?.code_no || "",
+          }));
+        }}
+        select={dropdownValues.unit || ""}
+        data={dropdownData.unit || []}
+        table="BASIC_DATA"
+        option="basic_data"
+        getControlLabel={getControlLabel}
+        language={language || user?.language || "en"}
+        field={getColumnLabel("unit", "Unit")}
+        totalItems={0}
+        pageSize={10}
+      />
+      <input type="hidden" name="unit" value={dropdownValues.unit || ""} />
+    </Box>
+  );
+
+  const renderSizeType = () => (
+    <Box sx={{ minWidth: 0 }}>
+      <Dropdown
+        onFetchData={createSizeCallback()}
+        onSelect={(selectedItem) => {
+          setDropdownValues((prev) => ({
+            ...prev,
+            size_type: selectedItem?.size_type || "",
+          }));
+        }}
+        select={dropdownValues.size_type || ""}
+        table="RD_SIZE_M"
+        option="size_type"
+        getControlLabel={getControlLabel}
+        language={language || user?.language || "en"}
+        field={getColumnLabel("size_type", "Size Type")}
+        totalItems={0}
+        pageSize={10}
+      />
+      <input type="hidden" name="size_type" value={dropdownValues.size_type || ""} />
+    </Box>
+  );
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="xl" fullWidth>
-      <DialogContent>
-        <Paper sx={{ maxWidth: "1400px", mx: "auto", p: 3 }}>
-          <Box
-            display="flex"
-            alignItems="center"
-            justifyContent="center"
-            mb={2}
-          >
-            <Typography
-              variant="h4"
-              textTransform="uppercase"
-              fontWeight={600}
-              textAlign="center"
-              flex={1}
-              mb={0}
-            >
-              {getControlLabel("ttl_m_2_add", "Add Ac Shoe M")}
-            </Typography>
-            <Button onClick={onClose} variant="contained" color="error">
-              <CloseIcon />
-            </Button>
-          </Box>
+    <FormDialogShell
+      open={open}
+      onClose={onClose}
+      onSubmit={handleAdd}
+      title={getControlLabel("ttl_m_2_add", "Add Ac Shoe M")}
+      submitLabel={getControlLabel("btn_save", "Save")}
+      cancelLabel={getControlLabel("btn_cancel", "Cancel")}
+      submitDisabled={loading}
+      maxWidth="xl"
+    >
+      <Stack spacing={2}>
+        <FormSection title="Shoe identity and names">
+          <FormGrid columns={3}>
+            <ReadOnlyField
+              label={getColumnLabel("factory_code", "Factory Code")}
+              value={user?.factory}
+            />
+            <TextField
+              fullWidth
+              label={getColumnLabel("customs_shoe_id", "Custom Shoe ID")}
+              name="customs_shoe_id"
+              required
+            />
+            <TextField
+              fullWidth
+              label={getColumnLabel(
+                "customs_shoe_name_l",
+                "Custom Shoe Name L",
+              )}
+              name="customs_shoe_name_l"
+            />
+            <TextField
+              fullWidth
+              label={getColumnLabel(
+                "customs_shoe_name_e",
+                "Custom Shoe Name E",
+              )}
+              name="customs_shoe_name_e"
+            />
+            <TextField
+              fullWidth
+              label={getColumnLabel(
+                "customs_shoe_name_t",
+                "Custom Shoe Name T",
+              )}
+              name="customs_shoe_name_t"
+            />
+          </FormGrid>
+        </FormSection>
 
-          <Box component="form" onSubmit={handleAdd}>
-            {/* Row 1 */}
-            <Grid container spacing={2} mb={3}>
-              <Grid item xs={3}>
-                <TextField
-                  fullWidth
-                  label={getColumnLabel("factory_code", "Factory Code")}
-                  name="factory_code"
-                  value={user?.factory}
-                  disabled
-                />
-              </Grid>
-              <Grid item xs={3}>
-                <TextField
-                  fullWidth
-                  label={getColumnLabel("customs_shoe_id", "Custom shoe id")}
-                  name="customs_shoe_id"
-                  required
-                />
-              </Grid>
-              <Grid item xs={3}>
-                <TextField
-                  fullWidth
-                  label={getColumnLabel(
-                    "customs_shoe_name_l",
-                    "Custom shoe name L",
-                  )}
-                  name="customs_shoe_name_l"
-                />
-              </Grid>
-              <Grid item xs={3}>
-                <TextField
-                  fullWidth
-                  label={getColumnLabel(
-                    "customs_shoe_name_e",
-                    "Custom shoe name E",
-                  )}
-                  name="customs_shoe_name_e"
-                />
-              </Grid>
-            </Grid>
-
-            {/* Row 2 */}
-            <Grid container spacing={2} mb={3}>
-              <Grid item xs={3}>
-                <TextField
-                  fullWidth
-                  label={getColumnLabel(
-                    "customs_shoe_name_t",
-                    "Custom shoe name T",
-                  )}
-                  name="customs_shoe_name_t"
-                />
-              </Grid>
-              <Grid item xs={3}>
-                <TextField
-                  fullWidth
-                  label={getColumnLabel("customs_tariff", "Custom Tariff")}
-                  name="customs_tariff"
-                />
-              </Grid>
-              {renderField("size_type", "Size Type", 2.4)}
-              {renderField("unit", "Unit", 2.4)}
-            </Grid>
-
-            {/* Submit Button */}
-            <Box mt={4} display="flex" justifyContent="center">
-              <Button
-                type="submit"
-                variant="contained"
-                color="primary"
-                size="large"
-              >
-                {getControlLabel("btn_save", "Save")}
-              </Button>
-            </Box>
-          </Box>
-        </Paper>
-      </DialogContent>
-    </Dialog>
+        <FormSection title="Customs and size information">
+          <FormGrid columns={3}>
+            <TextField
+              fullWidth
+              label={getColumnLabel("customs_tariff", "Custom Tariff")}
+              name="customs_tariff"
+            />
+            {renderSizeType()}
+            {renderUnit()}
+          </FormGrid>
+        </FormSection>
+      </Stack>
+    </FormDialogShell>
   );
 };
 
