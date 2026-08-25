@@ -1,107 +1,82 @@
-import {
-  Box,
-  Button,
-  Dialog,
-  DialogContent,
-  Grid,
-  Paper,
-  TextField,
-  Typography,
-} from "@mui/material";
-import useAuth from "../../../hooks/useAuth";
-import { useTranslation } from "react-i18next";
+import { Stack, TextField } from "@mui/material";
+import FormDialogShell from "../../../component/form/FormDialogShell";
+import FormGrid from "../../../component/form/FormGrid";
+import FormSection from "../../../component/form/FormSection";
 
-import CloseIcon from "@mui/icons-material/Close";
-
-const AddFactoryPage = ({ open, onClose , handleAdd,getControlLabel,getColumnLabel }) => {
-  const { t } = useTranslation();
+const AddFactoryPage = ({
+  open,
+  onClose,
+  handleAdd,
+  getControlLabel,
+  getColumnLabel,
+}) => {
   return (
-    <Dialog open={open} onClose={onClose} maxWidth>
-      <DialogContent>
-        <Paper sx={{ maxWidth: "1200px", mx: "auto", p: 3 }}>
-          <Box
-            display={"flex"}
-            alignItems={"center"}
-            justifyContent={"center"}
-            mb={2}
-          >
-            <Typography
-              variant="h4"
-              textTransform={"uppercase"}
-              fontWeight={600}
-              gutterBottom
-              textAlign={"center"}
-              flex={1}
-              mb={"0"}
-            >
-              {getControlLabel("ttl_add","Add Factory Information")}
-            </Typography>
-            <Button onClick={onClose} variant="contained" color="error">
-              <CloseIcon />
-            </Button>
-          </Box>
-          <Box component="form" onSubmit={handleAdd}>
-            <Grid container spacing={2}>
-              <Grid item xs={6}>
-                <TextField fullWidth label={getColumnLabel("factory_code","factory_code")} name="factory_code" />
-              </Grid>
-              <Grid item xs={6}>
-                <TextField
-                  fullWidth
-                  label={getColumnLabel("factory_name_t","factory_name_t")}
-                  name="factory_name_t"
-                />
-              </Grid>
-              <Grid item xs={6}>
-                <TextField
-                  fullWidth
-                  label={getColumnLabel("factory_name_e","factory_name_e")}
-                  name="factory_name_e"
-                />
-              </Grid>
-              <Grid item xs={6}>
-                <TextField
-                  fullWidth
-                  label={getColumnLabel("factory_name_l","factory_name_l")}
-                  name="factory_name_l"
-                />
-              </Grid>
-            </Grid>
+    <FormDialogShell
+      open={open}
+      onClose={onClose}
+      onSubmit={handleAdd}
+      title={getControlLabel("ttl_add", "Add Factory Information")}
+      description="Create the factory identity, localized names, and business information."
+      submitLabel={getControlLabel("btn_save", "Save")}
+      cancelLabel={getControlLabel("btn_cancel", "Cancel")}
+      maxWidth="md"
+    >
+      <Stack spacing={2}>
+        <FormSection title="Basic information">
+          <FormGrid>
+            <TextField
+              fullWidth
+              label={getColumnLabel("factory_code", "factory_code")}
+              name="factory_code"
+            />
+            <TextField
+              fullWidth
+              label={getColumnLabel(
+                "factory_abbreviation",
+                "factory_abbreviation",
+              )}
+              name="factory_abbreviation"
+            />
+          </FormGrid>
+        </FormSection>
 
-            <Box mt={4}>
-              <Grid container spacing={2}>
-                <Grid item xs={6}>
-                  <TextField
-                    fullWidth
-                    label={getColumnLabel("factory_address","factory_address")}
-                    name="factory_address"
-                  />
-                </Grid>
-                <Grid item xs={6}>
-                  <TextField
-                    fullWidth
-                    label={getColumnLabel("factory_abbreviation","factory_abbreviation")}
-                    name="factory_abbreviation"
-                  />
-                </Grid>
-                <Grid item xs={6}>
-                  <TextField
-                    fullWidth
-                    label={getColumnLabel("factory_tax_no","factory_tax_no")}
-                    name="factory_tax_no"
-                  />
-                </Grid>
-              </Grid>
-            </Box>
-            <Box mt={4}>
-              <Button type="submit" variant="contained" color="primary">
-                {getControlLabel("btn_save","Save")}
-              </Button>
-            </Box>
-          </Box>
-        </Paper>
-      </DialogContent>
-    </Dialog>
+        <FormSection title="Factory names">
+          <FormGrid columns={3}>
+            <TextField
+              fullWidth
+              label={getColumnLabel("factory_name_t", "factory_name_t")}
+              name="factory_name_t"
+            />
+            <TextField
+              fullWidth
+              label={getColumnLabel("factory_name_e", "factory_name_e")}
+              name="factory_name_e"
+            />
+            <TextField
+              fullWidth
+              label={getColumnLabel("factory_name_l", "factory_name_l")}
+              name="factory_name_l"
+            />
+          </FormGrid>
+        </FormSection>
+
+        <FormSection title="Business information">
+          <FormGrid>
+            <TextField
+              fullWidth
+              label={getColumnLabel("factory_tax_no", "factory_tax_no")}
+              name="factory_tax_no"
+            />
+            <TextField
+              fullWidth
+              label={getColumnLabel("factory_address", "factory_address")}
+              name="factory_address"
+            />
+          </FormGrid>
+        </FormSection>
+      </Stack>
+    </FormDialogShell>
   );
 };
+
 export default AddFactoryPage;
