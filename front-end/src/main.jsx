@@ -4,6 +4,7 @@ import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import App from "./App";
 import "./i18n";
+import "./styles/formFallback.css";
 import { AuthProvider } from "./context/AuthContext";
 import { ColumnTranslationProvider } from "./context/ColumnTranslationContext";
 import appTheme from "./theme/appTheme";
