@@ -53,6 +53,9 @@ const appTheme = createTheme({
           color: palette.navy,
         },
         "*": { boxSizing: "border-box" },
+        "input[type='checkbox']": {
+          accentColor: palette.primary,
+        },
         "body .MuiDataGrid-root .MuiDataGrid-columnHeader": {
           backgroundColor: `${palette.canvas} !important`,
           color: `${palette.navy} !important`,
@@ -158,6 +161,54 @@ const appTheme = createTheme({
         },
       },
     },
+    MuiOutlinedInput: {
+      styleOverrides: {
+        root: {
+          borderRadius: 8,
+          backgroundColor: palette.surface,
+          fontSize: "0.8rem",
+          transition:
+            "box-shadow 120ms ease, border-color 120ms ease, background-color 120ms ease",
+          "& .MuiOutlinedInput-notchedOutline": {
+            borderColor: palette.border,
+          },
+          "&:hover .MuiOutlinedInput-notchedOutline": {
+            borderColor: "#94a3b8",
+          },
+          "&.Mui-focused": {
+            boxShadow: "0 0 0 3px rgba(15, 118, 110, 0.10)",
+          },
+          "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+            borderColor: palette.primary,
+            borderWidth: 1,
+          },
+        },
+        input: {
+          paddingTop: 9,
+          paddingBottom: 9,
+        },
+      },
+    },
+    MuiInputLabel: {
+      styleOverrides: {
+        root: {
+          fontSize: "0.8rem",
+          color: palette.muted,
+          "&.Mui-focused": {
+            color: palette.primary,
+          },
+        },
+      },
+    },
+    MuiSelect: {
+      styleOverrides: {
+        select: {
+          minHeight: "unset",
+          display: "flex",
+          alignItems: "center",
+        },
+      },
+    },
     MuiCheckbox: {
       styleOverrides: {
         root: {
@@ -166,6 +217,21 @@ const appTheme = createTheme({
           "&.Mui-checked, &.MuiCheckbox-indeterminate": {
             color: palette.primary,
           },
+        },
+      },
+    },
+    MuiSwitch: {
+      styleOverrides: {
+        switchBase: {
+          "&.Mui-checked": {
+            color: palette.primary,
+          },
+          "&.Mui-checked + .MuiSwitch-track": {
+            backgroundColor: palette.primary,
+          },
+        },
+        track: {
+          backgroundColor: "#cbd5e1",
         },
       },
     },
@@ -233,7 +299,7 @@ const appTheme = createTheme({
             backgroundColor: "transparent !important",
           },
           "&& .MuiDataGrid-footerContainer": {
-            minHeight: 48,
+            minHeight: 46,
             borderTop: `1px solid ${palette.border}`,
             backgroundColor: "#fbfdff",
           },
