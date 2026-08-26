@@ -11,7 +11,8 @@ export default function FormGrid({ children, columns = 2, sx }) {
           xs: "minmax(0, 1fr)",
           md: `repeat(${desktopColumns}, minmax(0, 1fr))`,
         },
-        gap: 1.5,
+        columnGap: 1.25,
+        rowGap: 1.1,
         alignItems: "start",
         "& > *": {
           minWidth: 0,
