@@ -73,7 +73,7 @@ export const NAVIGATION_ITEMS = [
     children: [
       { id: "actf_250", labelKey: "lbl_actf_250", fallbackLabel: "Import Material Tracking", programCode: "ACTF_250" },
       { id: "actf_410", labelKey: "lbl_actf_410", fallbackLabel: "Customs Declaration Application", programCode: "ACTF_410" },
-      { id: "actf_410_1", labelKey: "lbl_actf_410_1", fallbackLabel: "Material Tracking", programCode: "ACTF_4101" },
+      { id: "actf_410_1", labelKey: "lbl_actf_410_1", fallbackLabel: "Material Tracking", programCode: "ACTF_410" },
       { id: "actf_410_2", labelKey: "lbl_actf_410_2", fallbackLabel: "Customs Tracking", programCode: "ACTF_4102" },
       { id: "actf_110", labelKey: "lbl_actf_110", fallbackLabel: "Import Contract", programCode: "ACTF_110" },
       { id: "actf_130", labelKey: "lbl_actf_130", fallbackLabel: "INM Master", programCode: "ACTF_130" },
