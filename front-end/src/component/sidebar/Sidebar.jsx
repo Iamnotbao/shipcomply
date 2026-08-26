@@ -38,7 +38,7 @@ import HomeRoundedIcon from "@mui/icons-material/HomeRounded";
 import NavigateNextRoundedIcon from "@mui/icons-material/NavigateNextRounded";
 import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
 import CircleIcon from "@mui/icons-material/Circle";
-import { Outlet, useLocation } from "react-router-dom";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import useAuth from "../../hooks/useAuth";
 import { useColumnTranslation } from "../../context/ColumnTranslationContext";
 import { fnQuery } from "../../utils/fnQuery";
@@ -72,18 +72,11 @@ const isRouteActive = (pathname, item) => {
   return pathname === path || pathname.startsWith(`${path}/`);
 };
 
-const hardNavigate = (path) => {
-  if (window.location.pathname === path) {
-    window.location.reload();
-    return;
-  }
-  window.location.assign(path);
-};
-
 export default function Sidebar() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const location = useLocation();
+  const navigate = useNavigate();
   const { logout, user, getDefaultRoute } = useAuth();
   const { fetchTableControlTranslations, language } = useColumnTranslation();
 
@@ -216,9 +209,17 @@ export default function Sidebar() {
     localStorage.setItem("sidebarOpen", String(value));
   };
 
+  const goToPath = React.useCallback(
+    (path) => {
+      if (!path || location.pathname === path) return;
+      navigate(path);
+    },
+    [location.pathname, navigate],
+  );
+
   const goTo = (item) => {
     if (isMobile) setMobileOpen(false);
-    hardNavigate(getNavigationPath(item));
+    goToPath(getNavigationPath(item));
   };
 
   const toggleGroup = (item) => {
@@ -552,7 +553,7 @@ export default function Sidebar() {
             <Box
               component="button"
               type="button"
-              onClick={() => hardNavigate(homePath)}
+              onClick={() => goToPath(homePath)}
               sx={{
                 border: 0,
                 p: 0,
