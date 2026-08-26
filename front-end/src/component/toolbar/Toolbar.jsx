@@ -1,3 +1,3 @@
-import ToolbarKit from "./ToolbarModern";
+import ToolbarLegacy from "./ToolbarLegacy";
 
-export default ToolbarKit;
+export default ToolbarLegacy;
