@@ -1,7 +1,7 @@
 import { Box } from "@mui/material";
 
 export default function FormGrid({ children, columns = 2, sx }) {
-  const desktopColumns = Math.max(1, Math.min(columns, 3));
+  const desktopColumns = Math.max(1, columns);
 
   return (
     <Box
@@ -11,12 +11,9 @@ export default function FormGrid({ children, columns = 2, sx }) {
           xs: "minmax(0, 1fr)",
           md: `repeat(${desktopColumns}, minmax(0, 1fr))`,
         },
-        columnGap: 1.25,
-        rowGap: 1.1,
+        gap: 2,
         alignItems: "start",
-        "& > *": {
-          minWidth: 0,
-        },
+        "& > *": { minWidth: 0 },
         "& > .MuiFormControl-root, & > .MuiAutocomplete-root": {
           width: "100%",
         },
