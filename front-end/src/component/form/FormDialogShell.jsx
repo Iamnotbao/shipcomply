@@ -41,14 +41,24 @@ export default function FormDialogShell({
         <Box sx={{ minWidth: 0 }}>
           <Typography
             variant="h6"
-            sx={{ fontWeight: 800, lineHeight: 1.25, color: "text.primary" }}
+            sx={{
+              fontWeight: 800,
+              fontSize: "1.05rem",
+              lineHeight: 1.2,
+              color: "text.primary",
+            }}
           >
             {title}
           </Typography>
           {description ? (
             <Typography
               variant="body2"
-              sx={{ mt: 0.5, color: "text.secondary", maxWidth: 720 }}
+              sx={{
+                mt: 0.2,
+                color: "text.secondary",
+                maxWidth: 720,
+                lineHeight: 1.35,
+              }}
             >
               {description}
             </Typography>
