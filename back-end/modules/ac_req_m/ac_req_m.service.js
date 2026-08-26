@@ -19,7 +19,8 @@ async function getAllARM(
     const message = "User is not exist or null from service!";
     return { message };
   }
-  return await acReqMRepository.listAllARM(
+
+  const result = await acReqMRepository.listAllARM(
     factory_code,
     department_code,
     user_code,
@@ -27,6 +28,16 @@ async function getAllARM(
     limit,
     offset,
   );
+
+  if (Array.isArray(result)) {
+    return {
+      rows: result,
+      count: result.length,
+      hasMore: false,
+    };
+  }
+
+  return result;
 }
 async function getARMByID(factory_code, req_no) {
   return await acReqMRepository.getByID(factory_code, req_no);
