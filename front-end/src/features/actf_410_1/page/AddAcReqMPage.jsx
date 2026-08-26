@@ -26,9 +26,14 @@ const AddAcReqMPage = ({
   getColumnLabel,
   user,
   auth,
-  language
+  language,
 }) => {
   const [dropdownValues, setDropdownValues] = useState({});
+
+  const getQueryLevel = () =>
+    (Array.isArray(auth)
+      ? auth.find((item) => item.field === "query_level")?.title
+      : null) || "1";
 
   const formatDate = () => {
     const date = new Date();
@@ -36,8 +41,7 @@ const AddAcReqMPage = ({
     const month = (date.getMonth() + 1).toString().padStart(2, "0");
     const day = date.getDate().toString().padStart(2, "0");
 
-    const yymmdd = `${year}${month}${day}`;
-    return yymmdd;
+    return `${year}${month}${day}`;
   };
 
   const fetchReqNo = async () => {
@@ -48,7 +52,7 @@ const AddAcReqMPage = ({
       user?.factory_abbreviation,
       user?.department,
       user?.user_code,
-      user?.query_level
+      getQueryLevel(),
     );
     if (response && response.success) {
       setDropdownValues((prev) => ({
@@ -64,26 +68,21 @@ const AddAcReqMPage = ({
     } else {
       setDropdownValues({});
     }
-  }, [open]);
+  }, [open, auth]);
 
-  // CreateDropdownCallback cho invoice_no
   const createInvoiceDropdownCallback = () => {
     return async (page, pageSize, searchText) => {
       try {
-        const allow = Array.isArray(auth)
-          ? auth.find((item) => item.field === "query_level")?.title
-          : "1";
-        
         const result = await fetchAllInvoiceNo(
           user?.factory,
           user?.department,
           user?.user_code,
-          allow,
+          getQueryLevel(),
           page,
           pageSize,
-          searchText
+          searchText,
         );
-        
+
         return {
           data: result?.data || [],
           total: result?.total || 0,
@@ -94,40 +93,34 @@ const AddAcReqMPage = ({
         return {
           data: [],
           total: 0,
-          pageSize: pageSize,
+          pageSize,
         };
       }
     };
   };
 
-  // CreateDropdownCallback cho ac_no
   const createAcNoDropdownCallback = () => {
     return async (page, pageSize, searchText) => {
       try {
-        const allow = Array.isArray(auth)
-          ? auth.find((item) => item.field === "query_level")?.title
-          : "1";
-        
-        // Chỉ fetch khi có invoice_no
         if (!dropdownValues.invoice_no) {
           return {
             data: [],
             total: 0,
-            pageSize: pageSize,
+            pageSize,
           };
         }
-        
+
         const result = await fetchAllAcNo(
           user?.factory,
           dropdownValues.invoice_no,
           user?.department,
           user?.user_code,
-          allow,
+          getQueryLevel(),
           page,
           pageSize,
-          searchText
+          searchText,
         );
-        
+
         return {
           data: result?.data || [],
           total: result?.total || 0,
@@ -138,22 +131,20 @@ const AddAcReqMPage = ({
         return {
           data: [],
           total: 0,
-          pageSize: pageSize,
+          pageSize,
         };
       }
     };
   };
-    const createVendNoDropdownCallback = () => {
+
+  const createVendNoDropdownCallback = () => {
     return async (page, pageSize, searchText) => {
       try {
-        const allow = Array.isArray(auth)
-          ? auth.find((item) => item.field === "query_level")?.title
-          : "1";
         const result = await fetchAllVendNoByStatus(
           user?.factory,
           user?.department,
           user?.user_code,
-          allow,
+          getQueryLevel(),
           language,
           page,
           pageSize,
@@ -165,15 +156,16 @@ const AddAcReqMPage = ({
           pageSize: result?.pageSize || pageSize,
         };
       } catch (error) {
-        console.error(`Error fetching dropdown:`, error);
+        console.error("Error fetching vend_no dropdown:", error);
         return {
           data: [],
           total: 0,
-          pageSize: pageSize,
+          pageSize,
         };
       }
     };
   };
+
   const renderField = (fieldName, label, gridSize = 2.4, extraProps = {}) => {
     if (fieldName === "invoice_no") {
       return (
@@ -184,12 +176,12 @@ const AddAcReqMPage = ({
               setDropdownValues((prev) => ({
                 ...prev,
                 invoice_no: selectedItem?.invoice_no || "",
-                ac_no: "", // Reset ac_no khi đổi invoice
+                ac_no: "",
               }));
             }}
             select={dropdownValues.invoice_no || extraProps.defaultValue || ""}
             table="AC_REQ_M_3"
-            option={"ac_req_m"}
+            option="ac_req_m"
             getControlLabel={getControlLabel}
             language={user?.language || "en"}
             field={getColumnLabel(fieldName, label)}
@@ -224,13 +216,13 @@ const AddAcReqMPage = ({
             }}
             select={dropdownValues.ac_no || extraProps.defaultValue || ""}
             table="AC_REQ_M_2"
-            option={"ac_req_m"}
+            option="ac_req_m"
             getControlLabel={getControlLabel}
             language={user?.language || "en"}
             field={getColumnLabel(fieldName, label)}
             totalItems={0}
             pageSize={10}
-            key={dropdownValues.invoice_no} // Re-render khi invoice thay đổi
+            key={dropdownValues.invoice_no}
           />
           <input
             type="hidden"
@@ -240,6 +232,7 @@ const AddAcReqMPage = ({
         </Grid>
       );
     }
+
     if (fieldName === "vend_no") {
       return (
         <Grid item xs={gridSize}>
@@ -254,7 +247,7 @@ const AddAcReqMPage = ({
             }}
             select={dropdownValues.vend_no || extraProps.defaultValue || ""}
             table="AC_VEND_BASE"
-            option={"ac_vend_base"}
+            option="ac_vend_base"
             getControlLabel={getControlLabel}
             language={user?.language || "en"}
             field={getColumnLabel(fieldName, label)}
@@ -267,6 +260,7 @@ const AddAcReqMPage = ({
         </Grid>
       );
     }
+
     return (
       <Grid item xs={gridSize}>
         <TextField
@@ -305,7 +299,6 @@ const AddAcReqMPage = ({
           </Box>
 
           <Box component="form" onSubmit={handleAdd}>
-            {/* Row 1 */}
             <Grid container spacing={2} mb={3}>
               <Grid item xs={2.4}>
                 <TextField
