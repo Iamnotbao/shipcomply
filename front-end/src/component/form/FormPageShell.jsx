@@ -18,21 +18,21 @@ export default function FormPageShell({
         maxWidth,
         mx: "auto",
         border: "1px solid",
-        borderColor: "divider",
-        borderRadius: 2.5,
+        borderColor: "#d9e2e7",
+        borderRadius: 2.25,
         overflow: "hidden",
-        bgcolor: "background.paper",
-        boxShadow: "0 4px 18px rgba(15, 23, 42, 0.06)",
+        bgcolor: "#f1f5f6",
+        boxShadow: "0 4px 16px rgba(15, 23, 42, 0.055)",
       }}
     >
       <Box
         sx={{
-          px: { xs: 2, md: 2.5 },
-          py: 1.75,
+          px: { xs: 1.75, md: 2 },
+          py: 1.3,
           display: "flex",
           alignItems: "center",
-          gap: 1.5,
-          bgcolor: "#fbfdff",
+          gap: 1.25,
+          bgcolor: "#f8fbfb",
         }}
       >
         {onBack ? (
@@ -47,11 +47,17 @@ export default function FormPageShell({
           </Button>
         ) : null}
         <Box sx={{ minWidth: 0 }}>
-          <Typography variant="h6" sx={{ fontWeight: 800, lineHeight: 1.25 }}>
+          <Typography
+            variant="h6"
+            sx={{ fontWeight: 800, lineHeight: 1.2, fontSize: "1.05rem" }}
+          >
             {title}
           </Typography>
           {description ? (
-            <Typography variant="body2" sx={{ mt: 0.35, color: "text.secondary" }}>
+            <Typography
+              variant="body2"
+              sx={{ mt: 0.2, color: "text.secondary", lineHeight: 1.35 }}
+            >
               {description}
             </Typography>
           ) : null}
@@ -61,18 +67,25 @@ export default function FormPageShell({
       <Divider />
 
       <Box component="form" onSubmit={onSubmit}>
-        <Stack spacing={2} sx={{ p: { xs: 2, md: 2.5 } }}>
+        <Stack
+          spacing={1.25}
+          sx={{
+            p: { xs: 1.5, md: 1.75 },
+            bgcolor: "#f1f5f6",
+            "& .MuiInputBase-root": { bgcolor: "#fff" },
+          }}
+        >
           {children}
         </Stack>
 
         <Divider />
         <Box
           sx={{
-            px: { xs: 2, md: 2.5 },
-            py: 1.5,
+            px: { xs: 1.75, md: 2 },
+            py: 1.15,
             display: "flex",
             justifyContent: "flex-end",
-            bgcolor: "#fbfdff",
+            bgcolor: "#f8fbfb",
           }}
         >
           <Button type="submit" variant="contained" color="primary">
