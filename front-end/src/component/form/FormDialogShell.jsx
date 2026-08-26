@@ -1,100 +1,64 @@
-import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
+import CloseIcon from "@mui/icons-material/Close";
 import {
   Box,
   Button,
   Dialog,
-  DialogActions,
   DialogContent,
-  Divider,
-  IconButton,
-  Stack,
+  Paper,
   Typography,
 } from "@mui/material";
-import {
-  formDialogActionsSx,
-  formDialogContentSx,
-  formDialogHeaderSx,
-  formDialogSx,
-} from "./formLayoutStyles";
 
 export default function FormDialogShell({
   open,
   onClose,
   title,
-  description,
   children,
   onSubmit,
   submitLabel = "Save",
-  cancelLabel = "Cancel",
   submitDisabled = false,
-  maxWidth = "md",
+  maxWidth,
 }) {
   return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      fullWidth
-      maxWidth={maxWidth}
-      sx={formDialogSx}
-    >
-      <Box sx={formDialogHeaderSx}>
-        <Box sx={{ minWidth: 0 }}>
-          <Typography
-            variant="h6"
-            sx={{
-              fontWeight: 800,
-              fontSize: "1.05rem",
-              lineHeight: 1.2,
-              color: "text.primary",
-            }}
+    <Dialog open={open} onClose={onClose} maxWidth={maxWidth} fullWidth={Boolean(maxWidth)}>
+      <DialogContent>
+        <Paper sx={{ maxWidth: "1200px", mx: "auto", p: 3 }}>
+          <Box
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            mb={2}
           >
-            {title}
-          </Typography>
-          {description ? (
             <Typography
-              variant="body2"
-              sx={{
-                mt: 0.2,
-                color: "text.secondary",
-                maxWidth: 720,
-                lineHeight: 1.35,
-              }}
+              variant="h4"
+              textTransform="uppercase"
+              fontWeight={600}
+              gutterBottom
+              textAlign="center"
+              flex={1}
+              mb={0}
             >
-              {description}
+              {title}
             </Typography>
-          ) : null}
-        </Box>
-        <IconButton
-          aria-label="close"
-          onClick={onClose}
-          size="small"
-          sx={{ mt: -0.25, flexShrink: 0 }}
-        >
-          <CloseRoundedIcon fontSize="small" />
-        </IconButton>
-      </Box>
-
-      <Divider />
-
-      <Box component="form" onSubmit={onSubmit}>
-        <DialogContent sx={formDialogContentSx}>{children}</DialogContent>
-        <Divider />
-        <DialogActions sx={formDialogActionsSx}>
-          <Stack direction="row" spacing={1}>
-            <Button type="button" variant="outlined" onClick={onClose}>
-              {cancelLabel}
+            <Button onClick={onClose} variant="contained" color="error">
+              <CloseIcon />
             </Button>
-            <Button
-              type="submit"
-              variant="contained"
-              color="primary"
-              disabled={submitDisabled}
-            >
-              {submitLabel}
-            </Button>
-          </Stack>
-        </DialogActions>
-      </Box>
+          </Box>
+
+          <Box component="form" onSubmit={onSubmit}>
+            {children}
+            <Box mt={4}>
+              <Button
+                type="submit"
+                variant="contained"
+                color="primary"
+                disabled={submitDisabled}
+              >
+                {submitLabel}
+              </Button>
+            </Box>
+          </Box>
+        </Paper>
+      </DialogContent>
     </Dialog>
   );
 }
