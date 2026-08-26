@@ -1,0 +1,113 @@
+/* Restore the original ShipComply visual styling while keeping refactored components. */
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+}
+
+/* Original shell */
+.MuiAppBar-root {
+  background-color: green !important;
+  color: #fff !important;
+  backdrop-filter: none !important;
+  border-bottom: 0 !important;
+}
+
+.MuiAppBar-root .MuiTypography-root,
+.MuiAppBar-root .MuiSvgIcon-root {
+  color: #fff !important;
+}
+
+.MuiDrawer-root .MuiDrawer-paper {
+  background-color: orange !important;
+  color: #000 !important;
+  border-right: 1px solid rgba(0, 0, 0, 0.12) !important;
+}
+
+.MuiDrawer-root .MuiTypography-root,
+.MuiDrawer-root .MuiListItemIcon-root,
+.MuiDrawer-root .MuiListItemButton-root {
+  color: #000 !important;
+}
+
+.MuiDrawer-root .MuiDivider-root {
+  border-color: rgba(0, 0, 0, 0.12) !important;
+}
+
+.MuiDrawer-root .MuiListItemButton-root {
+  border-radius: 0 !important;
+}
+
+.MuiDrawer-root .MuiListItemButton-root.Mui-selected {
+  background-color: #1b5e20 !important;
+  color: #fff !important;
+}
+
+.MuiDrawer-root .MuiListItemButton-root.Mui-selected .MuiTypography-root,
+.MuiDrawer-root .MuiListItemButton-root.Mui-selected .MuiListItemIcon-root {
+  color: #fff !important;
+}
+
+.MuiDrawer-root .MuiListItemButton-root.Mui-selected:hover {
+  background-color: #154d15 !important;
+}
+
+.MuiDrawer-root .MuiList-root .MuiList-root .MuiListItemButton-root.Mui-selected {
+  background-color: #154d15 !important;
+}
+
+.MuiDrawer-root .MuiList-root .MuiList-root .MuiListItemButton-root.Mui-selected:hover {
+  background-color: #0d3a0d !important;
+}
+
+/* Remove the redesign card around Outlet and return to original page canvas. */
+main {
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 24px !important;
+  min-height: 100vh;
+  background-color: #f0f2f5 !important;
+}
+
+main > .MuiBox-root:last-child {
+  width: 100% !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+/* Original list/table selection */
+.MuiListItemButton-root.Mui-selected:not(.MuiDrawer-root *) {
+  background-color: yellow !important;
+  color: #000 !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.MuiListItemButton-root.Mui-selected:not(.MuiDrawer-root *):hover {
+  background-color: #686868 !important;
+}
+
+.MuiDataGrid-row.Mui-selected,
+.MuiDataGrid-root .Mui-selected-row {
+  background-color: yellow !important;
+  color: #000 !important;
+  box-shadow: none !important;
+}
+
+.MuiDataGrid-row.Mui-selected:hover,
+.MuiDataGrid-root .Mui-selected-row:hover {
+  background-color: #787878 !important;
+}
+
+/* Do not globally redesign old dialogs/forms. */
+.MuiDialog-paper {
+  background-image: none;
+}
