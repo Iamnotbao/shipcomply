@@ -3073,9 +3073,12 @@ const ToolbarKit = forwardRef(
           <Box
             sx={{
               display: "grid",
-              gridTemplateColumns: tableConfig?.filter
-                ? "repeat(auto-fit, minmax(min(100%, 540px), 1fr))"
-                : "minmax(0, 1fr)",
+              gridTemplateColumns: {
+                xs: "minmax(0, 1fr)",
+                lg: tableConfig?.filter
+                  ? "minmax(0, 1fr) fit-content(46%)"
+                  : "minmax(0, 1fr)",
+              },
               width: "100%",
               gap: 1,
               alignItems: "start",
@@ -3107,6 +3110,21 @@ const ToolbarKit = forwardRef(
                 width: "fit-content",
                 maxWidth: "100%",
                 minWidth: 0,
+                position: "relative",
+                pl: { xs: 0, lg: tableConfig?.filter ? 1.25 : 0 },
+                pt: { xs: tableConfig?.filter ? 1 : 0, lg: 0 },
+                borderLeft: {
+                  xs: 0,
+                  lg: tableConfig?.filter
+                    ? "1px solid rgba(100, 116, 139, 0.32)"
+                    : 0,
+                },
+                borderTop: {
+                  xs: tableConfig?.filter
+                    ? "1px solid rgba(100, 116, 139, 0.32)"
+                    : 0,
+                  lg: 0,
+                },
               }}
             >
               <Box
