@@ -1,4 +1,5 @@
 import { Alert, Box, CircularProgress, TextField, Typography } from "@mui/material";
+import BackGround from "../../../assets/images/bg3.png";
 import Logo from "../../../assets/images/logo.png";
 import AirportShuttleIcon from "@mui/icons-material/AirportShuttle";
 import Button from "@mui/material/Button";
@@ -521,23 +522,25 @@ const Login = () => {
         sx={{
           position: "relative",
           minHeight: "100vh",
-          background:
-            "linear-gradient(135deg, #e9eef3 0%, #f4f6f8 48%, #eef3f7 100%)",
+          backgroundImage: `url(${BackGround})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           px: 2,
           py: 3,
-          "&::before": {
-            content: '""',
+        }}
+      >
+        <Box
+          sx={{
             position: "absolute",
             inset: 0,
             background:
-              "radial-gradient(circle at 15% 20%, rgba(85,112,138,0.12), transparent 32%), radial-gradient(circle at 85% 80%, rgba(47,107,79,0.10), transparent 30%)",
-            pointerEvents: "none",
-          },
-        }}
-      >
+              "linear-gradient(135deg, rgba(45, 75, 20, 0.65) 0%, rgba(230, 234, 241, 0.45) 100%)",
+            backdropFilter: "blur(3px)",
+          }}
+        />
 
         {/* ── Card ──────────────────────────────────────────────────── */}
         <Box
