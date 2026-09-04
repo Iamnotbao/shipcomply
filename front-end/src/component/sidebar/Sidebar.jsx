@@ -321,8 +321,10 @@ export default function Sidebar() {
                       position: "sticky",
                       top: 0,
                       zIndex: 3,
-                      bgcolor: "#e9eef3",
-                      borderRadius: 1.5,
+                      bgcolor: "#e3eaf0",
+                      borderRadius: 0.75,
+                      borderBottom: "1px solid rgba(85,112,138,0.28)",
+                      boxShadow: "0 2px 5px rgba(38,56,74,0.10)",
                     }),
                   }}
                 >
