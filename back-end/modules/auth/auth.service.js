@@ -80,18 +80,12 @@ async function loginAsAdmin(user, t) {
     return { message };
   }
   const userR = { ...userFound.toJSON() };
-  const permission = await userPermissionService.getPermisisonByFacAndUser(
-    user.factory_code,
-    user.department_code,
-    user.user_code,
-  );
-  console.log("take it", permission);
-  // const access_token = generateAccessToken(user);
-  // const refresh_token = generateRefreshToken(user);
-  // const department_name_l = departmentFound.department_name_l;
+  const access_token = generateAccessToken(userR);
+  const refresh_token = generateRefreshToken(userR);
+
   return {
-    // access_token,
-    // refresh_token,
+    access_token,
+    refresh_token,
     userR,
     message,
   };

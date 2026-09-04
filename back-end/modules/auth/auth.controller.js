@@ -71,7 +71,8 @@ async function loginAsAdmin(req, res) {
   }
   const t = await sequelize.transaction();
   try {
-    const { userR, message } = await authService.loginAsAdmin(userData, t);
+    const { userR, message, access_token, refresh_token } =
+      await authService.loginAsAdmin(userData, t);
     await t.commit();
     if (message) {
       return res.status(403).json({
@@ -83,13 +84,15 @@ async function loginAsAdmin(req, res) {
       message: "Login admin successfully!",
       success: true,
       statusCode: 200,
-      // access_token:access_token,
-      // refresh_token:refresh_token,
+      access_token,
+      refresh_token,
       user: {
         user_code: userR.user_code,
+        factory_code: userR.factory_code,
         department_code: userR.department_code,
-        department: userData.department_code,
-        factory: userData.factory_code,
+        department: userR.department_code,
+        factory: userR.factory_code,
+        role: userR.role,
       },
     });
   } catch (error) {
@@ -125,8 +128,15 @@ async function refreshToken(req, res) {
     return res.status(403);
   }
   const access_token = verifyRefreshToken(token);
+  if (!access_token) {
+    return res.status(403).json({
+      access_token: null,
+      success: false,
+      message: "Invalid refresh token",
+    });
+  }
   return res.status(200).json({
-    access_token: access_token,
+    access_token,
     success: true,
     message: "New access_token is ok!",
   });

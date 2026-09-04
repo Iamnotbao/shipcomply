@@ -16,7 +16,7 @@ import {
   fetchDepartments,
 } from "../../../service/factory_departments/FacDepartmentService";
 import { useTranslation } from "react-i18next";
-import { toast } from "react-toastify";
+
 import { useColumnTranslation } from "../../../context/ColumnTranslationContext";
 import {
   fetchPermissionByFactoryAndUser,
@@ -24,7 +24,11 @@ import {
 } from "../../../service/users_permission/UsersPermission";
 import NotificationPermission from "../../../component/dialog/NotificationPermission";
 import { fetchUPDByUser } from "../../../service/users_permisison_department/usersPermissionDepartmentService";
-import { showErrorToast } from "../../../utils/notification/Notification";
+import {
+  showDatabaseUnavailableToast,
+  showErrorToast,
+  showSuccessToast,
+} from "../../../utils/notification/Notification";
 import { AUTH_ERROR_MAP } from "../../../constants/errors/authErrors";
 import { DEFAULT_SITE_KEY } from "../../../config/sites";
 import { useSite } from "../../../context/siteContext";
@@ -236,17 +240,22 @@ const Login = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     if (!isHealthy) {
-      toast.error(
+      showDatabaseUnavailableToast(
         t("site_unavailable", {
           site: siteKey,
-          defaultValue: `{{site}} database is unavailable. Select another environment or retry.`,
+          defaultValue:
+            "{{site}} database is unavailable. Select another environment or retry.",
         }),
-        { toastId: `site-unavailable:${siteKey}` },
+        siteKey,
       );
       return;
     }
     if (!userCode) {
-      toast.error(t("Please select a user code"));
+      showErrorToast(
+        getControlLabel,
+        "noti_select_user_code",
+        "Please select a user code",
+      );
       return;
     }
     if (selectFactory !== null && selectDepartment !== null) {
@@ -273,7 +282,11 @@ const Login = () => {
         }
         if (response.success) {
           await login(response);
-          toast.success(t("Login successful"));
+          showSuccessToast(
+            getControlLabel,
+            "noti_login_success",
+            "Login successful",
+          );
           navigation("/");
         }
       } catch (error) {
@@ -399,7 +412,7 @@ const Login = () => {
           pageSize: result?.pageSize || pageSize,
         };
       } catch (error) {
-        console.error(`Error fetching dropdown ${categoryCode}:`, error);
+        console.error("Error fetching user dropdown:", error);
         return { data: [], total: 0, pageSize: pageSize };
       }
     };

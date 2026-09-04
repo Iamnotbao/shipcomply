@@ -36,7 +36,7 @@ const verifyRefreshToken = (token) => {
   try {
     const decoded = jwt.verify(token, REFRESH_SECRET_KEY);
     const accessToken = generateAccessToken({
-      id: decoded.user_code,
+      user_code: decoded.id,
       factory_code: decoded.factory_code,
       department_code: decoded.department_code,
     });

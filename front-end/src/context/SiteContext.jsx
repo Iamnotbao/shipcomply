@@ -5,18 +5,30 @@ import {
   useState,
 } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { toast } from "react-toastify";
 import { useTranslation } from "react-i18next";
 import {
+  DEFAULT_SITE_KEY,
   getCurrentSite,
   setCurrentSite,
   subscribeToSiteChanges,
 } from "../config/sites";
+import { showDatabaseUnavailableToast } from "../utils/notification/Notification";
 import { siteHealthQueryOptions } from "../service/siteHealth/siteHealth";
 import { SiteContext } from "./siteContext";
 
+const getInitialSite = () => {
+  const isAuthEntry =
+    window.location.pathname === "/login" ||
+    window.location.pathname === "/admin-login";
+
+  if (!isAuthEntry) return getCurrentSite();
+
+  localStorage.setItem("siteKey", DEFAULT_SITE_KEY);
+  return DEFAULT_SITE_KEY;
+};
+
 export const SiteProvider = ({ children }) => {
-  const [siteKey, setSiteKey] = useState(getCurrentSite);
+  const [siteKey, setSiteKey] = useState(getInitialSite);
   const { t } = useTranslation();
   const healthQuery = useQuery(siteHealthQueryOptions(siteKey));
 
@@ -24,12 +36,13 @@ export const SiteProvider = ({ children }) => {
 
   useEffect(() => {
     if (!healthQuery.isError) return;
-    toast.error(
+    showDatabaseUnavailableToast(
       t("site_unavailable", {
         site: siteKey,
-        defaultValue: `{{site}} database is unavailable. Select another environment or retry.`,
+        defaultValue:
+          "{{site}} database is unavailable. Select another environment or retry.",
       }),
-      { toastId: `site-unavailable:${siteKey}`, autoClose: 9000 },
+      siteKey,
     );
   }, [healthQuery.isError, siteKey, t]);
 

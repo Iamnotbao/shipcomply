@@ -31,7 +31,8 @@ export const siteHealthQueryOptions = (siteKey) =>
     queryKey: ["siteHealth", normalizeSiteKey(siteKey)],
     queryFn: ({ signal }) => fetchSiteHealth(siteKey, signal),
     staleTime: 15_000,
-    refetchInterval: 30_000,
     retry: 1,
     retryDelay: 1_000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });

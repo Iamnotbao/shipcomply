@@ -1,4 +1,6 @@
 import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import "../../styles/notification.css";
 
 const GlobalNotifications = () => (
   <ToastContainer
@@ -6,7 +8,7 @@ const GlobalNotifications = () => (
     position="top-right"
     hideProgressBar={false}
     newestOnTop
-    closeOnClick
+    closeOnClick={false}
     pauseOnFocusLoss
     draggable
     pauseOnHover

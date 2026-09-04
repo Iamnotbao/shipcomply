@@ -1,14 +1,17 @@
 import {
+  Alert,
+  AlertTitle,
   Box,
   Button,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
+  IconButton,
   Typography,
 } from "@mui/material";
-import ClearIcon from "@mui/icons-material/Clear";
-import { useTranslation } from "react-i18next";
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
+
 const NotificationPermission = ({
   open,
   onClose,
@@ -16,47 +19,58 @@ const NotificationPermission = ({
   getControlLabel,
   selectFactory,
   selectDepartment,
-}) => {
-  const { t } = useTranslation();
-  return (
-    <Dialog open={open} onClose={onClose}>
-      <Box display={"flex"} alignItems={"center"}>
-        <DialogTitle
-          sx={{ flex: "1" }}
-          variant="h5"
-          fontWeight={"bold"}
-          color="red"
-        >
-          {getControlLabel("ttl_notification","Program Not Found!")}
-        </DialogTitle>
-        <Box>
-          <Button
-            onClick={onClose}
-            variant="contained"
-            color="warning"
-            size="small"
-            sx={{ marginRight: "5px" }}
-          >
-            <ClearIcon />
-          </Button>
-        </Box>
-      </Box>
-      <DialogContent>
-        <Typography variant="h6" fontWeight={"bold"}>
-          {getControlLabel("msg_notification","You don't have any programn in")}({selectFactory?.factory_code} - {selectDepartment?.department_code})
+}) => (
+  <Dialog
+    open={open}
+    onClose={onClose}
+    fullWidth
+    maxWidth="sm"
+    PaperProps={{ sx: { borderRadius: 2.5 } }}
+  >
+    <DialogTitle sx={{ pr: 6, pb: 1 }}>
+      <Typography variant="h6" fontWeight={700}>
+        {getControlLabel("ttl_notification", "Program Not Found!")}
+      </Typography>
+      <IconButton
+        aria-label={getControlLabel("btn_cancel", "Close")}
+        onClick={onClose}
+        size="small"
+        sx={{ position: "absolute", right: 12, top: 12 }}
+      >
+        <CloseRoundedIcon fontSize="small" />
+      </IconButton>
+    </DialogTitle>
+
+    <DialogContent sx={{ pt: 1 }}>
+      <Alert severity="warning" variant="outlined">
+        <AlertTitle sx={{ fontWeight: 700 }}>
+          {getControlLabel(
+            "msg_notification",
+            "You do not have any available program in this workspace.",
+          )}
+        </AlertTitle>
+        <Typography variant="body2">
+          {selectFactory?.factory_code || "-"} -{" "}
+          {selectDepartment?.department_code || "-"}
         </Typography>
-        <br />
-        <Typography variant="h6">{getControlLabel("sub_msg_notification","Please choose another factory with another department")}!</Typography>
-      </DialogContent>
-      <DialogActions>
-        <Button variant="contained" color="error" onClick={onConfirm}>
-          {getControlLabel("btn_confirm","Confirm")}
-        </Button>
-        <Button variant="contained" color="primary" onClick={onClose}>
-          {getControlLabel("btn_cancel","Confirm")}
-        </Button>
-      </DialogActions>
-    </Dialog>
-  );
-};
+        <Typography variant="body2" sx={{ mt: 0.75 }}>
+          {getControlLabel(
+            "sub_msg_notification",
+            "Please choose another factory or department.",
+          )}
+        </Typography>
+      </Alert>
+    </DialogContent>
+
+    <DialogActions sx={{ px: 3, pb: 2.5, gap: 1 }}>
+      <Button onClick={onClose} color="inherit">
+        {getControlLabel("btn_cancel", "Cancel")}
+      </Button>
+      <Button variant="contained" onClick={onConfirm}>
+        {getControlLabel("btn_confirm", "Confirm")}
+      </Button>
+    </DialogActions>
+  </Dialog>
+);
+
 export default NotificationPermission;
