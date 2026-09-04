@@ -383,7 +383,7 @@ const Login = () => {
   };
   const fetchDbFactories = async () => {
     try {
-      const result = await fnQuery([fetchFactory]);
+      const result = await fnQuery([() => fetchFactory(10, 0)]);
       const data = result[0]?.data ?? [];
       setDbFactories(data);
 
@@ -421,6 +421,26 @@ const Login = () => {
     } catch (err) {
       console.error("fetchDbFactories error", err);
     }
+  };
+
+  const createFactoryDropdownCallback = () => {
+    return async (page, pageSize, searchText) => {
+      const safePage = Math.max(Number.parseInt(page, 10) || 1, 1);
+      const safePageSize = Math.max(Number.parseInt(pageSize, 10) || 10, 1);
+      const offset = (safePage - 1) * safePageSize;
+
+      const result = await fetchFactory(
+        safePageSize,
+        offset,
+        searchText,
+      );
+
+      return {
+        data: Array.isArray(result?.data) ? result.data : [],
+        total: Number.parseInt(result?.total, 10) || 0,
+        pageSize: safePageSize,
+      };
+    };
   };
   const createDropdownCallback = () => {
     return async (page, pageSize, searchText) => {
@@ -693,6 +713,12 @@ const Login = () => {
                 onSelect={handleSelectDbFactory}
                 getControlLabel={getControlLabel}
                 language={language}
+                table="FACTORY"
+                option="factory"
+                onFetchData={createFactoryDropdownCallback()}
+                totalItems={0}
+                pageSize={10}
+                pageSizeOptions={[10, 20, 50]}
               />
             </Box>
             {/* 4 ── Environment — dynamic theo factory ─────────────────── */}
