@@ -257,10 +257,10 @@ export default function Sidebar() {
               width: 36,
               height: 36,
               borderRadius: 2,
-              bgcolor: "#2f6b4f",
+              bgcolor: "#55708a",
               color: "#ffffff",
               flexShrink: 0,
-              "&:hover": { bgcolor: "#24543e" },
+              "&:hover": { bgcolor: "#48627a" },
             }}
           >
             {desktopOpen || isMobile ? (
@@ -272,17 +272,17 @@ export default function Sidebar() {
         </Tooltip>
         {(desktopOpen || isMobile) && (
           <Box sx={{ minWidth: 0 }}>
-            <Typography sx={{ fontWeight: 800, color: "#2d210d", lineHeight: 1.1 }}>
+            <Typography sx={{ fontWeight: 800, color: "#26384a", lineHeight: 1.1 }}>
               ShipComply
             </Typography>
-            <Typography sx={{ fontSize: "0.7rem", color: "#6b4a16", mt: 0.35 }}>
+            <Typography sx={{ fontSize: "0.7rem", color: "#607487", mt: 0.35 }}>
               Customs Operations
             </Typography>
           </Box>
         )}
       </Box>
 
-      <Divider sx={{ borderColor: "rgba(77, 50, 10, 0.10)" }} />
+      <Divider sx={{ borderColor: "rgba(85, 112, 138, 0.16)" }} />
 
       <Box
         sx={{
@@ -291,15 +291,15 @@ export default function Sidebar() {
           px: 1,
           py: 1.25,
           scrollbarWidth: "thin",
-          scrollbarColor: "rgba(80, 62, 35, 0.48) transparent",
+          scrollbarColor: "rgba(85,112,138,0.46) transparent",
           "&::-webkit-scrollbar": { width: 6 },
           "&::-webkit-scrollbar-track": { background: "transparent" },
           "&::-webkit-scrollbar-thumb": {
-            backgroundColor: "rgba(80, 62, 35, 0.48)",
+            backgroundColor: "rgba(85,112,138,0.46)",
             borderRadius: 999,
           },
           "&::-webkit-scrollbar-thumb:hover": {
-            backgroundColor: "rgba(64, 45, 20, 0.72)",
+            backgroundColor: "rgba(72,98,122,0.72)",
           },
         }}
       >
@@ -321,14 +321,21 @@ export default function Sidebar() {
                       position: "sticky",
                       top: 0,
                       zIndex: 3,
-                      bgcolor: "#e7b65c",
+                      bgcolor: "#e9eef3",
                       borderRadius: 1.5,
                     }),
                   }}
                 >
                   <Tooltip
-                    title={!desktopOpen && !isMobile ? item.label : ""}
+                    title={
+                      !desktopOpen && !isMobile
+                        ? item.label
+                        : item.label?.length > 24
+                          ? item.label
+                          : ""
+                    }
                     placement="right"
+                    arrow
                   >
                     <ListItemButton
                       selected={groupActive}
@@ -338,7 +345,7 @@ export default function Sidebar() {
                         px: desktopOpen || isMobile ? 1.5 : 1,
                         borderRadius: 0.75,
                         justifyContent: desktopOpen || isMobile ? "initial" : "center",
-                        color: groupActive ? "#ffffff" : "#3d2b0d",
+                        color: groupActive ? "#ffffff" : "#31475c",
                         boxShadow: groupActive
                           ? "inset 3px 0 0 #40566c"
                           : "inset 3px 0 0 transparent",
@@ -353,7 +360,7 @@ export default function Sidebar() {
                         "&&.Mui-selected:hover": {
                           bgcolor: "#48627a !important",
                         },
-                        "&:hover": { bgcolor: "rgba(85,112,138,0.14)" },
+                        "&:hover": { bgcolor: "rgba(85,112,138,0.12)" },
                       }}
                     >
                       <ListItemIcon
@@ -372,7 +379,15 @@ export default function Sidebar() {
                             primaryTypographyProps={{
                               fontSize: "0.82rem",
                               fontWeight: groupActive ? 700 : 500,
-                              noWrap: true,
+                              sx: {
+                                whiteSpace: "normal",
+                                overflowWrap: "anywhere",
+                                display: "-webkit-box",
+                                WebkitBoxOrient: "vertical",
+                                WebkitLineClamp: groupActive ? 3 : 2,
+                                overflow: "hidden",
+                                lineHeight: 1.22,
+                              },
                             }}
                           />
                           {hasChildren &&
@@ -403,33 +418,48 @@ export default function Sidebar() {
                                 pr: 1.25,
                                 py: 0.45,
                                 borderRadius: 0.5,
-                                color: active ? "#31475c" : "#5b3a08",
+                                color: active ? "#263f56" : "#40566c",
                                 boxShadow: active
                                   ? "inset 2px 0 0 #55708a"
                                   : "inset 2px 0 0 transparent",
                                 "&&.Mui-selected": {
-                                  bgcolor: "rgba(85,112,138,0.20) !important",
-                                  color: "#31475c !important",
+                                  bgcolor: "rgba(85,112,138,0.18) !important",
+                                  color: "#263f56 !important",
                                 },
                                 "&&.Mui-selected .MuiTypography-root": {
-                                  color: "#31475c !important",
+                                  color: "#263f56 !important",
                                 },
                                 "&&.Mui-selected:hover": {
-                                  bgcolor: "rgba(85,112,138,0.28) !important",
+                                  bgcolor: "rgba(85,112,138,0.26) !important",
                                 },
                                 "&:hover": {
-                                  bgcolor: "rgba(85,112,138,0.12)",
+                                  bgcolor: "rgba(85,112,138,0.10)",
                                 },
                               }}
                             >
-                              <ListItemText
-                                primary={child.label}
-                                primaryTypographyProps={{
-                                  fontSize: "0.76rem",
-                                  fontWeight: active ? 700 : 500,
-                                  noWrap: true,
-                                }}
-                              />
+                              <Tooltip
+                                title={child.label || ""}
+                                placement="right"
+                                arrow
+                                enterDelay={500}
+                              >
+                                <ListItemText
+                                  primary={child.label}
+                                  primaryTypographyProps={{
+                                    fontSize: "0.76rem",
+                                    fontWeight: active ? 700 : 500,
+                                    sx: {
+                                      whiteSpace: "normal",
+                                      overflowWrap: "anywhere",
+                                      display: "-webkit-box",
+                                      WebkitBoxOrient: "vertical",
+                                      WebkitLineClamp: active ? 3 : 2,
+                                      overflow: "hidden",
+                                      lineHeight: 1.28,
+                                    },
+                                  }}
+                                />
+                              </Tooltip>
                             </ListItemButton>
                           </ListItem>
                         );
@@ -443,7 +473,7 @@ export default function Sidebar() {
         </List>
       </Box>
 
-      <Divider sx={{ borderColor: "rgba(77, 50, 10, 0.10)" }} />
+      <Divider sx={{ borderColor: "rgba(85, 112, 138, 0.16)" }} />
       <Box sx={{ p: 1 }}>
         {(desktopOpen || isMobile) && (
           <Box sx={{ px: 1, py: 1, display: "flex", alignItems: "center", gap: 1 }}>
@@ -453,10 +483,10 @@ export default function Sidebar() {
               {(user?.user_code || "U").slice(0, 2).toUpperCase()}
             </Avatar>
             <Box sx={{ minWidth: 0, flex: 1 }}>
-              <Typography sx={{ color: "#2d210d", fontSize: "0.78rem", fontWeight: 700 }} noWrap>
+              <Typography sx={{ color: "#26384a", fontSize: "0.78rem", fontWeight: 700 }} noWrap>
                 {user?.user_code || "User"}
               </Typography>
-              <Typography sx={{ color: "#6b4a16", fontSize: "0.68rem" }} noWrap>
+              <Typography sx={{ color: "#607487", fontSize: "0.68rem" }} noWrap>
                 {user?.department || user?.factory || "ShipComply"}
               </Typography>
             </Box>
@@ -471,10 +501,10 @@ export default function Sidebar() {
             sx={{
               minHeight: 40,
               borderRadius: 1.5,
-              color: "#6b4a16",
+              color: "#607487",
               justifyContent: desktopOpen || isMobile ? "initial" : "center",
               px: desktopOpen || isMobile ? 1.5 : 1,
-              "&:hover": { color: "#b91c1c", bgcolor: "rgba(255,255,255,0.32)" },
+              "&:hover": { color: "#b23a3a", bgcolor: "rgba(85,112,138,0.10)" },
             }}
           >
             <ListItemIcon
@@ -510,8 +540,8 @@ export default function Sidebar() {
           flexShrink: 0,
           "& .MuiDrawer-paper": {
             width: isMobile ? APP_SHELL.drawerWidth : drawerWidth,
-            bgcolor: "#e7b65c",
-            borderRight: "1px solid rgba(91, 66, 26, 0.10)",
+            bgcolor: "#e9eef3",
+            borderRight: "1px solid rgba(85,112,138,0.18)",
             overflowX: "hidden",
             transition: theme.transitions.create("width", {
               duration: theme.transitions.duration.shorter,
