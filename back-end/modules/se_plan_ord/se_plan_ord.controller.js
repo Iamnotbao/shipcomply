@@ -206,6 +206,30 @@ async function getCBM(req, res) {
     tableName: "SE_PLAN_ORD",
   });
 }
+async function getMoney(req, res) {
+  const { factory_code, se_id, department_code, user_code, query_level } =
+    req.query;
+  const result = await sePlanOrdService.getMoney(
+    factory_code,
+    se_id,
+    department_code,
+    user_code,
+    query_level,
+  );
+  if (!result) {
+    return res.status(401).json({
+      message: "Cannot get money!",
+      success: false,
+      tableName: "SE_PLAN_ORD",
+    });
+  }
+  return res.status(200).json({
+    message: "Get money successfully!",
+    success: true,
+    data: result,
+    tableName: "SE_PLAN_ORD",
+  });
+}
 async function getTempTable(req, res) {
   const { limit, offset } = req.query;
   const authHeader = req.headers["authorization"];
@@ -517,7 +541,7 @@ async function deleteSePlanOrd(req, res) {
   try {
     const { factory_code, se_id, se_ver, se_seq, pack_gu, ship_seq } =
       req.query;
-
+    const data = req.body;
     const isDelete = await sePlanOrdService.deleteSePlanOrd(
       factory_code,
       se_id,
@@ -525,6 +549,7 @@ async function deleteSePlanOrd(req, res) {
       se_seq,
       pack_gu,
       ship_seq,
+      data,
       t,
     );
     if (!isDelete) {
@@ -548,7 +573,74 @@ async function deleteSePlanOrd(req, res) {
     });
   }
 }
-
+async function confirmItemsSePlanOrd(req, res) {
+  const t = await sequelize.transaction();
+  try {
+    const { factory_code, department_code, user_code, query_level } = req.query;
+    const { data } = req.body;
+    const result = await sePlanOrdService.confirmItemsSePlanOrd(
+      factory_code,
+      department_code,
+      user_code,
+      query_level,
+      data,
+      t,
+    );
+    if (!result) {
+      await t.rollback();
+      return res.status(401).json({
+        success: false,
+        message: "Cannot confirm because null!",
+      });
+    }
+    await t.commit();
+    return res.status(200).json({
+      success: true,
+      message: "Confirm import material tracking successfully!",
+    });
+  } catch (error) {
+    await t.rollback();
+    console.log("Something error from confirm controller:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+}
+async function unconfirmItemsSePlanOrd(req, res) {
+  const t = await sequelize.transaction();
+  try {
+    const { factory_code, department_code, user_code, query_level } = req.query;
+    const { data } = req.body;
+    const result = await sePlanOrdService.unconfirmItemsSePlanOrd(
+      factory_code,
+      department_code,
+      user_code,
+      query_level,
+      data,
+      t,
+    );
+    if (!result) {
+      await t.rollback();
+      return res.status(401).json({
+        success: false,
+        message: "Cannot unconfirm because null!",
+      });
+    }
+    await t.commit();
+    return res.status(200).json({
+      success: true,
+      message: "Confirm import material tracking successfully!",
+    });
+  } catch (error) {
+    await t.rollback();
+    console.log("Something error from confirm controller:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+}
 async function searchSePlanOrd(req, res) {
   const { search } = req.body;
   const {
@@ -986,6 +1078,7 @@ module.exports = {
   getAllFieldDropdown,
   getShipSeq,
   getCBM,
+  getMoney,
   getTempTable,
   clearTempTable,
   getTempTextTable,
@@ -1007,5 +1100,7 @@ module.exports = {
   checkBoxItem,
   recreateTempTable,
   importExcel,
-  confirm
+  confirm,
+  confirmItemsSePlanOrd,
+  unconfirmItemsSePlanOrd,
 };

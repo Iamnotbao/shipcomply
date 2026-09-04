@@ -31,13 +31,7 @@ async function listAllASR(
       ],
     });
   }
-  console.log(
-    "all things",
-    factory_code,
-    department_code,
-    user_code,
-    query_level,
-  );
+
   const whereClause = {};
   if (query_level === "1" && factory_code) {
     whereClause.factory_code = factory_code;
@@ -55,8 +49,10 @@ async function listAllASR(
       [getNumericSort(), "ASC"],
       ["prod_no", "ASC"],
     ],
-    limit: parseInt(limit) + 1,
-    offset: parseInt(offset),
+    ...(limit != null && {
+      limit: parseInt(limit),
+      offset: (parseInt(page) - 1) * parseInt(limit),
+    }),
   });
   const hasMore = rows.length > parseInt(limit);
   const actualRows = hasMore ? rows.slice(0, parseInt(limit)) : rows;
@@ -286,7 +282,7 @@ async function getByShoe(
         [getNumericSort(), "ASC"],
         ["prod_no", "ASC"],
       ],
-      limit: parseInt(limit)+1,
+      limit: parseInt(limit) + 1,
       offset: parseInt(offset),
     });
     const hasMore = rows.length > limit;
@@ -341,7 +337,7 @@ async function getListOfProdNo(page, limit, search = "") {
     ];
 
     if (search && search.trim() !== "") {
-      whereClauses.push("vrp.prod_no LIKE :search");
+      whereClauses.push("(vrp.prod_no ILIKE :search or( vrp.name_e ILIKE :search or vrp.name_t ILIKE :search or vrp.name_s ILIKE :search ))");
       replacements.search = `%${search}%`;
     }
 
@@ -371,7 +367,7 @@ async function getListOfProdNo(page, limit, search = "") {
       ORDER BY vrp.prod_no
       LIMIT :limit OFFSET :offset
     `;
-    replacements.limit  = parseInt(limit);
+    replacements.limit = parseInt(limit);
     replacements.offset = (page - 1) * parseInt(limit);
 
     const rows = await pool.query(dataSql, {
@@ -382,9 +378,9 @@ async function getListOfProdNo(page, limit, search = "") {
     return {
       data: rows,
       total,
-      currentPage:  page,
-      pageSize:     limit,
-      totalPages:   Math.ceil(total / limit),
+      currentPage: page,
+      pageSize: limit,
+      totalPages: Math.ceil(total / limit),
     };
   } catch (error) {
     console.error("Database Error:", error.message);

@@ -39,6 +39,8 @@ async function listAllAcChgD(
     ],
   });
 }
+
+
 async function listAllAcChgDWithView(
   factory_code,
   department_code,
@@ -83,14 +85,109 @@ async function listAllAcChgDWithView(
     d.ac_no,
     d.seq,
     d.ac_itemno,
-    "Customs".GF_AC_ITEMNAME(d.factory_code, d.ac_itemno, :p_charset) AS ac_itemnm,
+    "Customs".GF_ACPROD_NAME(d.factory_code, d.ac_itemno, :p_charset) AS ac_itemnm,
     "Customs".GF_ACPROD_NAME(FACTORY_CODE,AC_ITEMNO,:p_charset) as ITEM_NAME,
     "Customs".GF_AC_ITEMunit(d.factory_code, d.ac_itemno) AS unit,
-    "Customs".GF_CODE_NAME(d.factory_code, 'UNIT', "Customs".GF_AC_ITEMunit(d.factory_code, d.ac_itemno), :p_charset) AS unitnm,
+    "Customs".GF_CODE_NAME(d.factory_code, '1108', "Customs".GF_AC_ITEMunit(d.factory_code, d.ac_itemno), :p_charset) AS unitnm,
     "Customs".GF_CODE_NAME(d.factory_code, 'COLOR', d.color, :p_charset) AS colornm,
     d.ac_item,
     d.country,
-    "Customs".GF_CODE_NAME(d.factory_code, 'CHGCY', d.country, :p_charset) AS countrynm,
+    "Customs".GF_CODE_NAME(d.factory_code, '5006', d.country, :p_charset) AS countrynm,
+    d.ref_price,
+    d.price,
+    d.money,
+    d.breadth,
+    d.in_qty,
+    d.cmoney,
+    d.tax_rate,
+    d.tax,
+    d.atax_rate,
+    d.add_tax,
+    d.status,
+    d.grt_dept,
+    d.grt_user,
+    d.grt_date,
+    d.last_date,
+    d.last_user,
+    d.locked_information
+  FROM "Customs".AC_CHG_D d
+  WHERE ${permissionCondition}
+    AND d.ac_no = :ac_no
+  ORDER BY d.seq
+  LIMIT :limit
+  OFFSET :offset
+`;
+
+    const rows = await pool.query(sql, {
+      replacements: replacements,
+      type: pool.QueryTypes.SELECT,
+    });
+    let total = null;
+    const hasMore = rows.length > limit;
+    const actualRows = hasMore ? rows.slice(0, limit) : rows;
+
+    return {
+      rows: actualRows,
+      count: total,
+      hasMore: hasMore,
+    };
+  } catch (error) {
+    console.error("Error in listAllAcContDWithView:", error);
+    throw error;
+  }
+}
+
+async function listAllAcChgDExpWithView(
+  factory_code,
+  department_code,
+  user_code,
+  query_level,
+  language = "en",
+  ac_no,
+  limit,
+  offset,
+) {
+  let charSet = {
+    vi: "S",
+    en: "E",
+    zh: "T",
+  };
+  let permissionCondition = "1=1";
+  let replacements = {
+    factory_code: factory_code,
+    ac_no: ac_no || null,
+    p_charset: charSet[language],
+    limit: parseInt(limit) + 1 || 10,
+    offset: parseInt(offset) || 0,
+  };
+
+  if (user_code !== "admin") {
+    if (query_level === "1" && factory_code) {
+      permissionCondition = "d.factory_code = :factory_code";
+    } else if (query_level === "2" && department_code && factory_code) {
+      permissionCondition =
+        "d.grt_dept = :permission_dept AND d.factory_code = :factory_code";
+      replacements.permission_dept = department_code;
+    } else if (query_level === "3" && user_code) {
+      permissionCondition = "d.grt_user = :permission_user";
+      replacements.permission_user = user_code;
+    }
+  }
+
+  try {
+    const sql = `
+  SELECT
+    d.factory_code, 
+    d.ac_no,
+    d.seq,
+    d.ac_itemno,
+    "Customs".GF_ACPROD_NAME(d.factory_code, d.ac_itemno, :p_charset) AS ac_itemnm,
+    "Customs".gf_ac_prod_unit(d.factory_code, d.ac_itemno) AS unit,
+    "Customs".GF_CODE_NAME(d.factory_code, '1108', "Customs".gf_ac_prod_unit(d.factory_code, d.ac_itemno), :p_charset) AS unitnm,
+    "Customs".GF_CODE_NAME(d.factory_code, 'COLOR', d.color, :p_charset) AS colornm,
+    d.ac_item,
+    d.country,
+    "Customs".GF_CODE_NAME(d.factory_code, '5006', d.country, :p_charset) AS countrynm,
     d.ref_price,
     d.price,
     d.money,
@@ -515,31 +612,12 @@ async function autoAdd(
       }
 
       //  Calculate REF_PRICE (average from AC_REQ_ORDER)
-      const getRefPriceSql = `
-        SELECT 
-          COALESCE(SUM(a.amount), 0) as total_money,
-          COALESCE(SUM(a.req_acqty), 0) as total_qty
-        FROM "Customs".AC_REQ_ORDER a
-        JOIN "Customs".AC_REQ_M b 
-          ON a.factory_code = b.factory_code
-          AND a.req_no = b.req_no
-        WHERE a.factory_code = :factory_code
-          AND b.invoice_no = :com_invoice
-          AND b.status = 7
-          AND a.item_acno = :item_acno
-      `;
-      const refPriceResult = await pool.query(getRefPriceSql, {
-        replacements: { factory_code, com_invoice, item_acno },
-        type: pool.QueryTypes.SELECT,
+      const ref_price = await calculateRPrice(
+        factory_code,
+        com_invoice,
+        item_acno,
         transaction,
-      });
-
-      const total_money = refPriceResult[0]?.total_money || 0;
-      const total_qty = refPriceResult[0]?.total_qty || 0;
-      const ref_price =
-        total_qty > 0
-          ? Math.round((total_money / total_qty) * 10000) / 10000
-          : 0;
+      );
 
       //  Calculate amounts
       const money = Math.round(price * req_qty * 100) / 100; // Y_MONEY
@@ -714,6 +792,34 @@ async function autoAdd(
     console.error("Error in autoAdd AC_CHG_D:", error);
     throw error;
   }
+}
+async function calculateRPrice(factory_code, com_invoice, item_acno, t) {
+  const getRefPriceSql = `
+    SELECT 
+      COALESCE(SUM(a.amount), 0) as total_money,
+      COALESCE(SUM(a.req_acqty), 0) as total_qty
+    FROM "Customs".AC_REQ_ORDER a
+    JOIN "Customs".AC_REQ_M b 
+      ON a.factory_code = b.factory_code
+      AND a.req_no = b.req_no
+    WHERE a.factory_code = :factory_code
+      AND b.invoice_no = :com_invoice
+      AND b.status = 7
+      AND a.item_acno = :item_acno
+  `;
+
+  const refPriceResult = await pool.query(getRefPriceSql, {
+    replacements: { factory_code, com_invoice, item_acno },
+    type: pool.QueryTypes.SELECT,
+    transaction: t,
+  });
+
+  const total_money = refPriceResult[0]?.total_money || 0;
+  const total_qty = refPriceResult[0]?.total_qty || 0;
+
+  return total_qty > 0
+    ? Math.round((total_money / total_qty) * 10000) / 10000
+    : 0;
 }
 async function add(
   factory_code,
@@ -1130,7 +1236,7 @@ async function refreshPrice(factory_code, ac_no, language) {
               se_seq: j.se_seq,
               pk_seq: j.pk_seq,
               se_ver: j.se_ver,
-              pack_gu: j.pack_gu,
+              pack_gu: parseInt(j.pack_gu),
             },
             type: pool.QueryTypes.SELECT,
           },
@@ -1161,9 +1267,9 @@ async function refreshPrice(factory_code, ac_no, language) {
                 ship_seq: i.ship_seq,
                 se_ver: i.se_ver,
                 pack_gu: i.pack_gu,
-                price: k.price,
-                ctns: j.ctns,
-                pairs: k.pairs,
+                price: parseFloat(k.price),
+                ctns: parseFloat(j.ctns),
+                pairs: parseFloat(k.pairs),
               },
               type: pool.QueryTypes.UPDATE,
             },
@@ -1252,8 +1358,8 @@ async function refreshPrice(factory_code, ac_no, language) {
               ac_no,
               prod_acno: t.prod_acno,
               price: t.price,
-              qty: t.qty,
-              money: t.money,
+              qty: parseFloat(t.qty),
+              money: parseFloat(t.money),
             },
             type: pool.QueryTypes.UPDATE,
             transaction
@@ -1296,8 +1402,8 @@ async function refreshPrice(factory_code, ac_no, language) {
               factory_code,
               ac_no,
               prod_acno: t.prod_acno,
-              price: t.price,
-              qty: t.qty,
+              price: parseFloat(t.price),
+              qty: parseFloat(t.qty),
             },
             type: pool.QueryTypes.UPDATE,
             transaction
@@ -1393,6 +1499,7 @@ async function refreshPrice(factory_code, ac_no, language) {
 module.exports = {
   listAllAcChgD,
   listAllAcChgDWithView,
+  listAllAcChgDExpWithView,
   listAllAcChgMToExcel,
   fetchSumData,
   fetchUnitByGoodsCode,
@@ -1405,4 +1512,5 @@ module.exports = {
   refreshSeq,
   copyItemsFromShoeId,
   refreshPrice,
+  calculateRPrice
 };

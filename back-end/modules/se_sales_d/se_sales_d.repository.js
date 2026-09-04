@@ -19,7 +19,7 @@ async function listAllSeSalesD(
   let permissionCondition = "1=1";
   const replacements = {
     org_id: factory_code || null,
-    sales_id: parseInt(sales_id) || null,
+    sales_id: sales_id || null,
     p_charset: charSet[language] || "E",
     limit: parseInt(limit) + 1 || 10,
     offset: parseInt(offset) || 0,
@@ -50,13 +50,24 @@ async function listAllSeSalesD(
         A.COL3                AS CONTAINER_VEHICLE,
         B.BOOK_NO,
         A.INVOICE_NO,
-        A.PAIRS
-      FROM      "Customs".SE_SALES_D  A
+        A.PAIRS,
+        (select AC_NO from "Customs".AC_PLAN_ORD WHERE FACTORY_CODE=A.ORG_ID 
+        --AND SE_ID=A.SE_ID 
+        AND SE_SEQ=A.SE_SEQ 
+        AND SHIP_SEQ=A.SHIP_SEQ::NUMERIC 
+        LIMIT 1) AS AC_NO
+       ,(select "Customs".GF_AC_NAME(factory_code,ac_no,'E')  from "Customs".AC_PLAN_ORD WHERE FACTORY_CODE=A.ORG_ID 
+       AND SE_ID=A.SE_ID 
+       AND SE_SEQ=A.SE_SEQ 
+       AND SHIP_SEQ=A.SHIP_SEQ::NUMERIC 
+       LIMIT 1) AS AC_NAME 
+
+      FROM      "pac".sd_sales_d  A
       LEFT JOIN "Customs".SE_PLAN_ORD B ON  factory_code   = B.factory_code
                                         AND A.SE_ID    = B.SE_ID
                                         AND A.SE_SEQ   = B.SE_SEQ
-                                        AND A.SHIP_SEQ = B.SHIP_SEQ
-      WHERE factory_code  = :org_id
+                                        AND A.SHIP_SEQ::NUMERIC = B.SHIP_SEQ
+      WHERE A.org_id  = :org_id
          AND (:sales_id IS NULL OR A.SALES_ID = :sales_id)
       ORDER BY A.COL1, A.SALES_SEQ, A.SE_ID, A.SE_SEQ
       limit :limit 

@@ -274,6 +274,104 @@ async function deleteAcImp(factory_code, invoice_no, sort, t) {
     console.log("Cannot delete", error);
   }
 }
+async function deleteSePlanSize(
+  factory_code,
+  se_id,
+  se_ver,
+  se_seq,
+  pack_gu,
+  ship_seq,
+  pk_seq,
+  data,
+  t,
+) {
+  try {
+    
+    if (Array.isArray(data) && data.length > 0) {
+      const result = await sePlanSizeRepository.deleteItems(data, t);
+      if (!result) {
+        console.log("Cannot delete because data from db is null!");
+        return null;
+      }
+      return result;
+    }
+    const existImp = await getSePlanSizeByID(
+      factory_code,
+      se_id,
+      se_ver,
+      se_seq,
+      pack_gu,
+      ship_seq,
+      pk_seq,
+    );
+    if (!existImp) {
+      console.log("Import material tracking is not exist !");
+      return null;
+    }
+    const result = await sePlanSizeRepository.deleteItem(existImp, t);
+    if (!result) {
+      console.log("Cannot delete because data from db is null!");
+      return null;
+    }
+    return result;
+  } catch (error) {
+    console.log("Cannot delete", error);
+    throw error;
+  }
+}
+async function confirmItemsSePlanSize(
+  factory_code,
+  department_code,
+  user_code,
+  query_level,
+  data,
+  t,
+) {
+  try {
+    if (Array.isArray(data) && data.length > 0) {
+        
+      const result = await sePlanSizeRepository.confirmItems(
+        data,
+        factory_code,
+        department_code,
+        user_code,
+        query_level,
+        t,
+      );
+      return result?.success ? result : null;
+    }
+    return null;
+  } catch (error) {
+    console.log("Cannot confirm", error);
+    throw error;
+  }
+}
+async function unconfirmItemsSePlanSize(
+  factory_code,
+  department_code,
+  user_code,
+  query_level,
+  data,
+  t,
+) {
+  try {
+    if (Array.isArray(data) && data.length > 0) {
+      const result = await sePlanSizeRepository.unconfirmItems(
+        data,
+        factory_code,
+        department_code,
+        user_code,
+        query_level,
+        t,
+      );
+      return result?.success ? result : null;
+    }
+    return null;
+  } catch (error) {
+    console.log("Cannot unconfirm", error);
+    throw error;
+  }
+}
 async function searchSePlanOrd(
   search,
   factory_code,
@@ -356,5 +454,8 @@ module.exports = {
   deleteAcImp,
   exportExcelMaterialAcImp,
   exportExcelCustomAcImp,
-  confirmAll
+  confirmAll,
+  confirmItemsSePlanSize,
+  unconfirmItemsSePlanSize,
+  deleteSePlanSize,
 };

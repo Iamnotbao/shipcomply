@@ -45,8 +45,6 @@ async function listAllSeSales(
     A.SEND_CORP,
     "Customs".GF_CODE_NAME(A.ORG_ID, 'SENDCOMP', A.SEND_CORP, :p_charset)        AS SEND_COMPNAME,
     A.DESTINATION,
-    B.AC_NO,
-    "Customs".GF_AC_NAME(A.ORG_ID, B.AC_NO, :p_charset)                          AS AC_NAME,
     A.REMARK,
     A.STATUS,
     A.GRT_DEPT,
@@ -58,9 +56,6 @@ async function listAllSeSales(
     "Customs".GF_EMPNM(A.LAST_USER, :p_charset)                                  AS LAST_USERNAME,
     A.LAST_DATE
   FROM "Customs".VW_SALES_SH A
-  LEFT JOIN "Customs".SE_SALES_AC B
-    ON A.ORG_ID = B.FACTORY_CODE
-    AND A.SALES_ID = B.SALES_ID
   WHERE ${permissionCondition}
   ORDER BY A.SALES_ID ASC
   LIMIT :limit
@@ -172,7 +167,7 @@ async function listAllSalesDetails(
             AND AIT.AC_NO  = AC.AC_NO
         )                                                                             AS DM_NO
       FROM       "Customs".VW_SALES_SH    M
-      LEFT JOIN  "Customs".SE_SALES_D     D   ON  M.ORG_ID   = D.ORG_ID
+      LEFT JOIN  "pac".sd_sales_d     D   ON  M.ORG_ID   = D.ORG_ID
                                               AND M.SALES_ID  = D.SALES_ID
       LEFT JOIN  "Customs".SE_PLAN_ORD    SEP ON  D.ORG_ID   = sep.factory_code
                                               AND D.SE_ID     = SEP.SE_ID
@@ -270,7 +265,7 @@ async function listAllSalesDetails2(
             AND PS.SHIP_SEQ = D.SHIP_SEQ
         ), 0)                                                                         AS CTNS
       FROM       "Customs".VW_SALES_SH  M
-      LEFT JOIN  "Customs".SE_SALES_D   D   ON  M.ORG_ID    = D.ORG_ID
+      LEFT JOIN  "pac".sd_sales_d   D   ON  M.ORG_ID    = D.ORG_ID
                                             AND M.SALES_ID  = D.SALES_ID
       LEFT JOIN  "Customs".SE_PLAN_ORD  SEP ON  D.ORG_ID    = SEP.FACTORY_CODE
                                             AND D.SE_ID     = SEP.SE_ID
@@ -643,7 +638,7 @@ async function search(
         :se_id IS NULL OR
         (A.ORG_ID, A.SALES_ID) IN (
           SELECT ORG_ID, SALES_ID
-          FROM "Customs".SE_SALES_D
+          FROM "pac".sd_sales_d
           WHERE ORG_ID = :factory_code
             AND SE_ID LIKE :se_id || '%'
         )
@@ -652,9 +647,6 @@ async function search(
 
   const fromClause = `
     FROM "Customs".VW_SALES_SH A
-    LEFT JOIN "Customs".SE_SALES_AC B
-      ON A.ORG_ID = B.FACTORY_CODE
-      AND A.SALES_ID = B.SALES_ID
   `;
 
   try {
@@ -669,8 +661,6 @@ async function search(
         A.SEND_CORP,
         "Customs".GF_CODE_NAME(A.ORG_ID, 'SENDCOMP', A.SEND_CORP, :p_charset)      AS SEND_COMPNAME,
         A.DESTINATION,
-        B.AC_NO,
-        "Customs".GF_AC_NAME(A.ORG_ID, B.AC_NO, :p_charset)                        AS AC_NAME,
         A.REMARK,
         A.STATUS,
         A.GRT_DEPT,

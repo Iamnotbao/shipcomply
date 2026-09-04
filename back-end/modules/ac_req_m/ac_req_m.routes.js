@@ -1,7 +1,6 @@
 const express = require("express");
 const {
   getAllARM,
-  exportPDFARM,
   exportMaterialToExcel,
   exportCustomToExcel,
   getARMByID,
@@ -16,6 +15,7 @@ const {
   getAllAcType,
   getAcTypeDropdown,
   confirmAll,
+  exportExcelARM,
 } = require("./ac_req_m.controller");
 
 const acReqMRouter = express.Router();
@@ -25,7 +25,7 @@ acReqMRouter.get("/invoice", getInvoiceNoList);
 acReqMRouter.get("/ac_no", getAcNoList);
 acReqMRouter.get("/apply-filter", applyFilterActivate);
 acReqMRouter.get("/req_no", getReqNo);
-acReqMRouter.get("/pdf", exportPDFARM);
+acReqMRouter.post("/excel", exportExcelARM);
 acReqMRouter.get("/ac_type", getAllAcType);
 acReqMRouter.get("/dropdown_ac_type", getAcTypeDropdown);
 acReqMRouter.post("/material-excel", exportMaterialToExcel);

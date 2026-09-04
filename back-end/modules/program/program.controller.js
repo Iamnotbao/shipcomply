@@ -4,11 +4,17 @@ const fs = require("fs");
 const createProgramSchema = require("./program.create.dto");
 
 async function getAllProgram(req, res) {
-  const result = await programService.getAllProgram();
+  const limit =
+    req.query.limit !== undefined ? parseInt(req.query.limit, 10) : null;
+  const offset =
+    req.query.offset !== undefined ? parseInt(req.query.offset, 0) : null;
+  const result = await programService.getAllProgram(limit, offset);
   return res.status(200).json({
     message: "ok",
     success: true,
-    data: result,
+    data: result.rows,
+    total: result.count,
+    hasMore: result.hasMore,
     tableName: "PROGRAM",
   });
 }
@@ -31,6 +37,7 @@ async function getProgramByID(req, res) {
 }
 async function addProgram(req, res) {
   const { data } = req.body;
+  const { pageSize } = req.query;
   const { error, value } = createProgramSchema.validate(data);
   if (error) {
     return res.status(402).json({
@@ -40,7 +47,7 @@ async function addProgram(req, res) {
   }
   const t = await sequelize.transaction();
   try {
-    const response = await programService.addProgram(value, t);
+    const response = await programService.addProgram(value, pageSize, t);
     if (response.message) {
       await t.rollback();
       return res.status(401).json({
@@ -115,13 +122,18 @@ async function deleteProgram(req, res) {
 }
 async function searchProgram(req, res) {
   const keyword = req.body;
-  console.log(keyword);
+  const limit =
+    req.query.limit !== undefined ? parseInt(req.query.limit, 10) : null;
+  const offset =
+    req.query.offset !== undefined ? parseInt(req.query.offset, 0) : null;
   try {
-    const shoes = await programService.searchProgram(keyword);
+    const shoes = await programService.searchProgram(keyword, limit, offset);
     return res.json({
       message: "search program successfully!",
       success: true,
-      data: shoes,
+      data: shoes.rows,
+      total: shoes.count,
+      hasMore: shoes.hasMore,
       tableName: "PROGRAM",
     });
   } catch (error) {

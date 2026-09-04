@@ -422,24 +422,31 @@ async function searchARM(req, res) {
     console.log(error);
   }
 }
-async function exportPDFARM(req, res) {
+async function exportExcelARM(req, res) {
   try {
-    const { factory_code, department_code, user_code, query_level } = req.query;
+    const { factory_code, department_code, user_code, query_level,req_no} = req.query;
+    const { search } = req.body;
     const filename = "AC_REQ_M";
-    const pdf = await acReqMService.exportPDFARM(
+    const workbook = await acReqMService.exportExcelARM(
       filename,
       factory_code,
       department_code,
       user_code,
       query_level,
+      req_no,
+      search
     );
-    res.download(pdf, (err) => {
-      if (err) {
-        console.error("Error sending file:", err);
-        res.status(500).send("Error downloading file");
-      }
-      fs.unlinkSync(filename);
-    });
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    );
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=AC_INM_M_${Date.now()}.xlsx`,
+    );
+
+    await workbook.xlsx.write(res);
+    res.end();
   } catch (error) {
     console.error(error);
     res
@@ -537,8 +544,8 @@ async function applyFilterActivate(req, res) {
     return res.status(401).json({
       message: result?.message,
       success: result?.success,
-      data: result?.acNo,       // ✅ thêm vào
-      errors: result?.errors,   // ✅ forward validation errors xuống client
+      data: result?.acNo, // ✅ thêm vào
+      errors: result?.errors, // ✅ forward validation errors xuống client
       tableName: "AC_REQ_M",
     });
   }
@@ -562,7 +569,7 @@ module.exports = {
   editARM,
   deleteARM,
   searchARM,
-  exportPDFARM,
+  exportExcelARM,
   exportMaterialToExcel,
   exportCustomToExcel,
   applyFilterActivate,

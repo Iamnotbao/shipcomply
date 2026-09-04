@@ -56,7 +56,7 @@ async function loginAsUser(user, t) {
     permission,
     message,
     // department_name_l,
-    permission,
+    // permission,
   };
 }
 async function loginAsAdmin(user, t) {

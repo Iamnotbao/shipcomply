@@ -1259,14 +1259,14 @@ async function search(query, factory_code, language, limit, offset, is_max) {
       limit: parseInt(limit) || 20,
       offset: parseInt(offset) || 0,
       language: language || "E",
-      order_no: query?.order_no ? `%${query.order_no}%` : "%%",
+      order_no: query?.order_no ? `%${query.order_no}%` : '',
       vend_no: query?.vend_no || null,
       s_date: query?.s_date_1 || null,
       e_date: query?.e_date_1 || null,
       item_no: query?.item_acno ? `%${query.item_acno}%` : "%%",
-      item_no1: query?.ac_code ? `%${query.ac_code}%` : "%%",
+      item_no1: query?.ac_code ? `%${query.ac_code}%` :'',
       status: query?.status ?? null,
-      item_acno: query?.item_acno || null,
+      item_acno: query?.item_acno || '',
       invoice_no: query?.invoice_no || null,
       is_item: query?.is_item || null,
       s_cfm: query?.s_date_2 || null,
@@ -1323,8 +1323,8 @@ SELECT distinct on(vw.id)
     vw.order_type,
     vw.pr_unit
  from (select * from "Customs".vw_ac_srcorder where factory_code =:factory_code
-    AND order_no LIKE :order_no
-    AND ac_vend LIKE :vend_no) vw
+    AND (COALESCE(order_no,'') ILIKE '%'|| '' || '%' )
+    AND ac_vend ILIKE :vend_no) vw
   LEFT JOIN "Customs".ac_allitem_src ais
     ON ais.ac_code = vw.ac_code and ais.factory_code = vw.factory_code
   LEFT JOIN "Customs".ac_item_m aim
@@ -1335,13 +1335,13 @@ SELECT distinct on(vw.id)
     ON aro.req_no = arm.req_no and aro.factory_code = arm.factory_code
   WHERE
     vw.factory_code = :factory_code
-    AND vw.order_no LIKE :order_no
+    AND (COALESCE(vw.order_no,'') ILIKE '%'|| :order_no || '%' )
     AND (vw.ac_vend = :vend_no OR :vend_no IS NULL)
     AND (:s_date IS NULL OR DATE_TRUNC('day', vw.order_date) >= DATE_TRUNC('day', :s_date::timestamp))
     AND (:e_date IS NULL OR DATE_TRUNC('day', vw.order_date) <= DATE_TRUNC('day', :e_date::timestamp))
-    AND vw.ac_code LIKE :item_no1 
+    AND (COALESCE(vw.ac_code,'') ILIKE '%'|| :item_no1 || '%' )
     AND (:status IS NULL OR vw.status = :status)
-    AND vw.item_acno LIKE :item_no
+    AND (COALESCE(vw.item_acno,'') ILIKE '%'|| :item_acno || '%' )
     --AND arm.invoice_no = :invoice_no
     AND (
       (:is_item = 'Y' AND vw.item_acno IS NOT NULL) OR
@@ -1364,8 +1364,8 @@ SELECT distinct on(vw.id)
     const countSql = `
 SELECT COUNT(*) as total
  from (select * from "Customs".vw_ac_srcorder where factory_code =:factory_code
-    AND order_no LIKE '%%'
-    AND ac_vend LIKE :vend_no) vw
+    AND (COALESCE(order_no,'') ILIKE '%'|| '' || '%' )
+    AND ac_vend ILIKE :vend_no) vw
   LEFT JOIN "Customs".ac_allitem_src ais
     ON ais.ac_code = vw.ac_code and ais.factory_code = vw.factory_code
   LEFT JOIN "Customs".ac_item_m aim
@@ -1376,13 +1376,13 @@ SELECT COUNT(*) as total
     ON aro.req_no = arm.req_no and aro.factory_code = arm.factory_code
   WHERE
     vw.factory_code = :factory_code
-    AND vw.order_no LIKE :order_no
+    AND (COALESCE(vw.order_no,'') ILIKE '%'|| :order_no || '%' )
     AND (vw.ac_vend = :vend_no OR :vend_no IS NULL)
     AND (:s_date IS NULL OR DATE_TRUNC('day', vw.order_date) >= DATE_TRUNC('day', :s_date::timestamp))
     AND (:e_date IS NULL OR DATE_TRUNC('day', vw.order_date) <= DATE_TRUNC('day', :e_date::timestamp))
-    AND vw.ac_code LIKE :item_no1
+    AND (COALESCE(vw.ac_code,'') ILIKE '%'|| :item_no1 || '%' )
     AND (:status IS NULL OR vw.status = :status)
-    AND vw.item_acno LIKE :item_no
+    AND (COALESCE(vw.item_acno,'') ILIKE '%'|| :item_acno || '%' )
     --AND arm.invoice_no = :invoice_no
     AND (
       (:is_item = 'Y' AND vw.item_acno IS NOT NULL) OR

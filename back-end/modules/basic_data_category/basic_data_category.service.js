@@ -1,8 +1,9 @@
 const basicDataCategoryRepo = require("./basic_data_category.repository");
-const basicDataService = require("../basic_data/basic_data.service");
+const basicDataRepo = require("../basic_data/basic_data.repository");
 const factoryService = require("../factories/factory.service");
 const QueryHelper = require("../../utils/queryHelper");
 const { generatePDF } = require("../../utils/pdf");
+const { generateExcel, generateExcelWithSub } = require("../../utils/excel");
 async function getAll(
   factory_code,
   department_code,
@@ -204,7 +205,7 @@ async function searchBasicDataCategory(
     console.log("Error has been run from service", error);
   }
 }
-async function exportPDFBasicDataCategory(
+async function exportExcelBasicDataCategory(
   filename,
   factory_code,
   department_code,
@@ -212,13 +213,13 @@ async function exportPDFBasicDataCategory(
   query_level,
 ) {
   try {
-    const data = await basicDataService.getAllWithCategory(
+    const { rows } = await basicDataRepo.listAllWithCategory(
       factory_code,
       department_code,
       user_code,
       query_level,
     );
-    const plainData = data.map((item) => {
+    const plainData = rows.map((item) => {
       const plain = item.get ? item.get({ plain: true }) : item;
       const flattened = { ...plain };
       if (plain.CATEGORY) {
@@ -230,8 +231,18 @@ async function exportPDFBasicDataCategory(
       }
       return flattened;
     });
-    await generatePDF(plainData, filename, "BASIC_DATA");
-    return filename;
+    const BASIC_DATA_CATEGORY_COLUMNS = [
+      { header: "CATEGORY CODE", key: "category_code", width: 16 },
+      { header: "CODE NO", key: "code_no", width: 14 },
+      { header: "NAME T", key: "name_t", width: 28 },
+      { header: "NAME E", key: "name_e", width: 28 },
+      { header: "NAME L", key: "name_l", width: 28 },
+    ];
+    return await generateExcelWithSub(
+      plainData,
+      filename,
+      BASIC_DATA_CATEGORY_COLUMNS,
+    );
   } catch (error) {
     console.log("Error", error);
     throw error;
@@ -248,5 +259,5 @@ module.exports = {
   deleteBasicData,
   deleteAllFactoryDepartment,
   searchBasicDataCategory,
-  exportPDFBasicDataCategory,
+  exportExcelBasicDataCategory,
 };

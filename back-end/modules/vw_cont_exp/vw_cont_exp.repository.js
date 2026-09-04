@@ -133,8 +133,8 @@ async function getContractSetting(
         m.cont_type,
         m.cont_category,
         CASE m.CONT_CATEGORY 
-          WHEN '1' THEN '1-小合同' 
-          WHEN '2' THEN '2-大合同' 
+          WHEN '1' THEN '1-Small contract' 
+          WHEN '2' THEN '2-Main contract' 
         END AS cont_category_name,
         m.ISSUED_DATE,
         m.EXPIRE_DATE,
@@ -170,6 +170,7 @@ async function getContractSetting(
         "Customs".GF_EMPNM(m.LAST_USER, :p_charset) AS LAST_USERNM,
         m.LAST_DATE,
         m.GRT_DEPT,
+        m.GRT_DATE,
         "Customs".GF_DEPTNM(m.FACTORY_CODE, m.GRT_DEPT, :p_charset) AS GRT_DEPTNM,
         m.GRT_USER,
         "Customs".GF_EMPNM(m.GRT_USER, :p_charset) AS GRT_USERNM,
@@ -668,7 +669,7 @@ async function copyContract(
         BUYER, B_ADDR, B_PIC, B_POSITION, B_ACCNO,
         SUM_MONEY, CURRENCY, FREIGHT, INSURANCE, 
         TERM_PAY, PAY_TERM, TIME_DELIVE, GOODS_ORIGIN, NOTE, PORT_DIS,
-        STATUS, GRT_DEPT, GRT_USER, LAST_USER, LAST_DATE,
+        STATUS, GRT_DEPT, GRT_USER,GRT_DATE, LAST_USER, LAST_DATE,
         VEND_NO, BVEND_NO, BANK, BANK_IC, BANK_ADDR,
         D_TYPE, CONT_CATEGORY, BIG_CONTNO
       )
@@ -683,6 +684,7 @@ async function copyContract(
         '1',
         :grt_dept,
         :grt_user,
+        NOW(),
         :last_user,
         NOW(),
         VEND_NO, BVEND_NO, BANK, BANK_IC, BANK_ADDR,
@@ -720,7 +722,7 @@ async function copyContract(
       INSERT INTO "Customs".AC_CONT_D (
         FACTORY_CODE, CONT_NO, SEQ, GOODS_CODE, COLOR,
         CONT_QTY, CONT_PRICE, CONT_MONEY,
-        USED_QTY, UNIT, SHOE_ID, STOCK_QTY
+        USED_QTY, UNIT, SHOE_ID, STOCK_QTY,GRT_DATE,GRT_DEPT,GRT_USER
       )
       SELECT 
         FACTORY_CODE,
@@ -729,7 +731,10 @@ async function copyContract(
         CONT_QTY, CONT_PRICE, CONT_MONEY,
         0,
         UNIT, SHOE_ID,
-        CONT_QTY
+        CONT_QTY,
+ 	NOW(),
+	:grt_dept,
+	:grt_user
       FROM "Customs".AC_CONT_D
       WHERE FACTORY_CODE = :factory_code
         AND CONT_NO = :old_cont_no
@@ -740,6 +745,8 @@ async function copyContract(
         factory_code: replacements.factory_code,
         old_cont_no: replacements.old_cont_no,
         new_cont_no: replacements.new_cont_no,
+        grt_dept: replacements.grt_dept,
+	grt_user: replacements.grt_user
       },
       transaction,
       type: pool.QueryTypes.INSERT,
@@ -1164,8 +1171,8 @@ async function search(
         m.cont_type,
         m.cont_category,
         CASE m.CONT_CATEGORY 
-          WHEN '1' THEN '1-小合同' 
-          WHEN '2' THEN '2-大合同' 
+          WHEN '1' THEN '1-Small contract' 
+          WHEN '2' THEN '2-Main contract' 
         END AS CONT_CATEGORY_NAME,
         m.ISSUED_DATE,
         m.EXPIRE_DATE,
@@ -1201,6 +1208,7 @@ async function search(
         "Customs".GF_EMPNM(m.LAST_USER, :p_charset) AS LAST_USERNM,
         m.LAST_DATE,
         m.GRT_DEPT,
+        m.GRT_DATE,
         "Customs".GF_DEPTNM(m.FACTORY_CODE, m.GRT_DEPT, :p_charset) AS GRT_DEPTNM,
         m.GRT_USER,
         "Customs".GF_EMPNM(m.GRT_USER, :p_charset) AS GRT_USERNM,

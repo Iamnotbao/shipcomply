@@ -169,7 +169,8 @@ async function listAllAcProcM(
     GRT_DATE,
     LAST_USER,
     "Customs".GF_EMPNM(LAST_USER, :p_charset) AS LAST_USERNAME,
-    LAST_DATE
+    LAST_DATE,
+    locked_information
 FROM "Customs".AC_PROC_M
 WHERE ${permissionCondition}
 AND MARK = 'A'
@@ -1285,7 +1286,8 @@ async function search(
     GRT_DATE,
     LAST_USER,
     "Customs".GF_EMPNM(LAST_USER, :p_charset) AS LAST_USERNAME,
-    LAST_DATE
+    LAST_DATE,
+    locked_information
   FROM "Customs".AC_PROC_M
   WHERE FACTORY_CODE = :factory_code
     AND (COALESCE(ac_no, '')  ILIKE '%'|| :ac_no || '%')

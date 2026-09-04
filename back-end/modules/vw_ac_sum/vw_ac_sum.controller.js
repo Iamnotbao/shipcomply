@@ -9,6 +9,7 @@ async function getAllVwAcSum(req, res) {
     query_level,
     language,
     limit,
+    offset
   } = req.query;
   const result = await vwAcSumService.getAllVwAcSum(
     factory_code,
@@ -17,6 +18,7 @@ async function getAllVwAcSum(req, res) {
     query_level,
     language,
     limit,
+    offset
   );
   if (!result) {
     return res.status(401).json({

@@ -8,6 +8,7 @@ async function getAllFieldDropdown(
   limit,
   search,
   extraField,
+  conditionField
 ) {
   return await sdOrdMCRepository.fetchFieldDropdown(
     factory_code,
@@ -17,6 +18,7 @@ async function getAllFieldDropdown(
     limit,
     search,
     extraField,
+    conditionField
   );
 }
 async function getAllPackingSeidDropdown(factory_code, page, limit, search) {

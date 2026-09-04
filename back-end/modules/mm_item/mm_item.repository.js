@@ -48,14 +48,20 @@ async function listAllMMI(
 }
 
 async function listAllItemNoMMI(page, limit, search = "") {
-  const whereClause = {};
+  const andConditions = [];
 
   if (search && search.trim() !== "") {
-    whereClause.item_no = {
-      [Op.like]: `%${search}%`,
-    };
+    andConditions.push({
+      [Op.or]: [
+        { item_no: { [Op.iLike]: `%${search}%` } },
+        { name_e: { [Op.iLike]: `%${search}%` } },
+        { name_s: { [Op.iLike]: `%${search}%` } },
+        { name_t: { [Op.iLike]: `%${search}%` } },
+      ],
+    });
   }
-  whereClause[Op.and] = [
+
+  andConditions.push(
     Sequelize.literal(`
       NOT EXISTS (
          SELECT 1
@@ -67,7 +73,10 @@ async function listAllItemNoMMI(page, limit, search = "") {
     and aim.status <> 0
       )
     `),
-  ];
+  );
+
+  const whereClause = { [Op.and]: andConditions };
+
   try {
     const total = await MM_ITEM.count({ where: whereClause });
     const result = await MM_ITEM.findAll({

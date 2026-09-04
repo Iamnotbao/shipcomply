@@ -58,6 +58,52 @@ async function getAllAcCDWithView(req, res) {
     tableName: "AC_CONT_D",
   });
 }
+async function getFieldWithFunction(req, res) {
+  try {
+    const {
+      factory_code,
+      department_code,
+      user_code,
+      query_level,
+      field,
+      ac_itemno,
+      item_acno,
+      type,
+    } = req.query;
+
+    const selectedItemAcno = item_acno || ac_itemno;
+
+    if (!factory_code || !selectedItemAcno) {
+      return res.status(400).json({
+        success: false,
+        message: "factory_code and item_acno are required",
+      });
+    }
+
+    const result = await acContDService.getFieldWithFunction(
+      factory_code,
+      department_code,
+      user_code,
+      query_level,
+      field,
+      selectedItemAcno,
+      type,
+    );
+
+    return res.status(200).json({
+      message: "ok",
+      success: true,
+      data: result,
+      tableName: "AC_ITEM_M",
+    });
+  } catch (error) {
+    console.error("Error fetching field from PO_VENDER_M:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Internal server error",
+    });
+  }
+}
 async function getAcContDByID(req, res) {
   const { factory_code, cont_no, seq } = req.query;
   const result = await acContDService.getAcContDByID(
@@ -90,6 +136,7 @@ async function getDropdownGoods(req, res) {
       limit,
       search,
       is_status,
+      is_export,
     } = req.query;
 
     const result = await acContDService.getDropdownGoods(
@@ -101,6 +148,7 @@ async function getDropdownGoods(req, res) {
       limit,
       search,
       is_status,
+      is_export,
     );
 
     return res.status(200).json({
@@ -221,6 +269,7 @@ async function getUnitByGoodsCode(req, res) {
       limit,
       search,
       is_status,
+      is_export,
     } = req.query;
 
     const result = await acContDService.getUnitByGoodsCode(
@@ -233,6 +282,7 @@ async function getUnitByGoodsCode(req, res) {
       limit,
       search,
       is_status,
+      is_export
     );
 
     return res.status(200).json({
@@ -579,6 +629,7 @@ module.exports = {
   getDropdownGoods,
   getUnitByGoodsCode,
   getDropdownGoodsWithFunc,
+  getFieldWithFunction,
   getContPriceDrop,
   addAcContD,
   editAcContD,

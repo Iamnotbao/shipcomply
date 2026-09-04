@@ -22,6 +22,26 @@ async function getAllAcShoeRef(
     offset,
   );
 }
+async function checkValidData(
+  factory_code,
+  department_code,
+  user_code,
+  query_level,
+  row,
+) {
+  const validData = await getAllAcShoeRef(
+    factory_code,
+    department_code,
+    user_code,
+    query_level,
+    null,
+    null,
+    "",
+  );
+  const validItem = new Set(validData?.data?.map((item) => item?.prod_no));
+  const isValid = validItem?.has(row.prod_no);
+  return isValid;
+}
 async function getAcShoeRefByID(factory_code, customs_shoe_id, prod_no) {
   return await acShoeRefRepository.getByID(
     factory_code,
@@ -219,6 +239,7 @@ module.exports = {
   exportPDFAcShoeRef,
   searchAcShoeRef,
   deleteAcShoeRef,
+  checkValidData,
   // exportExcelMaterialAcImp,
   // exportExcelCustomAcImp
 };

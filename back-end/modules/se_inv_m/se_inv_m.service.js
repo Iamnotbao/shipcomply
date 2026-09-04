@@ -29,6 +29,21 @@ async function getAllSeInvM(
     offset,
   );
 }
+async function getAllWithDetails(
+  factory_code,
+  department_code,
+  user_code,
+  query_level,
+  language,
+) {
+  return await seInvMRepository.ListAllWithDetails(
+    factory_code,
+    department_code,
+    user_code,
+    query_level,
+    language
+  );
+}
 async function getSeInvMByID(factory_code, ac_no, invoice_id) {
   return await seInvMRepository.getByID(factory_code, ac_no, invoice_id);
 }
@@ -125,7 +140,7 @@ async function exportPDF(
   query_level,
 ) {
   try {
-    const data = await acInmDService.getAllWithKey(
+    const data = await seInvMService.getAllWithDetails(
       factory_code,
       department_code,
       user_code,
@@ -271,38 +286,74 @@ async function searchSeInvM(
 }
 async function exportExcel(
   filename,
-  query,
   factory_code,
   department_code,
   user_code,
   query_level,
+  language,
 ) {
-  const data = await seShipingDService.getAllWithKey(
-    query,
-    factory_code,
-    department_code,
-    user_code,
-    query_level,
-  );
-  console.log("kodakdad", data);
+  try {
+    const { rows } = await getAllWithDetails(
+      factory_code,
+      department_code,
+      user_code,
+      query_level,
+      language,
+    );
 
-  const plainData = data.map((item) => {
-    const plain = item.get ? item.get({ plain: true }) : item;
-    const flattened = {};
-    if (plain.SSM) {
-      flattened.start_date = plain.SSM.start_date || "";
-      flattened.end_date = plain.SSM.end_date || "";
-      flattened.status = plain.SSM.status || "";
-    }
-    Object.keys(plain).forEach((key) => {
-      if (key !== "SSM") {
-        flattened[key] = plain[key] || "";
-      }
-    });
-
-    return flattened;
-  });
-  return await generateExcel(plainData, filename);
+    const plainData = rows && rows.length > 0 ? rows : [];
+    const seInvMColumns = [
+      { header: "AC_NO", key: "ac_no", width: 15 },
+      { header: "INVOICE_ID", key: "invoice_id", width: 15 },
+      { header: "SE_ID", key: "se_id", width: 15 },
+      { header: "SE_VER", key: "se_ver", width: 10 },
+      { header: "SE_SEQ", key: "se_seq", width: 10 },
+      { header: "PACK_GU", key: "pack_gu", width: 12 },
+      { header: "PK_SEQ", key: "pk_seq", width: 10 },
+      { header: "SHIP_SEQ", key: "ship_seq", width: 12 },
+      { header: "CTN_PAIRS", key: "ctn_pairs", width: 12 },
+      { header: "CTNS", key: "ctns", width: 10 },
+      { header: "E_NO", key: "e_no", width: 15 },
+      { header: "GROSS_WEIGHT", key: "gross_weight", width: 15 },
+      { header: "NET_WEIGHT", key: "net_weight", width: 15 },
+      { header: "HIGH", key: "high", width: 10 },
+      { header: "LENGTH", key: "length", width: 10 },
+      { header: "S_NO", key: "s_no", width: 10 },
+      { header: "SIZE_RUN", key: "size_run", width: 12 },
+      { header: "WIDTH", key: "width", width: 10 },
+      { header: "INVOICE_NO", key: "invoice_no", width: 20 },
+      { header: "INVOICE_DATE", key: "invoice_date", width: 15 },
+      { header: "FCR_DATE", key: "fcr_date", width: 15 },
+      { header: "CDC_NO", key: "cdc_no", width: 15 },
+      { header: "CDC_DATE", key: "cdc_date", width: 15 },
+      { header: "HS_CODE", key: "hs_code", width: 15 },
+      { header: "SAILING_DATE", key: "sailing_date", width: 15 },
+      { header: "PER", key: "per", width: 10 },
+      { header: "EXP_PORT", key: "exp_port", width: 15 },
+      { header: "EXP_NAME", key: "exp_name", width: 25 },
+      { header: "DEST_PORT", key: "dest_port", width: 15 },
+      { header: "DEST_NAME", key: "dest_name", width: 25 },
+      { header: "SORT", key: "sort", width: 10 },
+      { header: "SORT_NAME", key: "sort_name", width: 20 },
+      { header: "NW", key: "nw", width: 10 },
+      { header: "GW", key: "gw", width: 10 },
+      { header: "SUBMISSION_DATE", key: "submission_date", width: 15 },
+      { header: "SHIPMENT_NO", key: "shipment_no", width: 20 },
+      { header: "VIA", key: "via", width: 10 },
+      { header: "TRADE", key: "trade", width: 10 },
+      { header: "TRADE_NAME", key: "trade_name", width: 20 },
+      { header: "PAYMENT", key: "payment", width: 12 },
+      { header: "PAYMENT_NAME", key: "payment_name", width: 20 },
+      { header: "BANK_NAME", key: "bank_name", width: 25 },
+      { header: "ACCOUNT_ADDR", key: "account_addr", width: 25 },
+      { header: "GOODS_DESC", key: "goods_desc", width: 30 },
+      { header: "ADJ_PRICE", key: "adj_price", width: 15 },
+    ];
+    return await generateExcel(plainData, filename, seInvMColumns);
+  } catch (error) {
+    console.error("Export Excel error:", error);
+    throw error;
+  }
 }
 async function exportExcelMaterialAcImp(filename, filters) {
   return await exportExcelMaterial(filename, filters);
@@ -425,4 +476,5 @@ module.exports = {
   getInvoiceDropdown,
   getPackingSeid,
   exportPDFToPakingList,
+  getAllWithDetails
 };

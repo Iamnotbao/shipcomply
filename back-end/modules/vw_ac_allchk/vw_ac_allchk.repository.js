@@ -51,8 +51,8 @@ async function getListOfALLCHK(
      WITH filtered_base AS MATERIALIZED (
     SELECT 
       vw.*,
-      "Customs".gf_orderseq_send(vw.FACTORY_CODE, vw.ORDER_NO, vw.ORDER_SEQ) as ac_send_value,
-      "Customs".gf_chkseq_req(vw.FACTORY_CODE, vw.CHK_NO, vw.CHK_SEQ) as chk_req_value
+      "Customs".gf_orderseq_send(vw.FACTORY_CODE, vw.ORDER_NO, vw.ORDER_SEQ::NUMERIC) as ac_send_value,
+      "Customs".gf_chkseq_req(vw.FACTORY_CODE, vw.CHK_NO, vw.CHK_SEQ::NUMERIC) as chk_req_value
     FROM "Customs".vw_ac_allchk vw
     WHERE vw.factory_code = :factory_code 
       AND vw.AC_VEND = :vend_no
@@ -84,7 +84,7 @@ async function getListOfALLCHK(
          FROM "Customs".ac_srcorder_m sm
          WHERE sm.FACTORY_CODE = vw.FACTORY_CODE
          AND sm.ORDER_NO = vw.ORDER_NO
-         AND sm.ORDER_SEQ = vw.ORDER_SEQ
+         AND sm.ORDER_SEQ = vw.ORDER_SEQ::NUMERIC
          LIMIT 1) AS UNITNM,
         
         -- SENDNM - GF_CODE_NAME(factory_code,'ACSEND',AC_SEND,:PARAMETER.P_CHARSET)
@@ -92,7 +92,7 @@ async function getListOfALLCHK(
          FROM "Customs".ac_srcorder_m sm
          WHERE sm.FACTORY_CODE = vw.FACTORY_CODE
          AND sm.ORDER_NO = vw.ORDER_NO
-         AND sm.ORDER_SEQ = vw.ORDER_SEQ
+         AND sm.ORDER_SEQ = vw.ORDER_SEQ::NUMERIC
          LIMIT 1) AS SENDNM,
         
        
@@ -100,13 +100,13 @@ async function getListOfALLCHK(
         (SELECT PR_FORMULA FROM "Customs".ac_srcorder_m
          WHERE FACTORY_CODE = vw.FACTORY_CODE
          AND ORDER_NO = vw.ORDER_NO
-         AND ORDER_SEQ = vw.ORDER_SEQ
+         AND ORDER_SEQ = vw.ORDER_SEQ::NUMERIC
          LIMIT 1) AS PR_FORMULA,
         
    (SELECT AC_SEND FROM "Customs".ac_srcorder_m
          WHERE FACTORY_CODE = vw.FACTORY_CODE
          AND ORDER_NO = vw.ORDER_NO
-         AND ORDER_SEQ = vw.ORDER_SEQ
+         AND ORDER_SEQ = vw.ORDER_SEQ::NUMERIC
          LIMIT 1) AS AC_SEND,
         
         -- V_FOR từ ac_item_ref và ac_item_m
@@ -138,14 +138,14 @@ async function getListOfALLCHK(
         (SELECT order_qty FROM "Customs".ac_srcorder_m
          WHERE FACTORY_CODE = vw.FACTORY_CODE
          AND ORDER_NO = vw.ORDER_NO
-         AND ORDER_SEQ = vw.ORDER_SEQ
+         AND ORDER_SEQ = vw.ORDER_SEQ::NUMERIC
          LIMIT 1) AS order_qty,
         
         -- Y_RCPT từ ac_srcorder_m (có điều kiện SRC)
         (SELECT SUM(COALESCE(REQ_QTY,0)) as Y_RCPT FROM "Customs".ac_req_order
          WHERE FACTORY_CODE = vw.FACTORY_CODE
          AND order_no = vw.order_no
-         AND order_seq = vw.order_seq
+         AND order_seq = vw.order_seq::NUMERIC
          LIMIT 1) AS Y_RCPT,
         
         vw.RCPT_QTY,
@@ -157,28 +157,28 @@ async function getListOfALLCHK(
         (SELECT CONT_NO FROM "Customs".ac_srcorder_m
          WHERE FACTORY_CODE = vw.FACTORY_CODE
          AND ORDER_NO = vw.ORDER_NO
-         AND ORDER_SEQ = vw.ORDER_SEQ
+         AND ORDER_SEQ = vw.ORDER_SEQ::NUMERIC
          LIMIT 1) AS CONT_NO,
         
         -- order_acqty từ ac_srcorder_m
         (SELECT order_acqty FROM "Customs".ac_srcorder_m
          WHERE FACTORY_CODE = vw.FACTORY_CODE
          AND ORDER_NO = vw.ORDER_NO
-         AND ORDER_SEQ = vw.ORDER_SEQ
+         AND ORDER_SEQ = vw.ORDER_SEQ::NUMERIC
          LIMIT 1) AS order_acqty,
         
         -- REQ_ACQTY1 từ ac_srcorder_m
         (SELECT SUM(COALESCE(REQ_ACQTY,0)) AS REQ_ACQTY FROM "Customs".ac_req_order
          WHERE 
          ORDER_NO = vw.ORDER_NO
-         AND ORDER_SEQ = vw.ORDER_SEQ
+         AND ORDER_SEQ = vw.ORDER_SEQ::NUMERIC
          LIMIT 1) AS REQ_ACQTY1,
         
         NULL AS AC_REQ
         
       FROM final_filtered vw
        WHERE
-    (:order_no IS NULL OR vw.ORDER_NO LIKE :order_no || '%') AND
+    (:order_no IS NULL OR vw.ORDER_NO ILIKE :order_no || '%') AND
     (vw.CHK_NO = :chk_no OR :chk_no IS NULL) AND
     (DATE_TRUNC('day', vw.RCPT_DATE) >= DATE_TRUNC('day', :rs_date::timestamp) OR :rs_date IS NULL) AND
     (DATE_TRUNC('day', vw.RCPT_DATE) <= DATE_TRUNC('day', :re_date::timestamp) OR :re_date IS NULL) AND
@@ -189,15 +189,15 @@ async function getListOfALLCHK(
      (SELECT VR_CFMDAY FROM "Customs".ac_srcorder_m
       WHERE FACTORY_CODE = vw.FACTORY_CODE
         AND ORDER_NO = vw.ORDER_NO 
-        AND ORDER_SEQ = vw.ORDER_SEQ
+        AND ORDER_SEQ = vw.ORDER_SEQ::NUMERIC
       LIMIT 1) >= DATE_TRUNC('day', :s_cfm::timestamp)) AND
     (:e_cfm IS NULL OR 
      (SELECT VR_CFMDAY FROM "Customs".ac_srcorder_m
       WHERE FACTORY_CODE = vw.FACTORY_CODE
         AND ORDER_NO = vw.ORDER_NO 
-        AND ORDER_SEQ = vw.ORDER_SEQ
+        AND ORDER_SEQ = vw.ORDER_SEQ::NUMERIC
       LIMIT 1) <= DATE_TRUNC('day', :e_cfm::timestamp))
-  --ORDER BY vw.RCPT_DATE DESC, vw.CHK_NO, vw.CHK_SEQ
+     ORDER BY vw.RCPT_DATE DESC, vw.CHK_NO, vw.CHK_SEQ
    ${!isAll ? "LIMIT :limit OFFSET :offset" : ""}
     `;
 
@@ -1253,6 +1253,137 @@ async function approveContract(factory_code, req_no, invoice_no, user_code) {
     throw error;
   }
 }
+async function revertApproveContract(factory_code,user_code, req_no, invoice_no) {
+  let transaction;
+  try {
+    transaction = await pool.transaction();
+
+    let v_ac = "";
+    try {
+      const chgResult = await pool.query(
+        `
+        SELECT ac_no
+        FROM "Customs".vw_chg_imp
+        WHERE factory_code = $1 AND com_invoice = $2
+        LIMIT 1
+        `,
+        { bind: [factory_code, invoice_no], type: pool.QueryTypes.SELECT, transaction },
+      );
+      if (chgResult && chgResult.length > 0) v_ac = chgResult[0].ac_no;
+    } catch (err) {
+      console.log(" AC_NO not found in VW_CHG_IMP, trying AC_PROC_M...");
+    }
+
+    if (!v_ac) {
+      const procResult = await pool.query(
+        `
+        SELECT ac_no
+        FROM "Customs".ac_proc_m
+        WHERE factory_code = $1 AND com_invoice = $2
+        LIMIT 1
+        `,
+        { bind: [factory_code, invoice_no], type: pool.QueryTypes.SELECT, transaction },
+      );
+      if (procResult && procResult.length > 0) v_ac = procResult[0].ac_no;
+    }
+
+    if (!v_ac) {
+      await transaction.rollback();
+      return { success: false, message: "Không tìm thấy AC_NO để revert" };
+    }
+
+    console.log(`Reverting with AC_NO: ${v_ac}`);
+
+    // BƯỚC 2: Lấy lại danh sách req_seq đã approve
+    const reqOrderItems = await pool.query(
+      `
+      SELECT m.factory_code, m.chk_no, m.chk_seq, m.req_seq, m.req_no
+      FROM "Customs".ac_req_order m
+      INNER JOIN "Customs".ac_req_m d
+        ON d.factory_code = m.factory_code
+        AND d.req_no = m.req_no
+      WHERE d.factory_code = $1
+        AND d.req_no = $2
+      `,
+      { bind: [factory_code, req_no], type: pool.QueryTypes.SELECT, transaction },
+    );
+
+    console.log(`Reverting ${reqOrderItems.length} items...`);
+
+    for (const item of reqOrderItems) {
+      // 2.1: Xóa PO_RCPT_AC nếu khớp đúng chk_no + ac_no vừa approve
+      if (item.chk_no) {
+        const deleted = await pool.query(
+          `
+          DELETE FROM "Customs".po_rcpt_ac
+          WHERE factory_code = $1
+            AND chk_no = $2
+            AND chk_seq = $3
+            AND ac_no = $4
+          `,
+          {
+            bind: [item.factory_code, item.chk_no, item.chk_seq, v_ac],
+            type: pool.QueryTypes.DELETE,
+            transaction,
+          },
+        );
+        console.log(`Deleted PO_RCPT_AC for chk_no=${item.chk_no}, chk_seq=${item.chk_seq}`);
+      }
+  // 2.2: Reset status ac_req_m về 1
+      await pool.query(
+        `
+        UPDATE "Customs".ac_req_m
+        SET status = 1,
+            last_user = $3,
+            last_date = NOW()
+        WHERE factory_code = $1
+          AND req_no = $2
+        `,
+        {
+          bind: [item.factory_code, item.req_no, user_code],
+          type: pool.QueryTypes.UPDATE,
+          transaction,
+        },
+      );
+      // 2.2: Reset CHGE_QTY về 0
+      await pool.query(
+        `
+        UPDATE "Customs".ac_req_order
+        SET chge_qty = 0,
+            status = 1,
+            last_user = NULL,
+            last_date = NULL
+        WHERE factory_code = $1
+          AND req_no = $2
+          AND req_seq = $3
+        `,
+        {
+          bind: [item.factory_code, item.req_no, item.req_seq],
+          type: pool.QueryTypes.UPDATE,
+          transaction,
+        },
+      );
+
+      console.log(`Reset CHGE_QTY for SEQ=${item.req_seq}`);
+    }
+
+    await transaction.commit();
+
+    console.log(`REVERT completed successfully`);
+
+    return {
+      req_no,
+      status: 1, // hoặc trạng thái trước khi approve — chỉnh theo status flow thật của bạn
+      processed_items: reqOrderItems.length,
+      message: `Đã hoàn tác duyệt yêu cầu ${req_no}`,
+      success: true,
+    };
+  } catch (error) {
+    if (transaction) await transaction.rollback();
+    console.error("ERROR in revert:", error);
+    throw error;
+  }
+}
 async function addContractNumber(
   factory_code,
   req_no,
@@ -1363,7 +1494,7 @@ async function getDropdownByF(factory_code, field, page, limit, search = "") {
     };
 
     if (search && search.trim() !== "") {
-        whereClause[field] = { [Op.like]: `%${search}%` };
+        whereClause[field] = { [Op.iLike]: `%${search}%` };
     }
     const sql = `SELECT chk_no,chk_seq,${field} from "Customs".vw_ac_allchk WHERE factory_code = :factory_code limit :limit offset :offset`;
     const countSql = `SELECT COUNT(*) as count FROM (${sql}) as subquery`;
@@ -1386,11 +1517,14 @@ async function search(query, factory_code, limit, offset) {
     const parsedLimit = parseInt(limit) || 10;
     const parsedOffset = parseInt(offset) || 0;
 
+    const order_no = query?.order_no === "" ? null : query?.order_no || null;
+    const chk_no = query?.chk_no === "" ? null : query?.chk_no || null;
+
     const replacements = {
       factory_code: factory_code || null,
       vend_no: query?.vend_no || null,
-      order_no: query?.order_no === "" ? null : query?.order_no || null,
-      chk_no: query?.chk_no === "" ? null : query?.chk_no || null,
+      order_no,
+      chk_no,
       rs_date: query?.s_date_1 || null,
       re_date: query?.e_date_1 || null,
       s_cfm: query?.s_date_2 || null,
@@ -1401,235 +1535,186 @@ async function search(query, factory_code, limit, offset) {
       offset: parsedOffset,
     };
 
+    // Phần CTE + WHERE dùng chung cho cả query data và query count
+    const cteAndWhere = `
+     WITH filtered_base AS MATERIALIZED (
+    SELECT 
+      vw.*,
+      "Customs".gf_orderseq_send(vw.FACTORY_CODE, vw.ORDER_NO, vw.ORDER_SEQ::NUMERIC) as ac_send_value,
+      "Customs".gf_chkseq_req(vw.FACTORY_CODE, vw.CHK_NO, vw.CHK_SEQ::NUMERIC) as chk_req_value
+    FROM "Customs".vw_ac_allchk vw
+    WHERE vw.factory_code = :factory_code 
+      AND vw.AC_VEND = :vend_no
+  ),
+  final_filtered AS (
+    SELECT fb.*
+    FROM filtered_base fb
+    WHERE fb.ac_send_value IN (
+      SELECT AC_SEND FROM "Customs".ac_send_base WHERE AC_TYPE = :ac_type
+    )
+    AND fb.chk_req_value = 'N'
+  )
+    `;
+
+    const whereClause = `
+    WHERE
+    (:order_no IS NULL OR vw.ORDER_NO ILIKE '%' || :order_no || '%') AND
+    (vw.CHK_NO ILIKE '%' || :chk_no || '%' OR :chk_no IS NULL) AND
+    (DATE_TRUNC('day', vw.RCPT_DATE) >= DATE_TRUNC('day', :rs_date::timestamp) OR :rs_date IS NULL) AND
+    (DATE_TRUNC('day', vw.RCPT_DATE) <= DATE_TRUNC('day', :re_date::timestamp) OR :re_date IS NULL) AND
+    ((:is_item = 'Y' AND vw.ITEM_ACNO IS NOT NULL) OR 
+     (:is_item = 'N' AND vw.ITEM_ACNO IS NULL) OR 
+     :is_item IS NULL) AND
+    (:s_cfm IS NULL OR 
+     (SELECT VR_CFMDAY FROM "Customs".ac_srcorder_m
+      WHERE FACTORY_CODE = vw.FACTORY_CODE
+        AND ORDER_NO = vw.ORDER_NO 
+        AND ORDER_SEQ = vw.ORDER_SEQ::NUMERIC
+      LIMIT 1) >= DATE_TRUNC('day', :s_cfm::timestamp)) AND
+    (:e_cfm IS NULL OR 
+     (SELECT VR_CFMDAY FROM "Customs".ac_srcorder_m
+      WHERE FACTORY_CODE = vw.FACTORY_CODE
+        AND ORDER_NO = vw.ORDER_NO 
+        AND ORDER_SEQ = vw.ORDER_SEQ::NUMERIC
+      LIMIT 1) <= DATE_TRUNC('day', :e_cfm::timestamp))
+    `;
+
     const sql = `
-WITH pre_filter AS MATERIALIZED (
-  SELECT
-    a.factory_code, a.chk_no, b.chk_seq,
-    b.order_no, b.order_seq, b.item_no,
-    a.rcpt_date, a.vend_no AS ac_vend,
-    b.pr_unit, b.pr_formula, b.rcpt_qty,
-    1 AS src
-  FROM "Customs".po_rcpt_m a
-  JOIN "Customs".po_rcpt_d b
-    ON a.factory_code = b.factory_code
-    AND a.chk_no = b.chk_no
-  LEFT JOIN "Customs".ac_srcorder_m sm
-    ON sm.factory_code = a.factory_code
-    AND sm.order_no = b.order_no
-    AND sm.order_seq = b.order_seq
-  WHERE a.factory_code = :factory_code
-    AND a.vend_no = :vend_no
-    AND a.status >= 2
-    AND (:chk_no   IS NULL OR COALESCE(a.chk_no, '')   ILIKE '%' || :chk_no   || '%')
-    AND (:order_no IS NULL OR COALESCE(b.order_no, '') ILIKE '%' || :order_no || '%')
-    AND (:rs_date  IS NULL OR DATE_TRUNC('day', a.rcpt_date) >= DATE_TRUNC('day', :rs_date::timestamp))
-    AND (:re_date  IS NULL OR DATE_TRUNC('day', a.rcpt_date) <= DATE_TRUNC('day', :re_date::timestamp))
-    AND (:s_cfm    IS NULL OR sm.vr_cfmday >= DATE_TRUNC('day', :s_cfm::timestamp))
-    AND (:e_cfm    IS NULL OR sm.vr_cfmday <= DATE_TRUNC('day', :e_cfm::timestamp))
-),
-with_functions AS MATERIALIZED (
-  SELECT
-    p.*,
-    "Customs".gf_orderseq_special(p.factory_code, p.order_no, p.order_seq, '1', p.item_no) AS ac_code,
-    "Customs".gf_orderseq_send(p.factory_code, p.order_no, p.order_seq)                     AS ac_send_value,
-    "Customs".gf_chkseq_req(p.factory_code, p.chk_no, p.chk_seq)                           AS chk_req_value
-  FROM pre_filter p
-),
-with_acno AS MATERIALIZED (
-  -- ✅ FIX 1: bỏ gf_ref_itemacno_noorg và is_item filter khỏi đây
-  SELECT wf.*
-  FROM with_functions wf
-  WHERE wf.ac_send_value IN (
-    SELECT AC_SEND FROM "Customs".ac_send_base WHERE AC_TYPE = :ac_type
-  )
-  AND wf.chk_req_value = 'N'
-),
-with_itemacno AS MATERIALIZED (
-  -- ✅ FIX 2: JOIN 1 lần thay vì gọi function N lần
-  SELECT
-    wa.*,
-    ref.item_acno AS item_acno
-  FROM with_acno wa
-  LEFT JOIN (
-    SELECT a.item_no, MIN(a.item_acno) AS item_acno
-    FROM   "Customs".ac_item_ref a
-    JOIN   "Customs".ac_item_m b
-           ON  a.factory_code = b.factory_code
-           AND a.item_acno    = b.item_acno
-    WHERE  b.status = 7
-    GROUP BY a.item_no
-  ) ref ON ref.item_no = wa.ac_code
-),
-with_srcorder AS MATERIALIZED (
-  SELECT DISTINCT ON (wa.factory_code, wa.order_no, wa.order_seq)
-    wa.*,
-    sm.pr_unit    AS sm_pr_unit,
-    sm.pr_formula AS sm_pr_formula,
-    sm.rcpt_qty   AS sm_rcpt_qty,
-    sm.ac_send,
-    sm.order_qty,
-    sm.order_acqty,
-    sm.req_acqty,
-    sm.cont_no,
-    sm.vr_cfmday
-  FROM with_itemacno wa
-  LEFT JOIN "Customs".ac_srcorder_m sm   -- ← JOIN trước
-    ON sm.factory_code = wa.factory_code
-    AND sm.order_no = wa.order_no
-    AND sm.order_seq = wa.order_seq
-  WHERE (:is_item IS NULL OR             -- ← WHERE sau
-    (:is_item = 'Y' AND wa.item_acno IS NOT NULL) OR
-    (:is_item = 'N' AND wa.item_acno IS NULL)
-  )
-  ORDER BY wa.factory_code, wa.order_no, wa.order_seq
-)
--- ✅ FIX 4: bỏ dấu phẩy thừa trước SELECT
-SELECT
-  ws.rcpt_date,
-  ws.chk_no,
-  ws.chk_seq,
-  ws.order_no,
-  ws.order_seq,
-  ws.ac_code,
-  ws.factory_code,
-  ait.name_s                                                              AS itemnm,
-  "Customs".gf_code_name(ws.factory_code, '1108',   ws.sm_pr_unit, 'S') AS unitnm,
-  "Customs".gf_code_name(ws.factory_code, 'ACSEND', ws.ac_send,    'S') AS sendnm,
-  ws.sm_pr_formula                                                        AS pr_formula,
-  ws.ac_send,
-  irf.formula                                                             AS v_for,
-  ws.item_acno,
-  im.item_acname_l                                                        AS itemnm1,
-  "Customs".gf_code_name(ws.factory_code, '1108', im.unit, 'S')         AS unitnm1,
-  ws.order_qty,
-  (
-    SELECT COALESCE(SUM(req_qty), 0)
-    FROM "Customs".ac_req_order
-    WHERE factory_code = ws.factory_code
-      AND order_no     = ws.order_no
-      AND order_seq    = ws.order_seq
-  )                                                                       AS y_rcpt,
-  ws.rcpt_qty                                                             AS rcpt_qty,
-  NULL                                                                    AS bl_qty,
-  NULL                                                                    AS is_check,
-  ws.cont_no,
-  ws.rcpt_qty * COALESCE(irf.formula, 1)                                 AS order_acqty,
-  (
-    SELECT COALESCE(SUM(req_acqty), 0)
-    FROM "Customs".ac_req_order
-    WHERE factory_code = ws.factory_code
-      AND order_no     = ws.order_no
-      AND order_seq    = ws.order_seq
-  )                                                                       AS req_acqty1,
-  NULL                                                                    AS ac_req
-FROM with_srcorder ws
-LEFT JOIN "Customs".ac_allitem_src ait ON ait.ac_code = ws.ac_code
-LEFT JOIN "Customs".ac_item_m im
-  ON im.factory_code = ws.factory_code
-  AND im.item_acno   = ws.item_acno
-LEFT JOIN (
-  SELECT DISTINCT ON (a.factory_code, a.item_no)
-    a.factory_code, a.item_no, a.formula
-  FROM "Customs".ac_item_ref a
-  JOIN "Customs".ac_item_m b
-    ON a.factory_code = b.factory_code
-    AND a.item_acno   = b.item_acno
-  WHERE b.status = 7
-  ORDER BY a.factory_code, a.item_no
-) irf ON irf.factory_code = ws.factory_code AND irf.item_no = ws.ac_code
-ORDER BY ws.rcpt_date DESC, ws.chk_no, ws.chk_seq
-LIMIT :limit OFFSET :offset
+      ${cteAndWhere}
+      SELECT 
+        vw.RCPT_DATE,
+        vw.CHK_NO,
+        vw.CHK_SEQ,
+        vw.ORDER_NO,
+        vw.ORDER_SEQ,
+        vw.AC_CODE,
+        vw.FACTORY_CODE,
+        vw.src,
+
+        (SELECT NAME_S FROM "Customs".ac_allitem_src
+         WHERE AC_CODE = vw.AC_CODE) AS ITEMNM,
+
+        (SELECT "Customs".gf_code_name(vw.FACTORY_CODE, '1108', sm.PR_UNIT, 'S')
+         FROM "Customs".ac_srcorder_m sm
+         WHERE sm.FACTORY_CODE = vw.FACTORY_CODE
+         AND sm.ORDER_NO = vw.ORDER_NO
+         AND sm.ORDER_SEQ = vw.ORDER_SEQ::NUMERIC
+         LIMIT 1) AS UNITNM,
+
+        (SELECT "Customs".gf_code_name(vw.FACTORY_CODE, 'ACSEND', sm.AC_SEND, 'S')
+         FROM "Customs".ac_srcorder_m sm
+         WHERE sm.FACTORY_CODE = vw.FACTORY_CODE
+         AND sm.ORDER_NO = vw.ORDER_NO
+         AND sm.ORDER_SEQ = vw.ORDER_SEQ::NUMERIC
+         LIMIT 1) AS SENDNM,
+
+        (SELECT PR_FORMULA FROM "Customs".ac_srcorder_m
+         WHERE FACTORY_CODE = vw.FACTORY_CODE
+         AND ORDER_NO = vw.ORDER_NO
+         AND ORDER_SEQ = vw.ORDER_SEQ::NUMERIC
+         LIMIT 1) AS PR_FORMULA,
+
+        (SELECT AC_SEND FROM "Customs".ac_srcorder_m
+         WHERE FACTORY_CODE = vw.FACTORY_CODE
+         AND ORDER_NO = vw.ORDER_NO
+         AND ORDER_SEQ = vw.ORDER_SEQ::NUMERIC
+         LIMIT 1) AS AC_SEND,
+
+        (SELECT A.FORMULA 
+         FROM "Customs".ac_item_ref A
+         INNER JOIN "Customs".ac_item_m B
+           ON A.factory_code = B.factory_code
+           AND A.ITEM_ACNO = B.ITEM_ACNO
+         WHERE A.factory_code = vw.FACTORY_CODE
+         AND A.ITEM_NO = vw.AC_CODE
+         AND B.STATUS = 7
+         LIMIT 1) AS V_FOR,
+
+        vw.ITEM_ACNO,
+
+        (SELECT item_acname_l FROM "Customs".ac_item_m
+         WHERE FACTORY_CODE = vw.FACTORY_CODE
+         AND ITEM_ACNO = vw.ITEM_ACNO) AS ITEMNM1,
+
+        (SELECT "Customs".gf_code_name(vw.FACTORY_CODE, '1108', im.UNIT, 'S')
+         FROM "Customs".ac_item_m im
+         WHERE im.FACTORY_CODE = vw.FACTORY_CODE
+         AND im.ITEM_ACNO = vw.ITEM_ACNO
+         LIMIT 1) AS UNITNM1,
+
+        (SELECT order_qty FROM "Customs".ac_srcorder_m
+         WHERE FACTORY_CODE = vw.FACTORY_CODE
+         AND ORDER_NO = vw.ORDER_NO
+         AND ORDER_SEQ = vw.ORDER_SEQ::NUMERIC
+         LIMIT 1) AS order_qty,
+
+        (SELECT SUM(COALESCE(REQ_QTY,0)) as Y_RCPT FROM "Customs".ac_req_order
+         WHERE FACTORY_CODE = vw.FACTORY_CODE
+         AND order_no = vw.order_no
+         AND order_seq = vw.order_seq::NUMERIC
+         LIMIT 1) AS Y_RCPT,
+
+        vw.RCPT_QTY,
+
+        NULL AS BL_QTY,
+        NULL AS IS_CHECK,
+
+        (SELECT CONT_NO FROM "Customs".ac_srcorder_m
+         WHERE FACTORY_CODE = vw.FACTORY_CODE
+         AND ORDER_NO = vw.ORDER_NO
+         AND ORDER_SEQ = vw.ORDER_SEQ::NUMERIC
+         LIMIT 1) AS CONT_NO,
+
+        (SELECT order_acqty FROM "Customs".ac_srcorder_m
+         WHERE FACTORY_CODE = vw.FACTORY_CODE
+         AND ORDER_NO = vw.ORDER_NO
+         AND ORDER_SEQ = vw.ORDER_SEQ::NUMERIC
+         LIMIT 1) AS order_acqty,
+
+        (SELECT SUM(COALESCE(REQ_ACQTY,0)) AS REQ_ACQTY FROM "Customs".ac_req_order
+         WHERE 
+         ORDER_NO = vw.ORDER_NO
+         AND ORDER_SEQ = vw.ORDER_SEQ::NUMERIC
+         LIMIT 1) AS REQ_ACQTY1,
+
+        NULL AS AC_REQ
+
+      FROM final_filtered vw
+      ${whereClause}
+      ORDER BY vw.RCPT_DATE DESC, vw.CHK_NO, vw.CHK_SEQ
+      LIMIT :limit OFFSET :offset
     `;
 
     const countSql = `
-WITH pre_filter AS MATERIALIZED (
-  SELECT
-    a.factory_code, a.chk_no, b.chk_seq,
-    b.order_no, b.order_seq, b.item_no, a.rcpt_date
-  FROM "Customs".po_rcpt_m a
-  JOIN "Customs".po_rcpt_d b
-    ON a.factory_code = b.factory_code
-    AND a.chk_no = b.chk_no
-  LEFT JOIN "Customs".ac_srcorder_m sm
-    ON sm.factory_code = a.factory_code
-    AND sm.order_no = b.order_no
-    AND sm.order_seq = b.order_seq
-  WHERE a.factory_code = :factory_code
-    AND a.vend_no = :vend_no
-    AND a.status >= 2
-    AND (:chk_no   IS NULL OR a.chk_no   = :chk_no)
-    AND (:order_no IS NULL OR b.order_no LIKE :order_no || '%')
-    AND (:rs_date  IS NULL OR DATE_TRUNC('day', a.rcpt_date) >= DATE_TRUNC('day', :rs_date::timestamp))
-    AND (:re_date  IS NULL OR DATE_TRUNC('day', a.rcpt_date) <= DATE_TRUNC('day', :re_date::timestamp))
-    AND (:s_cfm    IS NULL OR sm.vr_cfmday >= DATE_TRUNC('day', :s_cfm::timestamp))
-    AND (:e_cfm    IS NULL OR sm.vr_cfmday <= DATE_TRUNC('day', :e_cfm::timestamp))
-),
-with_functions AS MATERIALIZED (
-  SELECT
-    p.*,
-    "Customs".gf_orderseq_special(p.factory_code, p.order_no, p.order_seq, '1', p.item_no) AS ac_code,
-    "Customs".gf_orderseq_send(p.factory_code, p.order_no, p.order_seq)                     AS ac_send_value,
-    "Customs".gf_chkseq_req(p.factory_code, p.chk_no, p.chk_seq)                           AS chk_req_value
-  FROM pre_filter p
-),
-with_acno AS MATERIALIZED (
-  SELECT wf.*
-  FROM with_functions wf
-  WHERE wf.ac_send_value IN (
-    SELECT AC_SEND FROM "Customs".ac_send_base WHERE AC_TYPE = :ac_type
-  )
-  AND wf.chk_req_value = 'N'
-),
-with_itemacno AS MATERIALIZED (
-  SELECT
-    wa.*,
-    ref.item_acno AS item_acno
-  FROM with_acno wa
-  LEFT JOIN (
-    SELECT a.item_no, MIN(a.item_acno) AS item_acno
-    FROM   "Customs".ac_item_ref a
-    JOIN   "Customs".ac_item_m b
-           ON  a.factory_code = b.factory_code
-           AND a.item_acno    = b.item_acno
-    WHERE  b.status = 7
-    GROUP BY a.item_no
-  ) ref ON ref.item_no = wa.ac_code
-)
--- ✅ FIX: bỏ dấu phẩy thừa trước SELECT
-SELECT COUNT(*) AS total
-FROM with_itemacno wa
-WHERE (:is_item IS NULL OR
-  (:is_item = 'Y' AND wa.item_acno IS NOT NULL) OR
-  (:is_item = 'N' AND wa.item_acno IS NULL)
-)
+      ${cteAndWhere}
+      SELECT COUNT(*) AS total
+      FROM final_filtered vw
+      ${whereClause}
     `;
 
-    const rows = await pool.query(sql, {
-      replacements,
-      type: pool.QueryTypes.SELECT,
+    const [rows, countResult] = await Promise.all([
+      pool.query(sql, {
+        replacements,
+        type: pool.QueryTypes.SELECT,
+      }),
+      pool.query(countSql, {
+        replacements,
+        type: pool.QueryTypes.SELECT,
+      }),
+    ]);
+
+    const total = parseInt(countResult[0]?.total, 10) || 0;
+
+    rows.forEach((row) => {
+      if (row.order_qty !== null) {
+        const vFor = row.V_FOR || 1;
+        const prFormula = row.PR_FORMULA || 1;
+        row.CALCULATED_order_acqty = row.order_qty * vFor * prFormula;
+      }
     });
 
     const hasMore = rows.length > parsedLimit;
     const data = hasMore ? rows.slice(0, parsedLimit) : rows;
-
-    data.forEach((row) => {
-      if (row.order_qty != null) {
-        row.calculated_order_acqty = row.order_qty * (row.v_for || 1);
-      }
-    });
-
-    let total = null;
-    if (parsedOffset === 0) {
-      const countReplacements = { ...replacements };
-      delete countReplacements.limit;
-      delete countReplacements.offset;
-
-      const countResult = await pool.query(countSql, {
-        replacements: countReplacements,
-        type: pool.QueryTypes.SELECT,
-      });
-      total = parseInt(countResult[0]?.total) || 0;
-    }
 
     return { rows: data, count: total, hasMore };
   } catch (error) {
@@ -1637,189 +1722,10 @@ WHERE (:is_item IS NULL OR
     throw error;
   }
 }
-// async function search(query, factory_code, limit, offset) {
-//   try {
-//     const parsedLimit = parseInt(limit) || 10;
-//     const parsedOffset = parseInt(offset) || 0;
-
-//     const replacements = {
-//       factory_code: factory_code || null,
-//       vend_no:  query?.vend_no  || null,   // ← từ query
-//       ac_type:  query?.ac_type  || null,   // ← từ query
-//       order_no: query?.order_no === "" ? null : query?.order_no || null,
-//       chk_no:   query?.chk_no   === "" ? null : query?.chk_no   || null,
-//       rs_date:  query?.s_date_1 || null,
-//       re_date:  query?.e_date_1 || null,
-//       s_cfm:    query?.s_date_2 || null,
-//       e_cfm:    query?.e_date_2 || null,
-//       is_item:  query?.is_item  || null,
-//       limit:    parsedLimit + 1,
-//       offset:   parsedOffset,
-//     };
-
-//     const sql = `
-//       WITH filtered_base AS MATERIALIZED (
-//         SELECT
-//           vw.*,
-//           "Customs".gf_orderseq_send(vw.FACTORY_CODE, vw.ORDER_NO, vw.ORDER_SEQ) as ac_send_value,
-//           "Customs".gf_chkseq_req(vw.FACTORY_CODE, vw.CHK_NO, vw.CHK_SEQ) as chk_req_value
-//         FROM "Customs".vw_ac_allchk vw
-//         WHERE vw.factory_code = :factory_code
-//           AND vw.AC_VEND = :vend_no
-//       ),
-//       final_filtered AS (
-//         SELECT fb.*
-//         FROM filtered_base fb
-//         WHERE fb.ac_send_value IN (
-//           SELECT AC_SEND FROM "Customs".ac_send_base WHERE AC_TYPE = :ac_type
-//         )
-//         AND fb.chk_req_value = 'N'
-//       )
-//       SELECT
-//         vw.RCPT_DATE,
-//         vw.CHK_NO,
-//         vw.CHK_SEQ,
-//         vw.ORDER_NO,
-//         vw.ORDER_SEQ,
-//         vw.AC_CODE,
-//         vw.FACTORY_CODE,
-//         vw.src,
-
-//         (SELECT NAME_S FROM "Customs".ac_allitem_src
-//          WHERE AC_CODE = vw.AC_CODE) AS ITEMNM,
-
-//         (SELECT "Customs".gf_code_name(vw.FACTORY_CODE, '1108', sm.PR_UNIT, 'S')
-//          FROM "Customs".ac_srcorder_m sm
-//          WHERE sm.FACTORY_CODE = vw.FACTORY_CODE
-//            AND sm.ORDER_NO = vw.ORDER_NO
-//            AND sm.ORDER_SEQ = vw.ORDER_SEQ
-//          LIMIT 1) AS UNITNM,
-
-//         (SELECT "Customs".gf_code_name(vw.FACTORY_CODE, 'ACSEND', sm.AC_SEND, 'S')
-//          FROM "Customs".ac_srcorder_m sm
-//          WHERE sm.FACTORY_CODE = vw.FACTORY_CODE
-//            AND sm.ORDER_NO = vw.ORDER_NO
-//            AND sm.ORDER_SEQ = vw.ORDER_SEQ
-//          LIMIT 1) AS SENDNM,
-
-//         (SELECT PR_FORMULA FROM "Customs".ac_srcorder_m
-//          WHERE FACTORY_CODE = vw.FACTORY_CODE
-//            AND ORDER_NO = vw.ORDER_NO
-//            AND ORDER_SEQ = vw.ORDER_SEQ
-//          LIMIT 1) AS PR_FORMULA,
-
-//         (SELECT AC_SEND FROM "Customs".ac_srcorder_m
-//          WHERE FACTORY_CODE = vw.FACTORY_CODE
-//            AND ORDER_NO = vw.ORDER_NO
-//            AND ORDER_SEQ = vw.ORDER_SEQ
-//          LIMIT 1) AS AC_SEND,
-
-//         (SELECT A.FORMULA
-//          FROM "Customs".ac_item_ref A
-//          INNER JOIN "Customs".ac_item_m B
-//            ON A.factory_code = B.factory_code
-//            AND A.ITEM_ACNO = B.ITEM_ACNO
-//          WHERE A.factory_code = vw.FACTORY_CODE
-//            AND A.ITEM_NO = vw.AC_CODE
-//            AND B.STATUS = 7
-//          LIMIT 1) AS V_FOR,
-
-//         vw.ITEM_ACNO,
-
-//         (SELECT item_acname_l FROM "Customs".ac_item_m
-//          WHERE FACTORY_CODE = vw.FACTORY_CODE
-//            AND ITEM_ACNO = vw.ITEM_ACNO) AS ITEMNM1,
-
-//         (SELECT "Customs".gf_code_name(vw.FACTORY_CODE, '1108', im.UNIT, 'S')
-//          FROM "Customs".ac_item_m im
-//          WHERE im.FACTORY_CODE = vw.FACTORY_CODE
-//            AND im.ITEM_ACNO = vw.ITEM_ACNO
-//          LIMIT 1) AS UNITNM1,
-
-//         (SELECT order_qty FROM "Customs".ac_srcorder_m
-//          WHERE FACTORY_CODE = vw.FACTORY_CODE
-//            AND ORDER_NO = vw.ORDER_NO
-//            AND ORDER_SEQ = vw.ORDER_SEQ
-//          LIMIT 1) AS order_qty,
-
-//         (SELECT SUM(COALESCE(REQ_QTY, 0)) FROM "Customs".ac_req_order
-//          WHERE FACTORY_CODE = vw.FACTORY_CODE
-//            AND order_no = vw.order_no
-//            AND order_seq = vw.order_seq) AS Y_RCPT,
-
-//         vw.RCPT_QTY,
-//         NULL AS BL_QTY,
-//         NULL AS IS_CHECK,
-
-//         (SELECT CONT_NO FROM "Customs".ac_srcorder_m
-//          WHERE FACTORY_CODE = vw.FACTORY_CODE
-//            AND ORDER_NO = vw.ORDER_NO
-//            AND ORDER_SEQ = vw.ORDER_SEQ
-//          LIMIT 1) AS CONT_NO,
-
-//         (SELECT order_acqty FROM "Customs".ac_srcorder_m
-//          WHERE FACTORY_CODE = vw.FACTORY_CODE
-//            AND ORDER_NO = vw.ORDER_NO
-//            AND ORDER_SEQ = vw.ORDER_SEQ
-//          LIMIT 1) AS order_acqty,
-
-//         (SELECT SUM(COALESCE(REQ_ACQTY, 0)) FROM "Customs".ac_req_order
-//          WHERE ORDER_NO = vw.ORDER_NO
-//            AND ORDER_SEQ = vw.ORDER_SEQ) AS REQ_ACQTY1,
-
-//         NULL AS AC_REQ
-
-//       FROM final_filtered vw
-//       WHERE
-//         (:order_no IS NULL OR vw.ORDER_NO LIKE :order_no || '%') AND
-//         (vw.CHK_NO = :chk_no OR :chk_no IS NULL) AND
-//         (:rs_date IS NULL OR DATE_TRUNC('day', vw.RCPT_DATE) >= DATE_TRUNC('day', :rs_date::timestamp)) AND
-//         (:re_date IS NULL OR DATE_TRUNC('day', vw.RCPT_DATE) <= DATE_TRUNC('day', :re_date::timestamp)) AND
-//         ((:is_item = 'Y' AND vw.ITEM_ACNO IS NOT NULL) OR
-//          (:is_item = 'N' AND vw.ITEM_ACNO IS NULL) OR
-//          :is_item IS NULL) AND
-//         (:s_cfm IS NULL OR
-//          (SELECT VR_CFMDAY FROM "Customs".ac_srcorder_m
-//           WHERE FACTORY_CODE = vw.FACTORY_CODE
-//             AND ORDER_NO = vw.ORDER_NO
-//             AND ORDER_SEQ = vw.ORDER_SEQ
-//           LIMIT 1) >= DATE_TRUNC('day', :s_cfm::timestamp)) AND
-//         (:e_cfm IS NULL OR
-//          (SELECT VR_CFMDAY FROM "Customs".ac_srcorder_m
-//           WHERE FACTORY_CODE = vw.FACTORY_CODE
-//             AND ORDER_NO = vw.ORDER_NO
-//             AND ORDER_SEQ = vw.ORDER_SEQ
-//           LIMIT 1) <= DATE_TRUNC('day', :e_cfm::timestamp))
-//       ORDER BY vw.RCPT_DATE DESC, vw.CHK_NO, vw.CHK_SEQ
-//       LIMIT :limit OFFSET :offset" }
-//     `;
-
-//     const rows = await pool.query(sql, {
-//       replacements,
-//       type: pool.QueryTypes.SELECT,
-//     });
-
-//     rows.forEach((row) => {
-//       if (row.order_qty !== null) {
-//         const vFor = row.V_FOR || 1;
-//         const prFormula = row.PR_FORMULA || 1;
-//         row.CALCULATED_order_acqty = row.order_qty * vFor * prFormula;
-//       }
-//     });
-
-//     const hasMore = rows.length > parseInt(limit);
-//     const actualRows = hasMore ? rows.slice(0, parseInt(limit)) : rows;
-
-//     return { rows: actualRows, count: null, hasMore };
-//   } catch (error) {
-//     console.error("Error in search function:", error);
-//     console.error("Error details:", error.message);
-//     throw error;
-//   }
-// }
 module.exports = {
   getListOfALLCHK,
   approveContract,
+  revertApproveContract,
   checkBox,
   getPlanIQty,
   updateBlQty,

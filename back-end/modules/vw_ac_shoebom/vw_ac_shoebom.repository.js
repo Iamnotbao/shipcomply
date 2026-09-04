@@ -82,7 +82,7 @@ async function search(
         if (allowedFields.includes(key) && query.search[key]) {
           const value = query.search[key];
           if (typeof value === "string") {
-            conditions.push(`${key} LIKE :param${paramIndex}`);
+            conditions.push(`${key} ILIKE :param${paramIndex}`);
             replacements[`param${paramIndex}`] = `%${value}%`;
           } else if (typeof value === "number") {
             conditions.push(`${key} = :param${paramIndex}`);

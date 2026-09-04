@@ -244,7 +244,7 @@ async function getAllVendNoByStatus(
       // }
       let searchCondition = "";
       if (search && search.trim() !== "") {
-        searchCondition = `AND (vend_no ILIKE :search)`;
+        searchCondition = `AND (vend_no ILIKE :search OR (shortnm_s ILIKE :search OR shortnm_e ILIKE :search OR shortnm_t ILIKE :search))`;
         replacements.search = `%${search.trim()}%`;
       }
       const isStatusBool = String(isStatus).toLowerCase() === "true";
@@ -260,8 +260,8 @@ async function getAllVendNoByStatus(
             WHEN :charset = 'E' THEN shortnm_e
             ELSE shortnm_s
           END AS NAME 
-         FROM "Customs".po_vender_m
-         WHERE factory_code = :factory 
+         FROM "po".po_vender_m
+         WHERE org_id = :factory 
            ${statusCondition} 
            ${additionalWhere}
            ${searchCondition}
@@ -281,20 +281,16 @@ async function getAllVendNoByStatus(
       try {
         const countResult = await pool.query(
           `SELECT COUNT(*) as total 
-             FROM "Customs".po_vender_m
-             WHERE factory_code = :factory 
+             FROM "po".po_vender_m
+             WHERE org_id = :factory 
                 ${statusCondition}  
                 ${additionalWhere}
                 ${searchCondition}
                `,
           {
-            replacements: {
-              factory: factory_code,
-              dept: replacements.dept,
-              user: replacements.user,
-            },
-            type: pool.QueryTypes.SELECT,
-            transaction: t,
+             replacements: replacements,
+             type: pool.QueryTypes.SELECT,
+             transaction: t,
           },
         );
         total = parseInt(countResult[0]?.total) || 0;

@@ -40,6 +40,27 @@ async function getAllAcCDWithView(
     offset,
   );
 }
+async function getAllAcCDExpWithView(
+  factory_code,
+  department_code,
+  user_code,
+  query_level,
+  language,
+  ac_no,
+  limit,
+  offset,
+) {
+  return await acChgDRepository.listAllAcChgDExpWithView(
+    factory_code,
+    department_code,
+    user_code,
+    query_level,
+    language,
+    ac_no,
+    limit,
+    offset,
+  );
+}
 async function getAcChgDByID(factory_code, ac_no, seq) {
   return await acChgDRepository.getByID(factory_code, ac_no, seq);
 }
@@ -109,6 +130,16 @@ async function autoAddAcChgD(factory_code, department_code, user_code, ac_no,lan
   );
   if (!result) {
     console.log("Cannot add because data from db is null");
+    return null;
+  }
+  return result;
+}
+async function calculateRefPrice(factory_code, com_invoice, item_acno, t) {
+  const result = await acChgDRepository.calculateRPrice(
+   factory_code, com_invoice, item_acno, t
+  );
+  if (!result) {
+    console.log("data is null!");
     return null;
   }
   return result;
@@ -247,6 +278,7 @@ async function refreshP(factory_code, ac_no,language) {
 module.exports = {
   getAllAcCD,
   getAllAcCDWithView,
+  getAllAcCDExpWithView,
   getAcChgDByID,
   getSum,
   getUnitByGoodsCode,
@@ -261,4 +293,5 @@ module.exports = {
   refreshS,
   copyItemsFromShoe,
   refreshP,
+  calculateRefPrice
 };

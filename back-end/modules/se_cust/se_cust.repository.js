@@ -22,7 +22,7 @@ async function fetchCustDataDropdown(
   if (search && search.trim() !== "") {
     searchCondition = `
       AND (
-        cust_id ILIKE :search OR
+        cust_id ILIKE :search OR COLUMN1 ILIKE :search
       )
     `;
     replacements.search = `%${search.trim()}%`;
@@ -44,15 +44,16 @@ async function fetchCustDataDropdown(
     WHEN 'T' THEN NAME_J_T
     WHEN 'E' THEN NAME_J_E
   END AS STATUS
-      FROM "Customs".SE_CUST 
+      FROM "public".sd_cust 
       WHERE ${permissionCondition} 
       ${statusCondition}
+       ${searchCondition}
       ORDER BY CUST_ID
       limit :limit offset :offset
       `;
     countSql = `
         SELECT COUNT(CUST_ID) as total
-        FROM "Customs".SE_CUST
+        FROM "public".sd_cust
        WHERE 
         ${permissionCondition} 
          ${statusCondition}
@@ -68,7 +69,7 @@ async function fetchCustDataDropdown(
     WHEN 'T' THEN NAME_J_T
     WHEN 'E' THEN NAME_J_E
   END AS STATUS
-      FROM "Customs".SE_CUST M,
+      FROM "public".sd_cust M,
     "Customs".AC_CO_M D 
     WHERE M.FACTORY_CODE=:factory_code AND  M.STATUS=7 AND  M.FACTORY_CODE = D.FACTORY_CODE AND  M.CUST_ID = D.CUST_ID
        ${searchCondition} 
@@ -77,7 +78,7 @@ async function fetchCustDataDropdown(
       `;
     countSql = `
         SELECT COUNT(M.CUST_ID) as total
-      FROM "Customs".SE_CUST M,
+      FROM "public".sd_cust M,
     "Customs".AC_CO_M D WHERE M.FACTORY_CODE=:factory_code AND  M.STATUS=7 AND  M.FACTORY_CODE = D.FACTORY_CODE AND  M.CUST_ID = D.CUST_ID
        ${searchCondition} 
       `;
@@ -155,17 +156,21 @@ async function fetchFieldByVendNo(
        addr_e as ADDRESS_E,
        pay_curr as PAY_CUR,
        pay_no as PAY_NO
-       from  "Customs".SE_CUST 
-       where factory_code=:factory_code 
-       and cust_id=:vend_no
+       from  "public".sd_cust 
+       where
+       -- org_id=:factory_code 
+       --and 
+       cust_id=:vend_no
        ${statusCondition}
        ORDER BY CUST_ID
       `;
     countSql = `
         SELECT COUNT(DISTINCT CUST_ID) as total
-       from  "Customs".SE_CUST 
-       where factory_code=:factory_code 
-        and cust_id=:vend_no
+       from  "public".sd_cust 
+       where
+       -- org_id=:factory_code 
+        --and 
+        cust_id=:vend_no
           AND ${permissionCondition}
           ${statusCondition}
           ${searchCondition}
@@ -173,8 +178,8 @@ async function fetchFieldByVendNo(
   } else if (isStatus && field !== "vend_no") {
     sql = `
         SELECT DISTINCT ${field} as code_no
-        FROM "Customs".po_vender_m
-        WHERE factory_code = :factory_code
+        FROM "po".po_vender_m
+        WHERE org_id = :factory_code
            ${statusCondition}
           AND ${permissionCondition}
           ${searchCondition}
@@ -184,8 +189,8 @@ async function fetchFieldByVendNo(
       `;
     countSql = `
         SELECT COUNT(DISTINCT ${field}) as total
-        FROM "Customs".po_vender_m
-        WHERE factory_code = :factory_code
+        FROM "po".po_vender_m
+        WHERE org_id = :factory_code
          ${statusCondition}
           AND ${permissionCondition}
           ${searchCondition}
@@ -193,10 +198,10 @@ async function fetchFieldByVendNo(
   } else if (!isStatus && field !== "vend_no") {
     sql = `
         SELECT DISTINCT ${field} as code_no
-        FROM "Customs".po_vender_m
+        FROM "po".po_vender_m
         WHERE 
        ${permissionCondition}
-        AND factory_code = :factory_code
+        AND org_id = :factory_code
         AND vend_no = :vend_no
         ${searchCondition}
           ${statusCondition}
@@ -206,10 +211,10 @@ async function fetchFieldByVendNo(
       `;
     countSql = `
         SELECT COUNT(DISTINCT ${field}) as total
-        FROM "Customs".po_vender_m
+        FROM "po".po_vender_m
          WHERE 
        ${permissionCondition}
-        AND factory_code =:factory_code
+        AND org_id =:factory_code
         AND vend_no = :vend_no
         ${searchCondition}
           ${statusCondition}
@@ -300,7 +305,7 @@ async function fetchFieldDropdown(
    when 'E' then name_j_e 
    else name_j_s 
    end as CUST_NAME
-    FROM   "Customs".SE_CUST 
+    FROM   "public".sd_cust 
     WHERE ${permissionCondition} 
    ${statusCondition}
         ${searchCondition}
@@ -317,7 +322,7 @@ async function fetchFieldDropdown(
    when 'E' then name_j_e 
    else name_j_s 
    end as CUST_NAME
-    FROM   "Customs".SE_CUST 
+    FROM   "public".sd_cust 
     WHERE ${permissionCondition} 
    ${statusCondition}
     ${searchCondition}

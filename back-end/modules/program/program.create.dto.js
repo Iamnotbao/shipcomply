@@ -10,5 +10,6 @@ const createProgramSchema = Joi.object({
   grt_date: Joi.date().allow(null, "").optional(),
   last_user: Joi.string().allow(null, "").optional(),
   last_date: Joi.date().allow(null, "").optional(),
+  locked_information: Joi.string().allow(null, "").optional(),
 });
 module.exports = createProgramSchema;

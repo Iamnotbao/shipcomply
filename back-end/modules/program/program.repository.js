@@ -1,10 +1,24 @@
 const QueryHelper = require("../../utils/queryHelper");
 const PROGRAM = require("./program.model");
 
-async function listAll() {
-  return await PROGRAM.findAll({
+async function listAll(limit, offset) {
+  const parsedLimit = !isNaN(parseInt(limit)) ? parseInt(limit) : null;
+  const parsedOffset = !isNaN(parseInt(offset)) ? parseInt(offset) : null;
+
+  const findOptions = {
     order: [["program_code", "ASC"]],
-  });
+    raw: true,
+  };
+  if (parsedLimit !== null) {
+    findOptions.limit = parsedLimit + 1;
+    findOptions.offset = parsedOffset ?? 0;
+  }
+  const rows = await PROGRAM.findAll(findOptions);
+  return {
+    rows: parsedLimit !== null ? rows.slice(0, parsedLimit) : rows,
+    count: rows.length,
+    hasMore: parsedLimit !== null && rows.length === parsedLimit + 1,
+  };
 }
 async function getByID(program_code) {
   const program = await PROGRAM.findOne({
@@ -18,12 +32,47 @@ async function getByID(program_code) {
   }
   return program;
 }
-async function add(program, t) {
+async function getPosition(keys, pageSize, t) {
+  try {
+    const orderFields = Object.keys(keys);
+    const orConditions = [];
+
+    for (let i = 0; i < orderFields.length; i++) {
+      const condition = {};
+      for (let j = 0; j < i; j++) {
+        condition[orderFields[j]] = keys[orderFields[j]];
+      }
+      condition[orderFields[i]] = { [Op.lt]: keys[orderFields[i]] };
+      orConditions.push(condition);
+    }
+
+    const position = await PROGRAM.count({
+      where: { [Op.or]: orConditions },
+      transaction: t,
+    });
+
+    const size = parseInt(pageSize) || 10;
+    const page = Math.floor(position / size);
+    const offset = page * size;
+
+    return { position, size, page, offset };
+  } catch (error) {
+    console.log("Cannot calculate position", error);
+    throw error;
+  }
+}
+async function add(program, pageSize, t) {
   try {
     const addProgram = await PROGRAM.create(program, {
       transaction: t,
     });
-    return addProgram;
+
+    const positionInfo = await getPosition(
+      { program_code: addProgram.program_code },
+      pageSize,
+      t,
+    );
+    return { data: addProgram, ...positionInfo };
   } catch (error) {
     console.log("Cannot add program from db", error);
   }
@@ -44,7 +93,7 @@ async function deleteProg(existProgram, t) {
     console.log("Cannot delete program from db", error);
   }
 }
-async function search(keyword) {
+async function search(keyword, limit, offset) {
   try {
     const fields = [
       "program_code",
@@ -61,11 +110,33 @@ async function search(keyword) {
     const queryHelper = new QueryHelper(keyword, {
       PROGRAM: fields,
     }).filter();
-    const facSearch = await PROGRAM.findAll({
-      where: queryHelper.whereMap.PROGRAM || {},
+    const whereClause = queryHelper.whereMap.PROGRAM || {};
+    const parsedLimit = !isNaN(parseInt(limit)) ? parseInt(limit) : null;
+    const parsedOffset = !isNaN(parseInt(offset)) ? parseInt(offset) : null;
+     const findOptions = {
+      where: whereClause,
       order: [["program_code", "ASC"]],
-    });
-    return facSearch;
+    };
+    if (parsedLimit !== null) {
+      findOptions.limit = parsedLimit + 1;
+      findOptions.offset = parsedOffset ?? 0;
+    }
+
+    const rows = await PROGRAM.findAll(findOptions);
+
+    const hasMore = parsedLimit !== null && rows.length > parsedLimit;
+    const actualRows = hasMore ? rows.slice(0, parsedLimit) : rows;
+
+    let total = null;
+    if (parsedOffset === 0 || parsedOffset === null) {
+      total = await PROGRAM.count({ where: whereClause });
+    }
+
+    return {
+      rows: actualRows,
+      count: total,
+      hasMore: hasMore,
+    };
   } catch (error) {
     console.log("Database can not search the data", error);
   }

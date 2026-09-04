@@ -59,8 +59,8 @@ async function listAllARM(
       WHEN :charset = 'E' THEN shortnm_e
       ELSE shortnm_s
     END AS name 
-   FROM "Customs".po_vender_m
-   WHERE factory_code = :factory_code
+   FROM "po".po_vender_m
+   WHERE org_id = :factory_code
      AND status = '7'
    ORDER BY vend_no`,
     {
@@ -139,6 +139,90 @@ async function listAllARM(
     count: total,
     hasMore: hasMore,
   };
+}
+async function listAllSubByARM(
+  factory_code,
+  req_no,
+  department_code,
+  user_code,
+  query_level,
+  search = {},
+  language = "en",
+) {
+  const nameCol = { en: "name_e", vi: "name_l", zh: "name_t" }[language] || "name_e";
+
+  if (user_code === "admin") {
+    const rows = await pool.query(
+      `
+      SELECT a.*, b.*
+      FROM "Customs".ac_req_order a
+      LEFT JOIN "Customs".ac_req_m b
+        ON b.req_no = a.req_no
+        AND b.factory_code = a.factory_code
+      ORDER BY a.factory_code ASC, a.req_no ASC
+      LIMIT :limit OFFSET :offset
+      `,
+      { replacements: { limit: parsedLimit, offset: parsedOffset }, type: pool.QueryTypes.SELECT }
+    );
+    return { rows };
+  }
+
+  let permissionCondition = "1=1";
+  const replacements = {
+    factory_code: factory_code || null,
+    req_no: req_no || null,
+    invoice_no: search.invoice_no || "",
+    vend_no: search.vend_no || "",
+    ac_type: search.ac_type || "",
+    req_date: search.req_date || null,
+    status: search?.status ?? null,
+  };
+
+  if (query_level === "1" && factory_code) {
+    permissionCondition = "a.factory_code = :factory_code";
+  } else if (query_level === "2" && department_code && factory_code) {
+    permissionCondition = "b.grt_dept = :permission_dept AND a.factory_code = :factory_code";
+    replacements.permission_dept = department_code;
+  } else if (query_level === "3" && user_code) {
+    permissionCondition = "b.grt_user = :permission_user";
+    replacements.permission_user = user_code;
+  }
+
+  const searchCondition = `
+    COALESCE(b.invoice_no, '') ILIKE '%' || :invoice_no || '%'
+    AND COALESCE(b.vend_no, '') ILIKE '%' || :vend_no || '%'
+    AND (:ac_type = '' OR act.ac_type ILIKE '%' || :ac_type || '%')
+    AND (:req_date IS NULL OR DATE_TRUNC('day', b.req_date) = DATE_TRUNC('day', CAST(:req_date AS date)))
+    AND (:status is null or b.status=:status)
+  `;
+
+  const sql = `
+    SELECT a.*, b.*, act.ac_type, act.ac_type_name
+    FROM "Customs".ac_req_order a
+    LEFT JOIN "Customs".ac_req_m b
+      ON b.req_no = a.req_no
+      AND b.factory_code = a.factory_code
+    LEFT JOIN LATERAL (
+      SELECT imt.declaration_category AS ac_type,
+             bd.${nameCol} AS ac_type_name
+      FROM "Customs".ac_imp_material_tracking imt
+      LEFT JOIN "Customs".basic_data bd
+        ON bd.factory_code = imt.factory_code
+        AND bd.category_code = 'CDC'
+        AND bd.code_no = imt.declaration_category
+      WHERE imt.factory_code = b.factory_code
+        AND imt.invoice_no = b.invoice_no
+        AND imt.declaration_category IS NOT NULL
+      LIMIT 1
+    ) act ON true
+    WHERE ${permissionCondition}
+      AND (:req_no IS NULL OR a.req_no = :req_no)
+      AND ${searchCondition}
+    ORDER BY a.factory_code ASC, a.req_no,a.req_seq ASC
+  `;
+
+  const rows = await pool.query(sql, { replacements, type: pool.QueryTypes.SELECT });
+  return { rows };
 }
 async function confirm(
   factory_code,
@@ -459,7 +543,9 @@ async function listAllAcNo(
       }
       try {
         const rows = await pool.query(
-          ` SELECT AC_NO FROM "Customs".VW_CHG_IMP WHERE factory_code=:factory AND COM_INVOICE=:invoice ${additionalWhere} ${searchCondition} ${statusCondition}
+          ` SELECT distinct AC_NO FROM "Customs".VW_CHG_IMP WHERE factory_code=:factory AND COM_INVOICE=:invoice ${additionalWhere} ${searchCondition} ${statusCondition}
+          UNION 
+          SELECT distinct AC_NO FROM "Customs".ac_proc_m WHERE factory_code=:factory AND com_invoice=:invoice ${additionalWhere} ${searchCondition} ${statusCondition}
             order by AC_NO
             limit :limit offset :offset
           `,
@@ -472,7 +558,15 @@ async function listAllAcNo(
         );
         let total = null;
         const countResult = await pool.query(
-          `SELECT COUNT(AC_NO) as total FROM "Customs".VW_CHG_IMP WHERE factory_code=:factory AND COM_INVOICE=:invoice ${additionalWhere} ${searchCondition} ${statusCondition}
+          `SELECT COUNT(*) as total FROM (
+  SELECT distinct AC_NO FROM "Customs".VW_CHG_IMP 
+  WHERE factory_code=:factory AND COM_INVOICE=:invoice 
+    ${additionalWhere} ${searchCondition} ${statusCondition}
+  UNION 
+  SELECT distinct AC_NO FROM "Customs".ac_proc_m 
+  WHERE factory_code=:factory AND com_invoice=:invoice 
+    ${additionalWhere} ${searchCondition} ${statusCondition}
+) combined
                `,
           {
             replacements: replacements,
@@ -788,8 +882,8 @@ async function search(
           WHEN :charset = 'E' THEN shortnm_e
           ELSE shortnm_s
         END AS name 
-       FROM "Customs".po_vender_m
-       WHERE factory_code = :factory_code
+       FROM "po".po_vender_m
+       WHERE org_id = :factory_code
          AND status = '7'
        ORDER BY vend_no`,
       {
@@ -911,7 +1005,7 @@ async function applyFilter(orgId, reqNo, empId, pCharset) {
         type: pool.QueryTypes.SELECT,
         transaction: t,
       });
-       const validationErrors = [];
+      const validationErrors = [];
       for (const order of ordersResult) {
         if (!order.cont_no) {
           validationErrors.push(`Order ${order.order_no}: Contract is empty`);
@@ -1068,8 +1162,8 @@ async function applyFilter(orgId, reqNo, empId, pCharset) {
     if (error.isValidation) {
       return {
         success: false,
-        message: error.message,   
-        errors: error.errors,  
+        message: error.message,
+        errors: error.errors,
         acNo: null,
         recordCount: 0,
       };
@@ -1085,6 +1179,7 @@ async function applyFilter(orgId, reqNo, empId, pCharset) {
 }
 module.exports = {
   listAllARM,
+  listAllSubByARM,
   getByID,
   getAcTypeFromMaterPur,
   listAllInvoiceNo,

@@ -51,6 +51,7 @@ async function listAllSePlanSize(
   try {
     const sql = `
       SELECT 
+      A.FACTORY_CODE,
       A.SE_ID,
       A.SE_VER,
       A.SE_SEQ,
@@ -297,7 +298,7 @@ async function edit(
   department_code,
   user_code,
   query_level,
-  existSPO,
+  existSPS,
   editSPO,
   pageSize,
 ) {
@@ -306,18 +307,18 @@ async function edit(
     if (editSPO.ctns !== undefined) {
       const validationResult = await getCtns(
         factory_code,
-        existSPO.se_id,
-        existSPO.pack_gu,
-        existSPO.se_seq,
-        existSPO.pk_seq,
-        existSPO.ship_seq,
+        existSPS.se_id,
+        existSPS.pack_gu,
+        existSPS.se_seq,
+        existSPS.pk_seq,
+        existSPS.ship_seq,
         editSPO.ctns,
         t,
       );
       editSPO.cbm = validationResult.calculatedCbm;
     }
 
-    const editItem = await existSPO.update(editSPO, { transaction: t });
+    const editItem = await existSPS.update(editSPO, { transaction: t });
 
     if (editSPO.ctns !== undefined) {
       await updateSePlanOrdSummary(
@@ -941,7 +942,229 @@ async function getCtns(
     throw error;
   }
 }
+async function deleteItem(existSPS, t) {
+  try {
+    const deleteSizeSql = `
+      DELETE FROM "Customs".SE_PLAN_SIZE
+      WHERE FACTORY_CODE = :factory_code
+        AND SE_ID = :se_id
+        AND PACK_GU = :pack_gu
+        AND SE_VER = :se_ver
+        AND SE_SEQ = :se_seq
+        AND SHIP_SEQ = :ship_seq
+        AND PK_SEQ = :pk_seq
+    `;
+    const deletedSizes = await pool.query(deleteSizeSql, {
+      replacements: {
+        factory_code: existSPS.factory_code,
+        se_id: existSPS.se_id,
+        pack_gu: existSPS.pack_gu,
+        se_ver: existSPS.se_ver,
+        se_seq: existSPS.se_seq,
+        ship_seq: existSPS.ship_seq,
+        pk_seq: existSPS.pk_seq,
+      },
+      type: pool.QueryTypes.DELETE,
+      transaction: t,
+    });
 
+    // 🔧 Cha vẫn còn, chỉ mất 1 size con → phải tính lại tổng
+    // Thứ tự tham số khớp đúng signature hàm (se_seq trước se_ver)
+    await updateSePlanOrdSummary(
+      existSPS.factory_code,
+      existSPS.se_id,
+      existSPS.pack_gu,
+      existSPS.se_seq,
+      existSPS.se_ver,
+      existSPS.ship_seq,
+      t,
+    );
+
+    console.log(`Deleted ${deletedSizes[1] || 0} SE_PLAN_SIZE records`);
+
+    return {
+      deleted_sizes: deletedSizes[1] || 0,
+    };
+  } catch (error) {
+    console.log("Cannot delete SE_PLAN_SIZE from db", error);
+    throw error;
+  }
+}
+async function deleteItems(items, t) {
+  try {
+    if (!items || items.length === 0) {
+      return { deleted_sizes: 0 };
+    }
+
+    const replacements = {};
+    const tuples = items.map((item, i) => {
+      replacements[`factory_code_${i}`] = item.factory_code;
+      replacements[`se_id_${i}`] = item.se_id;
+      replacements[`pack_gu_${i}`] = item.pack_gu;
+      replacements[`se_ver_${i}`] = item.se_ver;
+      replacements[`se_seq_${i}`] = item.se_seq;
+      replacements[`ship_seq_${i}`] = item.ship_seq;
+      replacements[`pk_seq_${i}`] = item.pk_seq; 
+      return `(:factory_code_${i}, :se_id_${i}, :pack_gu_${i}, :se_ver_${i}, :se_seq_${i}, :ship_seq_${i}, :pk_seq_${i})`;
+    });
+    const tupleList = tuples.join(", ");
+
+    const deleteSizeSql = `
+      DELETE FROM "Customs".SE_PLAN_SIZE
+      WHERE (FACTORY_CODE, SE_ID, PACK_GU, SE_VER, SE_SEQ, SHIP_SEQ, PK_SEQ) IN (${tupleList})
+    `;
+    const deletedSizes = await pool.query(deleteSizeSql, {
+      replacements,
+      type: pool.QueryTypes.DELETE,
+      transaction: t,
+    });
+
+    //  Bỏ hẳn đoạn DELETE "Customs".SE_PLAN_ORD — bulk delete cấp DETAIL
+    // không được phép đụng tới bảng master
+
+    //  Recalc lại p_shipqty/cbm cho (các) master bị ảnh hưởng.
+    // Thực tế theo luồng FE hiện tại, tất cả item check đều thuộc cùng 1 master
+    // (vì selectCheckSPS chỉ lấy trong 1 page của 1 selectRows[0] đang chọn),
+    // nhưng vẫn dedupe theo composite key để an toàn nếu sau này FE cho phép
+    // check xuyên nhiều master.
+    const uniqueParents = new Map();
+    for (const item of items) {
+      const key = `${item.factory_code}|${item.se_id}|${item.pack_gu}|${item.se_ver}|${item.se_seq}|${item.ship_seq}`;
+      if (!uniqueParents.has(key)) {
+        uniqueParents.set(key, item);
+      }
+    }
+    for (const parent of uniqueParents.values()) {
+      await updateSePlanOrdSummary(
+        parent.factory_code,
+        parent.se_id,
+        parent.pack_gu,
+        parent.se_seq,
+        parent.se_ver,
+        parent.ship_seq,
+        t,
+      );
+    }
+
+    return {
+      deleted_sizes: deletedSizes[1] || 0,
+    };
+  } catch (error) {
+    console.log("Cannot bulk delete SE_PLAN_SIZE from db", error);
+    throw error;
+  }
+}
+async function confirmItems(
+  items,
+  factory_code,
+  department_code,
+  user_code,
+  query_level,
+  t,
+) {
+  return bulkUpdateMasterStatus(
+    items,
+    7,        // newStatus
+    [1, 2],   // allowedFromStatuses — khớp handleStatusChange(7,"confirm",[1,2]) bên FE
+    factory_code,
+    department_code,
+    user_code,
+    query_level,
+    t,
+  );
+}
+async function bulkUpdateMasterStatus(
+  items,
+  newStatus,
+  allowedFromStatuses,
+  factory_code,
+  department_code,
+  user_code,
+  query_level,
+  t,
+) {
+  console.log("vvb",factory_code,department_code,user_code,query_level,items);
+  if (!items || items.length === 0) {
+    return { success: false, message: "No items to update" };
+  }
+
+  const replacements = { user_code, new_status: newStatus };
+
+  const tuples = items.map((item, i) => {
+    replacements[`factory_code_${i}`] = item.factory_code;
+    replacements[`se_id_${i}`] = item.se_id;
+    replacements[`pack_gu_${i}`] = item.pack_gu;
+    replacements[`se_ver_${i}`] = item.se_ver;
+    replacements[`se_seq_${i}`] = item.se_seq;
+    replacements[`ship_seq_${i}`] = item.ship_seq;
+    replacements[`pk_seq_${i}`] = item.pk_seq;
+    return `(:factory_code_${i}, :se_id_${i}, :pack_gu_${i}, :se_ver_${i}, :se_seq_${i}, :ship_seq_${i}, :pk_seq_${i})`;
+  });
+  const tupleList = tuples.join(", ");
+
+  const statusList = allowedFromStatuses
+    .map((s, i) => {
+      replacements[`from_status_${i}`] = s;
+      return `:from_status_${i}`;
+    })
+    .join(", ");
+
+  let permissionCondition = "1=1";
+  if (user_code !== "admin") {
+    if (query_level === "1" && factory_code) {
+      permissionCondition = "factory_code = :permission_factory";
+      replacements.permission_factory = factory_code;
+    } else if (query_level === "2" && department_code && factory_code) {
+      permissionCondition =
+        "grt_dept = :permission_dept AND factory_code = :permission_factory";
+      replacements.permission_dept = department_code;
+      replacements.permission_factory = factory_code;
+    } else if (query_level === "3" && user_code) {
+      permissionCondition = "grt_user = :permission_user";
+      replacements.permission_user = user_code;
+    }
+  }
+
+  try {
+    const sql = `
+      UPDATE "Customs".se_plan_size
+      SET status = :new_status, last_user = :user_code, last_date = NOW()
+      WHERE (factory_code, se_id, pack_gu, se_ver, se_seq, ship_seq, pk_seq) IN (${tupleList})
+        AND status IN (${statusList})
+        AND ${permissionCondition}
+    `;
+    const updated = await pool.query(sql, {
+      replacements,
+      type: pool.QueryTypes.UPDATE,
+      transaction: t,
+    });
+
+    return { success: true, updated_count: updated[1] || 0 };
+  } catch (error) {
+    console.log("Cannot bulk update status SE_PLAN_SIZE from db", error);
+    throw error;
+  }
+}
+// Wrapper riêng cho unconfirm — 7 -> 1, khớp allowedFromStatuses=[7] bên frontend
+async function unconfirmItems(
+  items,
+  factory_code,
+  department_code,
+  user_code,
+  query_level,
+  t,
+) {
+  return bulkUpdateMasterStatus(
+    items,
+    1,
+    [7],
+    factory_code,
+    department_code,
+    user_code,
+    query_level,
+    t,
+  );
+}
 module.exports = {
   listAllSePlanSize,
   getByID,
@@ -954,5 +1177,10 @@ module.exports = {
   autoGenerateSePlanSize,
   updateSePlanOrdSummary,
   confirm,
+  unconfirmItems,
+  deleteItem,
+  deleteItems,
+  confirmItems,
+  bulkUpdateMasterStatus,
 };
  

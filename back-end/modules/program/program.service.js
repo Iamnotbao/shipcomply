@@ -1,20 +1,20 @@
  const { generatePDF } = require("../../utils/pdf");
 const programReposity = require("./program.repository");
 
-async function getAllProgram() {
-  return await programReposity.listAll();
+async function getAllProgram(limit,offset) {
+  return await programReposity.listAll(limit,offset);
 }
 async function getProgramByID(program_code) {
   return await programReposity.getByID(program_code);
 }
-async function addProgram(program, t) {
+async function addProgram(program,pageSize, t) {
   try {
     const existProgram = await getProgramByID(program.program_code);
     if (existProgram) {
       const  message = "program is already exist and program_code cannot be duplicate or the same !";
       return {message};
     }
-    const result = await programReposity.add(program, t);
+    const result = await programReposity.add(program,pageSize, t);
     if (!result) {
       console.log("Cannot add because data from db is null");
       return null;
@@ -58,9 +58,9 @@ async function deleteProgram(program_code, t) {
     console.log("Cannot delete", error);
   }
 }
-async function searchProgram(keyword) {
+async function searchProgram(keyword,limit, offset) {
   try {
-    const programFound = await programReposity.search(keyword);
+    const programFound = await programReposity.search(keyword,limit, offset);
     return programFound;
   } catch (error) {
     console.log(error);

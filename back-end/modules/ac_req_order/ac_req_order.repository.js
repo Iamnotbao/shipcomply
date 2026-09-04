@@ -292,7 +292,7 @@ async function getAllVendNoByStatus(
             WHEN :charset = 'E' THEN shortnm_e
             ELSE shortnm_s
           END AS NAME 
-         FROM "Customs".po_vender_m
+         FROM "po".po_vender_m
          WHERE factory_code = :factory 
            AND status = '7' 
          ORDER BY vend_no`,

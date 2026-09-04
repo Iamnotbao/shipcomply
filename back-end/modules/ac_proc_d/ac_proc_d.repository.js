@@ -845,7 +845,7 @@ async function autoAddMarkB(
       WHERE ac_vend = :vend_no
         AND column2 = :com_invoice
       --  AND src = :col6
-        AND status > 1
+        AND status::NUMERIC > 1
         AND invoice_id = :col4
       GROUP BY item_no, price, exchg_rate
       ORDER BY item_no

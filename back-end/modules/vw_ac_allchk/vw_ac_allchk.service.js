@@ -84,6 +84,14 @@ async function approveCont(factory_code, req_no, invoice_no, user_code) {
     user_code,
   );
 }
+async function revertApprove(factory_code, user_code, req_no, invoice_no) {
+  return await vwAcSrcOrderRepository.revertApproveContract(
+    factory_code,
+    user_code,
+    req_no,
+    invoice_no,
+  );
+}
 async function addContractNumb(
   factory_code,
   req_no,
@@ -135,6 +143,7 @@ async function exportVwAcAllChkExcel(filters) {
 module.exports = {
   getListOfAcAllChk,
   approveCont,
+  revertApprove,
   addContractNumb,
   checkB,
   confirmAll,

@@ -246,38 +246,23 @@ async function editSePlanSize(req, res) {
   }
 }
 
-async function deleteAcImp(req, res) {
+async function deleteSePlanSize(req, res) {
   const t = await sequelize.transaction();
   try {
-    const { factory_code, invoice_code, sort } = req.query;
-    const { lock_info } = req.body;
-
-    // Kiểm tra lock trước khi xóa
-    const io = req.app.get("io");
-    const activeLocks = io.activeLocks || new Map();
-    const lockKey = `SE_PLAN_SIZE:${factory_code}:${invoice_code}:${sort}`;
-    const existingLock = activeLocks.get(lockKey);
-
-    if (existingLock && existingLock.lock_info !== lock_info) {
-      await t.rollback();
-      const lockDetails = parseLockInfo(existingLock.lock_info);
-      return res.status(423).json({
-        success: false,
-        message:
-          "Cannot delete. Record is currently being edited by another user",
-        locked: true,
-        lockedBy: existingLock.lock_info,
-        lockDetails: lockDetails,
-      });
-    }
-
-    const isDelete = await sePlanSizeService.deleteAcImp(
+    const { factory_code, se_id, se_ver, se_seq, pack_gu, ship_seq,pk_seq } =
+      req.query;
+    const data = req.body;
+    const isDelete = await sePlanSizeService.deleteSePlanSize(
       factory_code,
-      invoice_code,
-      sort,
+      se_id,
+      se_ver,
+      se_seq,
+      pack_gu,
+      ship_seq,
+      pk_seq,
+      data,
       t,
     );
-
     if (!isDelete) {
       await t.rollback();
       return res.status(401).json({
@@ -285,16 +270,7 @@ async function deleteAcImp(req, res) {
         message: "Cannot delete because null!",
       });
     }
-
     await t.commit();
-
-    // Emit event về việc xóa
-    io.emit("record-deleted", {
-      table: "SE_PLAN_SIZE",
-      primaryKey: { factory_code, invoice_code, sort },
-      lock_info: lock_info,
-    });
-
     return res.status(200).json({
       success: true,
       message: "Delete import material tracking successfully!",
@@ -302,6 +278,74 @@ async function deleteAcImp(req, res) {
   } catch (error) {
     await t.rollback();
     console.log("Something error from delete controller:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+}
+async function confirmItemsSePlanSize(req, res) {
+  const t = await sequelize.transaction();
+  try {
+    const { factory_code, department_code, user_code, query_level } = req.query;
+    const { data } = req.body;
+    const result = await sePlanSizeService.confirmItemsSePlanSize(
+      factory_code,
+      department_code,
+      user_code,
+      query_level,
+      data,
+      t,
+    );
+    if (!result) {
+      await t.rollback();
+      return res.status(401).json({
+        success: false,
+        message: "Cannot confirm because null!",
+      });
+    }
+    await t.commit();
+    return res.status(200).json({
+      success: true,
+      message: "Confirm import material tracking successfully!",
+    });
+  } catch (error) {
+    await t.rollback();
+    console.log("Something error from confirm controller:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+}
+async function unconfirmItemsSePlanSize(req, res) {
+  const t = await sequelize.transaction();
+  try {
+    const { factory_code, department_code, user_code, query_level } = req.query;
+    const { data } = req.body;
+    const result = await sePlanSizeService.unconfirmItemsSePlanSize(
+      factory_code,
+      department_code,
+      user_code,
+      query_level,
+      data,
+      t,
+    );
+    if (!result) {
+      await t.rollback();
+      return res.status(401).json({
+        success: false,
+        message: "Cannot unconfirm because null!",
+      });
+    }
+    await t.commit();
+    return res.status(200).json({
+      success: true,
+      message: "Confirm import material tracking successfully!",
+    });
+  } catch (error) {
+    await t.rollback();
+    console.log("Something error from confirm controller:", error);
     return res.status(500).json({
       success: false,
       message: "Internal server error",
@@ -490,10 +534,12 @@ module.exports = {
   addSePlanOrd,
   editSePlanSize,
   exportPDF,
-  deleteAcImp,
   searchSePlanOrd,
   exportExcel,
   exportMaterialToExcel,
   exportCustomToExcel,
-  confirmAll
+  confirmAll,
+  confirmItemsSePlanSize,
+  unconfirmItemsSePlanSize,
+  deleteSePlanSize,
 };

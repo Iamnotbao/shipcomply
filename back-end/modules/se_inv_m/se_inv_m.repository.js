@@ -109,7 +109,120 @@ async function ListOfSeInvM(
     throw error;
   }
 }
+async function ListAllWithDetails(
+  factory_code,
+  department_code,
+  user_code,
+  query_level,
+  language,
+) {
+  try {
+    const charset = { vi: "S", zh: "T", en: "E" };
 
+    let permissionCondition = "1=1";
+    let replacements = {
+      factory_code: factory_code || null,
+      p_charset: charset[language] || "E"
+    };
+
+    if (user_code !== "admin") {
+      if (query_level === "1" && factory_code) {
+        permissionCondition = "a.factory_code = :permission_factory";
+        replacements.permission_factory = factory_code;
+      } else if (query_level === "2" && department_code && factory_code) {
+        permissionCondition =
+          "a.grt_dept = :permission_dept AND a.factory_code = :permission_factory";
+        replacements.permission_dept = department_code;
+        replacements.permission_factory = factory_code;
+      } else if (query_level === "3" && user_code) {
+        permissionCondition = "a.grt_user = :permission_user";
+        replacements.permission_user = user_code;
+      }
+    }
+    const sql = `
+      select 
+        a.factory_code,
+        b.ac_no,
+        b.invoice_id,
+        b.se_id ,
+        b.se_ver,
+        b.se_seq,
+        b.pack_gu,
+        b.pk_seq,
+        b.ship_seq,
+        b.ctn_pairs ,
+        b.ctns,
+        b.e_no,
+        b.gross_weight,
+        b.net_weight ,
+        b.high,
+        b.length,
+        b.s_no,
+        b.size_run,
+        b.width,
+        a.invoice_no,
+        a.invoice_date,
+        a.fcr_date,
+        a.cdc_no,
+        a.cdc_date,
+        a.hs_code,
+        a.sailing_date,
+        a.per,
+        a.exp_port,
+        "Customs".gf_code_name(a.factory_code, '2111', a.exp_port, :p_charset) AS exp_name,
+        a.dest_port,
+        "Customs".gf_code_name(a.factory_code, '2111', a.dest_port, :p_charset) AS dest_name,
+        a.sort,
+        "Customs".gf_code_name(a.factory_code, '5008', a.sort, :p_charset) AS sort_name,
+        a.nw,
+        a.gw,
+        a.submission_date,
+        a.shipment_no,
+        a.via,
+        a.trade,
+        CASE :p_charset
+          WHEN 'T' THEN d.name_t
+         WHEN 'S' THEN d.name_s
+          ELSE d.name_e
+        END AS trade_name,
+        a.payment,
+        "Customs".gf_code_name(a.factory_code, '5001', a.payment, :p_charset) AS payment_name,
+        a.bank_name,
+        a.account_addr,
+        a.goods_desc,
+        CASE a.status
+          WHEN 1  THEN '1-New新單'
+          WHEN 2  THEN '2-Check復核'
+          WHEN 7  THEN '7-Confirm確認'
+          WHEN 0  THEN '0-Cancel取消'
+          WHEN 9  THEN '9-Locked'
+          WHEN 99 THEN '99-Shipping'
+        END AS status_name,
+        c.adj_price
+      FROM "Customs".se_inv_d b
+      LEFT JOIN "Customs".se_inv_m a
+      on b.invoice_id = a.invoice_id
+      and b.ac_no = a.ac_no
+      LEFT JOIN "Customs".se_pay d ON a.trade = d.pay_no
+      LEFT JOIN "pac".sd_price_item c
+      ON 
+       b.se_id  = c.se_id
+       and b.se_seq = c.se_seq::TEXT
+       and b.se_ver = c.se_ver 
+      WHERE a.factory_code = :factory_code
+      AND ${permissionCondition}
+      ORDER BY b.ac_no,b.invoice_id
+    `;
+    const rows = await pool.query(sql, {
+      replacements,
+      type: pool.QueryTypes.SELECT,
+    });
+    return { rows: rows };
+  } catch (error) {
+    console.error("Error fetching SE_INV_M list:", error);
+    throw error;
+  }
+}
 async function fetchInvoiceDropdown(factory_code, page, limit, search) {
   let permissionCondition = "1=1";
   let replacements = {
@@ -932,6 +1045,7 @@ async function search(
 }
 module.exports = {
   ListOfSeInvM,
+  ListAllWithDetails,
   getByID,
   updateInvoiceDate,
   updateHsCode,
@@ -946,4 +1060,5 @@ module.exports = {
   voidAll,
   fetchInvoiceDropdown,
   getPackingSeidByInvoice,
+
 };

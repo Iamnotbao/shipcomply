@@ -537,11 +537,11 @@ async function exportExcel(req, res) {
     const { search } = req.body;
     const workbook = await seInvMService.exportExcel(
       filename,
-      search,
       factory_code,
       department_code,
       user_code,
       query_level,
+      search,
     );
     res.setHeader(
       "Content-Type",

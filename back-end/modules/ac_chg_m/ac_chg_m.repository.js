@@ -450,7 +450,7 @@ async function listAllReportDescProc(
   department_code,
   user_code,
   query_level,
-  
+
   ac_no,
 ) {
   try {
@@ -633,7 +633,7 @@ async function getPosition(ac_no, pageSize, t, permission = {}, type = "1") {
       WITH ranked AS (
         SELECT 
           m.ac_no,
-          ROW_NUMBER() OVER (ORDER BY v.out_date DESC, m.ac_no) - 1 as position
+          ROW_NUMBER() OVER (ORDER BY ${type === "1" ? "v.out_date DESC, m.ac_no" : "m.ac_no,v.out_date DESC"} ) - 1 as position
         FROM "Customs".ac_chg_m m
         INNER JOIN  ${type === "1" ? '"Customs".vw_chg_imp' : '"Customs".vw_chg_exp'} v 
           ON m.factory_code = v.factory_code 
@@ -1602,7 +1602,7 @@ async function cancelActivateExp(factory_code, ac_no, user_code, language) {
       transaction,
     });
     if (parseInt(checkIssueResult[0].cnt) > 0) {
-      const message = gf_mesgnm("500067", charset[language]);
+      const message = await gf_mesgnm("500067", charset[language]);
       throw new Error(message);
     }
 
@@ -2356,13 +2356,16 @@ async function checkDuplicateAcChgno(
   ac_chgno,
   out_date,
   ac_no = null,
+  type = "1",
 ) {
   if (!ac_chgno || !out_date)
     return {
       success: false,
       message: "Missing Custom Declaration Date or Custom Declaration No!",
     };
-
+  if (type === "2") {
+    return { success: true, count: 0 };
+  }
   const year = new Date(out_date).getFullYear();
 
   let permissionCondition = "1=1";

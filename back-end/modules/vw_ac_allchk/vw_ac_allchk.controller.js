@@ -165,6 +165,38 @@ async function approveCont(req, res) {
     });
   }
 }
+async function revertApprove(req, res) {
+  const { factory_code, user_code, req_no, invoice_no } = req.query;
+  try {
+    const result = await vwAcAllChkService.revertApprove(
+      factory_code,
+      user_code,
+      req_no,
+      invoice_no,
+    );
+    if (!result.success) {
+      return res.status(401).json({
+        message: result?.message,
+        success: result?.success,
+        tableName: "VW_AC_ALLCHK",
+      });
+    }
+    return res.status(200).json({
+      message: result?.message,
+      success: result?.success,
+      data: result?.ac_no,
+      tableName: "VW_AC_ALLCHK",
+    });
+  } catch (error) {
+    return res.status(400).json({
+      message: error.message || "Cannot approve contract",
+      success: false,
+      error_code: error.code,
+      error_type: error.type,
+      tableName: "VW_AC_ALLCHK",
+    });
+  }
+}
 async function addContractNumb(req, res) {
   const { factory_code, req_no, vend_no, req_date, ac_type } = req.query;
   try {
@@ -210,7 +242,7 @@ async function searchVwAcAllChk(req, res) {
     return res.json({
       message: "search ac_bom_m successfully!",
       success: true,
-      data: shoes.rows,
+      data: shoes.rows || [],
       total: shoes.count,
       hasMore: shoes.hasMore,
       tableName: "VW_AC_ALLCHK",
@@ -282,6 +314,7 @@ module.exports = {
   getListOfAcAllChk,
   checkB,
   approveCont,
+  revertApprove,
   addContractNumb,
   confirmAll,
   searchVwAcAllChk,

@@ -14,6 +14,7 @@ const {
   fetchGroupFieldDrop,
   fetchFieldWithFunction,
   importExcel,
+  fetchFieldDropdown,
 } = require("./ac_item_m.controller");
 
 const acItemMRouter = express.Router();
@@ -22,8 +23,9 @@ acItemMRouter.get("/all", getAllAcIM);
 acItemMRouter.get("/pdf", exportPDFAcIM);
 acItemMRouter.post("/excel", exportExcelAcIM);
 acItemMRouter.get("/item", getAcIMByIA);
+acItemMRouter.get("/field_dropdown",fetchFieldDropdown);
 acItemMRouter.get("/dropdown_group_field",fetchGroupFieldDrop);
-acItemMRouter.get("/field_with_function",fetchFieldWithFunction); 
+acItemMRouter.get("/field_with_function", fetchFieldWithFunction);
 // acItemMRouter.post("/material-excel",exportMaterialToExcel );
 // acItemMRouter.post("/custom-excel",exportCustomToExcel);
 acItemMRouter.get("/", getAcIMByID);

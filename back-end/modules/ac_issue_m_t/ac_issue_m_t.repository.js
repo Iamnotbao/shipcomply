@@ -1001,7 +1001,6 @@ async function voidAll(factory_code, user_code, conf_seq, lock_seq, language) {
 
     if (parseInt(lockResult[0].cnt) > 0) {
       const message = await gf_mesgnm(500110, language);
-      await transaction.rollback();
       throw new Error(message);
     }
 

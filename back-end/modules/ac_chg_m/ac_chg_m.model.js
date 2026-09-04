@@ -212,6 +212,10 @@ const AC_CHG_M = sequelize.define(
     stoc_type: {
       type: DataTypes.STRING(1),
     },
+    locked_information: {
+      type: DataTypes.STRING(600),
+      allowNull: true,
+    },
   },
   {
     tableName: "ac_chg_m",

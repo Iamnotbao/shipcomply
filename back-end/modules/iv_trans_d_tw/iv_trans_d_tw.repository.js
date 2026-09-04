@@ -18,14 +18,14 @@ async function listAllITDT(order_no, order_seq, limit, offset) {
     };
     const sql = `
      SELECT DISTINCT ON(iv_trans_d_tw.TRANS_NO, iv_trans_d_tw.TRANS_SEQ)
-    iv_trans_d_tw.FACTORY_CODE,
+    iv_trans_d_tw.org_id,
     iv_trans_d_tw.TRANS_NO,
     iv_trans_d_tw.TRANS_SEQ,
     iv_trans_d_tw.OUT_QTY,
     iv_trans_d_tw.COL3,
     iv_trans_d_tw.COL4,
     iv_trans_d_tw.LAST_DATE
-FROM "Customs".iv_trans_d_tw AS iv_trans_d_tw
+FROM "po".iv_trans_d AS iv_trans_d_tw
 INNER JOIN "Customs".vw_ac_srcorder AS VW_AC_SRCORDER
     ON iv_trans_d_tw.COL3 = VW_AC_SRCORDER.order_no
     AND iv_trans_d_tw.COL4::numeric = VW_AC_SRCORDER.order_seq

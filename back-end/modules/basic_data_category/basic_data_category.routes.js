@@ -1,9 +1,9 @@
 const express = require("express");
-const { getAll, getByID, editBasicCategoryData, getByFactory, createBasicDataCategory, searchBasicDataCategory, exportPDFBasicDataCategory, getByDeclareCate } = require("./basic_data_category.controller");
+const { getAll, getByID, editBasicCategoryData, getByFactory, createBasicDataCategory, searchBasicDataCategory, exportExcelBasicDataCategory, getByDeclareCate } = require("./basic_data_category.controller");
 
 const basicDataCategoryRouter = express.Router();
 basicDataCategoryRouter.get("/all",getAll)
-basicDataCategoryRouter.get("/pdf",exportPDFBasicDataCategory);
+basicDataCategoryRouter.get("/excel",exportExcelBasicDataCategory);
 basicDataCategoryRouter.get("/",getByID)
 basicDataCategoryRouter.get("/factory",getByFactory);
 basicDataCategoryRouter.get("/filter",getByDeclareCate);

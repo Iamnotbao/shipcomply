@@ -400,7 +400,7 @@ async function search(
 FROM "Customs".SE_SHIPING_M 
 WHERE ${permissionCondition}
 AND
-(:cust_id IS NULL OR cust_id LIKE '%' || :cust_id || '%') AND
+(:cust_id IS NULL OR cust_id ILIKE '%' || :cust_id || '%') AND
 (:status IS NULL OR status = :status) AND
 (:s_date_1 IS NULL OR DATE_TRUNC('day', start_date) >= DATE_TRUNC('day', :s_date_1::timestamp)) AND
 (:e_date_1 IS NULL OR DATE_TRUNC('day', end_date) <= DATE_TRUNC('day', :e_date_1::timestamp))
@@ -413,7 +413,7 @@ ORDER BY CUST_ID, SI_SEQ
     FROM "Customs".SE_SHIPING_M 
     WHERE ${permissionCondition}
     AND
-    (:cust_id IS NULL OR cust_id LIKE '%' || :cust_id || '%') AND
+    (:cust_id IS NULL OR cust_id ILIKE '%' || :cust_id || '%') AND
     (:status IS NULL OR status = :status) AND
     (:s_date_1 IS NULL OR DATE_TRUNC('day', start_date) >= DATE_TRUNC('day', :s_date_1::timestamp)) AND
     (:e_date_1 IS NULL OR DATE_TRUNC('day', end_date) <= DATE_TRUNC('day', :e_date_1::timestamp))

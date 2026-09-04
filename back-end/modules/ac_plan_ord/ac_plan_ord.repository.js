@@ -73,7 +73,7 @@ async function getListOfAcPLanOrd(
                       WHEN 'E' THEN name_q_e
                       ELSE  name_q_e
                   END
-              FROM "Customs".SE_CUST
+              FROM "public".sd_cust
               WHERE CUST_ID = (
                   SELECT DISTINCT VKORG
                   FROM mxcp.SD_030
@@ -84,7 +84,7 @@ async function getListOfAcPLanOrd(
 
           (
               SELECT column1
-              FROM "Customs".SE_CUST
+              FROM "public".sd_cust
               WHERE CUST_ID = (
                   SELECT DISTINCT VKORG
                   FROM mxcp.SD_030

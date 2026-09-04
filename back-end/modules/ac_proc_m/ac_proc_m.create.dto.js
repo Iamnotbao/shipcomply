@@ -8,7 +8,7 @@ const createAcProcMSchema = Joi.object({
     .allow(null, "")
     .optional(),
   in_cont: Joi.string().max(200).allow(null, "").optional(),
-  in_crate: Joi.number().precision(4).allow(null).optional(),
+  in_crate: Joi.number().precision(4).allow(null).empty('').default(null).optional(),
   out_type: Joi.string().max(30).allow(null, "").optional(),
   out_cont: Joi.string().max(200).allow(null, "").optional(),
   in_type: Joi.string().max(30).allow(null, "").optional(),
@@ -16,8 +16,8 @@ const createAcProcMSchema = Joi.object({
   sort: Joi.string().max(200).allow(null, "").optional(),
   out_settle: Joi.string().max(30).allow(null, "").optional(),
   out_curr: Joi.string().max(30).allow(null, "").optional(),
-  out_crate: Joi.number().precision(4).allow(null).optional(),
-  gross: Joi.number().precision(4).allow(null).optional(),
+  out_crate: Joi.number().precision(4).allow(null).empty('').default(null).optional(),
+  gross: Joi.number().precision(4).allow(null).empty('').default(null).optional(),
 
   stoc_type: Joi.string()
     .max(1)
@@ -25,11 +25,11 @@ const createAcProcMSchema = Joi.object({
     .optional(),
 
   in_license: Joi.string().max(30).allow(null, "").optional(),
-  tax: Joi.number().precision(4).allow(null).optional(),
-  add_tax: Joi.number().precision(4).allow(null).optional(),
-  sum_qty: Joi.number().precision(4).allow(null).optional(),
-  sum_money: Joi.number().precision(4).allow(null).optional(),
-  peice: Joi.number().precision(4).allow(null).optional(),
+  tax: Joi.number().precision(4).allow(null).empty('').default(null).optional(),
+  add_tax: Joi.number().precision(4).allow(null).empty('').default(null).optional(),
+  sum_qty: Joi.number().precision(4).allow(null).empty('').default(null).optional(),
+  sum_money: Joi.number().precision(4).allow(null).empty('').default(null).optional(),
+  peice: Joi.number().precision(4).allow(null).empty('').default(null).optional(),
   ac_chgeno: Joi.string().max(200).allow(null, "").optional(),
   mark: Joi.string().max(1).default("A").optional(),
 
@@ -61,8 +61,8 @@ const createAcProcMSchema = Joi.object({
   soso: Joi.string().max(200).allow(null, "").optional(),
 
   // ========== UNUSED FIELDS ==========
-  oth_cost: Joi.number().precision(4).allow(null).optional(),
-  suttle: Joi.number().precision(4).allow(null).optional(),
+  oth_cost: Joi.number().precision(4).allow(null).empty('').default(null).optional(),
+  suttle: Joi.number().precision(4).allow(null).empty('').default(null).optional(),
   col3: Joi.string().max(200).allow(null, "").optional(),
   col4: Joi.string().max(200).allow(null, "").optional(),
   col6: Joi.string().max(200).allow(null, "").optional(),

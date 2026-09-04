@@ -103,7 +103,8 @@ async function listAllSePlanOrd(
           WHEN '1' THEN '1-Waitting'
           WHEN '2' THEN '2-PASS'
           WHEN '9' THEN '9-NG'
-        END AS EX_STATUS,
+        END AS EX_STATUS_NAME,
+        A.EX_STATUS,
         A.STATUS ,
         A.LOCKED_INFORMATION,
         A.GRT_DEPT,
@@ -117,8 +118,33 @@ async function listAllSePlanOrd(
         A.locked_information,
         A.COLUMN3,
         A.SEND_ADDR,
-        A.REMARK
+        A.REMARK,
+        (COALESCE(C.SUM_CTNS, 0)) AS SUM_CTNS
       FROM "Customs".SE_PLAN_ORD A
+     LEFT JOIN (
+    SELECT
+        FACTORY_CODE,
+        SE_ID,
+        SE_VER,
+        SE_SEQ,
+        SHIP_SEQ,
+        PACK_GU,
+        SUM(COALESCE(CTNS, 0)) AS SUM_CTNS
+    FROM "Customs".SE_PLAN_SIZE
+    GROUP BY
+        FACTORY_CODE,
+        SE_ID,
+        SE_VER,
+        SE_SEQ,
+        SHIP_SEQ,
+        PACK_GU
+) C
+    ON A.FACTORY_CODE = C.FACTORY_CODE
+    AND A.SE_ID = C.SE_ID
+    AND A.SE_VER = C.SE_VER
+    AND A.SE_SEQ = C.SE_SEQ
+    AND A.SHIP_SEQ = C.SHIP_SEQ
+    AND A.PACK_GU = C.PACK_GU
       INNER JOIN "pac".SD_ORD_M_C B 
         ON A.FACTORY_CODE = B.ORG_ID 
        AND A.SE_ID = B.SE_ID
@@ -240,7 +266,7 @@ async function listAllSePlanOrdDetails(
     AND (DATE_TRUNC('day', B.NST) <= DATE_TRUNC('day', :fe_date::timestamp) OR :fe_date IS NULL)
     AND (COALESCE(A.SE_ID, '')      ILIKE '%' || :se_id     || '%')
     AND (A.STATUS = :status OR :status IS NULL)
-    AND ("Customs".GF_CUSTID_CUSTNO(A.FACTORY_CODE, B.SE_CUSTID) LIKE :cust_id OR :cust_id IS NULL)
+    AND ("Customs".GF_CUSTID_CUSTNO(A.FACTORY_CODE, B.SE_CUSTID) ILIKE :cust_id OR :cust_id IS NULL)
     AND (COALESCE(A.COLUMN1, '')    ILIKE '%' || :hg_stoc   || '%')
     AND (COALESCE(A.COL5, '')       ILIKE '%' || :agent     || '%')
     AND (COALESCE(A.EX_STATUS, '')  ILIKE '%' || :ex_status || '%')
@@ -610,56 +636,6 @@ async function getByID(factory_code, se_id, se_ver, se_seq, pack_gu, ship_seq) {
   }
   return acImp;
 }
-async function createShipSeq(
-  factory_code,
-  se_id,
-  pack_gu,
-  se_seq,
-  se_ver,
-  department_code,
-  user_code,
-  query_level,
-) {
-  let permissionCondition = "1=1";
-  let replacements = {
-    factory_code: factory_code,
-    se_id: se_id || null,
-    pack_gu: pack_gu || null,
-    se_seq: se_seq || null,
-    se_ver: se_ver || null,
-  };
-  // if (user_code !== "admin") {
-  //   if (query_level === "1" && factory_code) {
-  //     permissionCondition = "factory_code = :factory_code";
-  //   } else if (query_level === "2" && department_code && factory_code) {
-  //     permissionCondition =
-  //       "grt_dept = :permission_dept AND factory_code = :factory_code";
-  //     replacements.permission_dept = department_code;
-  //   } else if (query_level === "3" && user_code) {
-  //     permissionCondition = "grt_user = :permission_user";
-  //     replacements.permission_user = user_code;
-  //   }
-  // }
-  try {
-    const sql = `
-    SELECT COALESCE(MAX(ship_seq), 0) + 1 as ship_seq
-     from "Customs".SE_PLAN_ORD
-    WHERE factory_code= :factory_code 
-    AND SE_ID=:se_id 
-    AND PACK_GU=:pack_gu	
-    AND SE_SEQ=:se_seq
-    AND SE_VER=:se_ver
-    `;
-    const rows = await pool.query(sql, {
-      replacements: replacements,
-      type: pool.QueryTypes.SELECT,
-    });
-    return parseFloat(rows[0]) || 1;
-  } catch (error) {
-    console.error("Error in createAcno:", error);
-    throw error;
-  }
-}
 async function createCBM(
   factory_code,
   se_id,
@@ -827,6 +803,41 @@ async function createShipSeq(
     };
   } catch (error) {
     console.error("Error in createShipSeq:", error);
+    throw error;
+  }
+}
+async function createMoney(
+  factory_code,
+  se_id,
+  department_code,
+  user_code,
+  query_level,
+) {
+  try {
+    const sql = `
+      select sum(spo.p_shipqty * somc.sales_price)as money 
+      from "Customs".se_plan_ord spo
+      left join "pac".sd_ord_m_c somc
+      on spo.se_id = somc.se_id
+      and spo.factory_code = somc.org_id
+      where
+      spo.se_id = :se_id
+    `;
+
+    const rows = await pool.query(sql, {
+        replacements: {
+        se_id
+      },
+      type: pool.QueryTypes.SELECT,
+    });
+    const money = rows[0]?.money
+      ? parseFloat(parseFloat(rows[0].money).toFixed(2))
+      : 1;
+    return {
+      money: money,
+    };
+  } catch (error) {
+    console.error("Error in createMoney:", error);
     throw error;
   }
 }
@@ -1194,7 +1205,7 @@ async function confirmCheck(
       const vwSalesShItem = await pool.query(
         `
      SELECT MAX(M.COL2) as v_shno
-			FROM   "Customs".VW_SALES_SH M, "Customs".SE_SALES_D D
+			FROM   "Customs".VW_SALES_SH M, "pac".sd_sales_d D
 			WHERE  M.org_id = D.org_id
 			AND    M.SALES_ID = D.SALES_ID
 			AND    D.org_id =:factory_code
@@ -1399,6 +1410,201 @@ async function confirm(
     throw error;
   }
 }
+async function confirmItems(items, factory_code, department_code, user_code, query_level, t) {
+     console.log("items",factory_code,department_code,user_code,query_level,items);
+     
+  if (!items || items.length === 0) {
+    return { success: false, message: "No items to confirm" };
+  }
+
+  const replacements = { user_code };
+  const tuples = items.map((item, i) => {
+    replacements[`factory_code_${i}`] = item.factory_code;
+    replacements[`se_id_${i}`] = item.se_id;
+    replacements[`pack_gu_${i}`] = parseFloat(item.pack_gu);
+    replacements[`se_ver_${i}`] = parseFloat(item.se_ver);
+    replacements[`se_seq_${i}`] = item.se_seq;
+    replacements[`ship_seq_${i}`] = parseFloat(item.ship_seq);
+    return `(:factory_code_${i}, :se_id_${i}, :pack_gu_${i}, :se_ver_${i}, :se_seq_${i}, :ship_seq_${i})`;
+  });
+  const tupleList = tuples.join(", ");
+
+  let permissionCondition = "1=1";
+  if (user_code !== "admin") {
+    if (query_level === "1" && factory_code) {
+      permissionCondition = "spo.factory_code = :permission_factory";
+      replacements.permission_factory = factory_code;
+    } else if (query_level === "2" && department_code && factory_code) {
+      permissionCondition =
+        "spo.grt_dept = :permission_dept AND spo.factory_code = :permission_factory";
+      replacements.permission_dept = department_code;
+      replacements.permission_factory = factory_code;
+    } else if (query_level === "3" && user_code) {
+      permissionCondition = "spo.grt_user = :permission_user";
+      replacements.permission_user = user_code;
+    }
+  }
+
+  try {
+    // 1. Confirm toàn bộ SE_PLAN_SIZE con — đơn giản, IN(...) là đủ vì không cần tính toán gì thêm
+    const sql1 = `
+      UPDATE "Customs".se_plan_size
+      SET status = 7, last_user = :user_code, last_date = NOW()
+      WHERE (factory_code, se_id, pack_gu, se_ver, se_seq, ship_seq) IN (${tupleList})
+        AND status = 1
+    `;
+    await pool.query(sql1, {
+      replacements,
+      type: pool.QueryTypes.UPDATE,
+      transaction: t,
+    });
+
+    // 2. Confirm master + tính p_shipqty/cbm RIÊNG cho từng master
+    //    targets = danh sách master cần confirm (kể cả master không có size con nào)
+    //    agg = tổng size GROUP BY theo từng composite key
+    //    LEFT JOIN để master không có size vẫn được confirm với 0, không bị bỏ sót
+    const sql2 = `
+      UPDATE "Customs".se_plan_ord AS spo
+      SET status = 7,
+          p_shipqty = COALESCE(agg.total_ship_qty, 0),
+          cbm = COALESCE(agg.total_cbm, 0),
+          last_user = :user_code,
+          last_date = NOW()
+      FROM (
+        VALUES ${tupleList}
+      ) AS targets(factory_code, se_id, pack_gu, se_ver, se_seq, ship_seq)
+      LEFT JOIN (
+        SELECT
+          factory_code, se_id, pack_gu, se_ver, se_seq, ship_seq,
+          SUM(COALESCE(ctns_pairs, 0) * COALESCE(ctns, 0)) AS total_ship_qty,
+          SUM(ctns) * 1.03 AS total_cbm
+        FROM "Customs".se_plan_size
+        WHERE (factory_code, se_id, pack_gu, se_ver, se_seq, ship_seq) IN (${tupleList})
+          AND status > 0
+        GROUP BY factory_code, se_id, pack_gu, se_ver, se_seq, ship_seq
+      ) AS agg
+        ON agg.factory_code = targets.factory_code
+       AND agg.se_id = targets.se_id
+       AND agg.pack_gu = targets.pack_gu
+       AND agg.se_ver = targets.se_ver
+       AND agg.se_seq = targets.se_seq
+       AND agg.ship_seq = targets.ship_seq
+      WHERE spo.factory_code = targets.factory_code
+        AND spo.se_id = targets.se_id
+        AND spo.pack_gu = targets.pack_gu
+        AND spo.se_ver = targets.se_ver
+        AND spo.se_seq = targets.se_seq
+        AND spo.ship_seq = targets.ship_seq
+        AND spo.status IN (1, 2)
+        AND ${permissionCondition}
+    `;
+    const updatedMasters = await pool.query(sql2, {
+      replacements,
+      type: pool.QueryTypes.UPDATE,
+      transaction: t,
+    });
+
+    return {
+      success: true,
+      message: "Confirmed successfully",
+      confirmed_count: updatedMasters[1] || 0,
+    };
+  } catch (error) {
+    console.log("Cannot bulk confirm SE_PLAN_ORD from db", error);
+    throw error;
+  }
+}
+async function bulkUpdateMasterStatus(
+  items,
+  newStatus,
+  allowedFromStatuses,
+  factory_code,
+  department_code,
+  user_code,
+  query_level,
+  t,
+) {
+  if (!items || items.length === 0) {
+    return { success: false, message: "No items to update" };
+  }
+
+  const replacements = { user_code, new_status: newStatus };
+
+  const tuples = items.map((item, i) => {
+    replacements[`factory_code_${i}`] = item.factory_code;
+    replacements[`se_id_${i}`] = item.se_id;
+    replacements[`pack_gu_${i}`] = item.pack_gu;
+    replacements[`se_ver_${i}`] = item.se_ver;
+    replacements[`se_seq_${i}`] = item.se_seq;
+    replacements[`ship_seq_${i}`] = item.ship_seq;
+    return `(:factory_code_${i}, :se_id_${i}, :pack_gu_${i}, :se_ver_${i}, :se_seq_${i}, :ship_seq_${i})`;
+  });
+  const tupleList = tuples.join(", ");
+
+  const statusList = allowedFromStatuses
+    .map((s, i) => {
+      replacements[`from_status_${i}`] = s;
+      return `:from_status_${i}`;
+    })
+    .join(", ");
+
+  let permissionCondition = "1=1";
+  if (user_code !== "admin") {
+    if (query_level === "1" && factory_code) {
+      permissionCondition = "factory_code = :permission_factory";
+      replacements.permission_factory = factory_code;
+    } else if (query_level === "2" && department_code && factory_code) {
+      permissionCondition =
+        "grt_dept = :permission_dept AND factory_code = :permission_factory";
+      replacements.permission_dept = department_code;
+      replacements.permission_factory = factory_code;
+    } else if (query_level === "3" && user_code) {
+      permissionCondition = "grt_user = :permission_user";
+      replacements.permission_user = user_code;
+    }
+  }
+
+  try {
+    const sql = `
+      UPDATE "Customs".se_plan_ord
+      SET status = :new_status, last_user = :user_code, last_date = NOW()
+      WHERE (factory_code, se_id, pack_gu, se_ver, se_seq, ship_seq) IN (${tupleList})
+        AND status IN (${statusList})
+        AND ${permissionCondition}
+    `;
+    const updated = await pool.query(sql, {
+      replacements,
+      type: pool.QueryTypes.UPDATE,
+      transaction: t,
+    });
+
+    return { success: true, updated_count: updated[1] || 0 };
+  } catch (error) {
+    console.log("Cannot bulk update status SE_PLAN_ORD from db", error);
+    throw error;
+  }
+}
+// Wrapper riêng cho unconfirm — 7 -> 1, khớp allowedFromStatuses=[7] bên frontend
+async function unconfirmItems(
+  items,
+  factory_code,
+  department_code,
+  user_code,
+  query_level,
+  t,
+) {
+  return bulkUpdateMasterStatus(
+    items,
+    1,
+    [7],
+    factory_code,
+    department_code,
+    user_code,
+    query_level,
+    t,
+  );
+}
+
 async function checkItem(
   sessionKey,
   factory_code,
@@ -1508,8 +1714,8 @@ async function recreateTempT(factory_code, user_code, session_id) {
     // 2. INSERT: query IV_TRANS_D lấy STOC_NO
     const sql = `
       SELECT STOC_NO
-      FROM "Customs".IV_TRANS_D_TW
-      WHERE factory_code = :factory_code
+      FROM "po".iv_trans_d
+      WHERE org_id = :factory_code
         AND STOC_NO IS NOT NULL
       GROUP BY STOC_NO
     `;
@@ -1722,6 +1928,51 @@ async function deleteItem(existSPO, t) {
     throw error;
   }
 }
+async function deleteItems(items, t) {
+  try {
+     if(!items || items.length === 0) {
+      return {deleted_master:0, deleted_sizes:0};
+     }
+
+     const replacements = {};
+     const tuples = items.map((item,i)=>{
+      replacements[`factory_code_${i}`] = item.factory_code;
+      replacements[`se_id_${i}`] = item.se_id;
+      replacements[`pack_gu_${i}`] = item.pack_gu;
+      replacements[`se_ver_${i}`] = item.se_ver;
+      replacements[`se_seq_${i}`] = item.se_seq;
+      replacements[`ship_seq_${i}`] = item.ship_seq;
+      return `(:factory_code_${i}, :se_id_${i}, :pack_gu_${i}, :se_ver_${i}, :se_seq_${i}, :ship_seq_${i})`;
+     })
+     const tupleLists = tuples.join(", ");
+
+     const deleteSizeSql = `
+      DELETE FROM "Customs".SE_PLAN_SIZE
+      WHERE (FACTORY_CODE, SE_ID, PACK_GU, SE_VER, SE_SEQ, SHIP_SEQ) IN (${tupleLists})
+    `;
+    const deletedSizes = await pool.query(deleteSizeSql, {
+      replacements: replacements,
+      type: pool.QueryTypes.DELETE,
+      transaction: t,
+    });
+    const deleteMasterSql = `
+      DELETE FROM "Customs".SE_PLAN_ORD
+      WHERE (FACTORY_CODE, SE_ID, PACK_GU, SE_VER, SE_SEQ, SHIP_SEQ) IN (${tupleLists})
+    `;
+    const deletedMasters = await pool.query(deleteMasterSql, {  
+      replacements: replacements,
+      type: pool.QueryTypes.DELETE,
+      transaction: t,
+    });
+    return {
+      deleted_master: deletedMasters[1] || 0,
+      deleted_sizes: deletedSizes[1] || 0,
+    };
+  } catch (error) {
+    console.log("Cannot bulk delete SE_PLAN_ORD from db", error);
+    throw error;
+  }
+}
 async function getMaterialOut(
   session_id,
   factory_code,
@@ -1784,10 +2035,10 @@ async function getMaterialOut(
     };
     if (user_code !== "admin") {
       if (query_level === "1" && factory_code) {
-        permissionCondition = "B.FACTORY_CODE = :factory_code";
+        permissionCondition = "B.org_id = :factory_code";
       } else if (query_level === "2" && department_code && factory_code) {
         permissionCondition =
-          "B.FACTORY_CODE = :factory_code AND B.GRT_DEPT = :permission_dept";
+          "B.org_id = :factory_code AND B.GRT_DEPT = :permission_dept";
         replacements.permission_dept = department_code;
       } else if (query_level === "3" && user_code) {
         permissionCondition = "B.GRT_USER = :permission_user";
@@ -1798,7 +2049,7 @@ async function getMaterialOut(
     const sql = `
       SELECT 
         B.ITEM_NO,
-        B.FACTORY_CODE,
+        B.org_id,
         B.STOC_NO,
         B.TRANS_TYPE,
         NULL AS SPECIAL_INVENTORY,
@@ -1813,18 +2064,18 @@ async function getMaterialOut(
         C.NAME_E,
         NULL AS TRANS_TYPE_TEXT,
         B.ITEM_TEXT
-      FROM "Customs".IV_TRANS_D_TW B
+      FROM "po".iv_trans_d B
       LEFT JOIN "public".MM_ITEM C ON B.ITEM_NO = C.ITEM_NO
       INNER JOIN "Customs".SAP_TRANS_TYPE D
-        ON B.FACTORY_CODE = D.FACTORY_CODE
+        ON B.org_id = D.org_id
         AND B.TRANS_TYPE = D.TYPE_NO
         AND COALESCE(D.MATERIAL_OUT, 'N') = 'Y'
       WHERE ${permissionCondition}
-        AND B.FACTORY_CODE = :factory_code
+        AND B.org_id = :factory_code
         AND (B.TRANS_DATE BETWEEN DATE_TRUNC('day', :s_transdate::timestamp)
                                AND DATE_TRUNC('day', :e_transdate::timestamp)
              OR :s_transdate IS NULL)
-        AND B.ITEM_NO LIKE :item_no
+        AND B.ITEM_NO ILIKE :item_no
         AND B.STOC_NO IN (${stocNoList})
         AND (COALESCE(B.OUT_QTY, 0) <> 0 OR COALESCE(B.IN_QTY, 0) <> 0)
         AND EXISTS (
@@ -1907,7 +2158,7 @@ async function getMaterialOut(
          INNER JOIN "wk".WK_ORD_M B
            ON A.ORG_ID = B.ORG_ID AND A.WK_ID = B.WK_ID
          WHERE A.ORG_ID = :factory_code
-           AND :item_text LIKE '%' || A.DRAW_NO || '%'
+           AND :item_text ILIKE '%' || A.DRAW_NO || '%'
            AND A.STATUS > 1
            AND B.STATUS > 1`,
             {
@@ -2054,7 +2305,7 @@ async function getPeriodEndMaterial(
     const sql = `
       SELECT
         B.ITEM_NO,
-        B.FACTORY_CODE,
+        B.org_id,
         B.STOC_NO,
         B.TRANS_TYPE,
         B.TRANS_NO    AS MATERIAL_FILE,
@@ -2067,7 +2318,7 @@ async function getPeriodEndMaterial(
         B.AMOUNT,
         C.NAME_E,
         B.ITEM_TEXT
-      FROM "Customs".IV_TRANS_D_TW B
+      FROM "po".iv_trans_d B
       LEFT JOIN "public".MM_ITEM C ON B.ITEM_NO = C.ITEM_NO
       INNER JOIN "Customs".SAP_TRANS_TYPE D
         ON B.FACTORY_CODE = D.FACTORY_CODE
@@ -2078,7 +2329,7 @@ async function getPeriodEndMaterial(
         AND (B.TRANS_DATE BETWEEN DATE_TRUNC('day', :s_transdate::timestamp)
                                AND DATE_TRUNC('day', :e_transdate::timestamp)
              OR :s_transdate IS NULL)
-        AND B.ITEM_NO LIKE :item_no
+        AND B.ITEM_NO ILIKE :item_no
         AND B.STOC_NO IN (${stocNoList})
         AND (COALESCE(B.OUT_QTY, 0) <> 0 OR COALESCE(B.IN_QTY, 0) <> 0)
         AND EXISTS (
@@ -2192,7 +2443,7 @@ async function getPeriodEndMaterial(
            INNER JOIN "wk".SF_DRAW_D C ON A.ORG_ID = C.ORG_ID AND A.DRAW_ID = C.DRAW_ID
            INNER JOIN "wk".SF_DRAW_S D ON C.ORG_ID = D.ORG_ID AND C.DRAW_ID = D.DRAW_ID AND C.ITEM_ID = D.ITEM_ID
            WHERE A.ORG_ID = :factory_code
-             AND :item_text LIKE '%' || A.DRAW_NO || '%'
+             AND :item_text ILIKE '%' || A.DRAW_NO || '%'
              AND A.STATUS > 1 AND B.STATUS > 1
              AND D.ITEM_NO = :item_no
              AND D.SAP_AUFNR = :work_order_no`,
@@ -2473,7 +2724,7 @@ async function getShipOrder(
         AND F.PACK_GU = A.PACK_GU
       INNER JOIN "wk".SF_DRAW_M B
         ON B.ORG_ID = F.ORG_ID
-        AND B.WK_ID LIKE F.ORI_SE_ID || '%'
+        AND B.WK_ID ILIKE F.ORI_SE_ID || '%'
       INNER JOIN "wk".SF_DRAW_D C
         ON C.ORG_ID  = B.ORG_ID
         AND C.DRAW_ID = B.DRAW_ID
@@ -2489,7 +2740,7 @@ async function getShipOrder(
                            AND DATE_TRUNC('day', :e_transdate::timestamp)
           OR :s_transdate IS NULL
         )
-        AND C.ITEM_NO LIKE :item_no
+        AND C.ITEM_NO ILIKE :item_no
         AND B.STOC_NO IN (${stocNoList})
         AND (D.REQ_QTY <> 0 OR D.DRAW_QTY <> 0)
         AND (F.ORI_SE_ID, COALESCE(A.SE_VER, 1), A.SE_SEQ) IN (
@@ -2629,9 +2880,9 @@ async function getShipOrder(
            FROM "pac".SD_ORD_SIZE
            WHERE ORG_ID = :factory_code
              AND (
-               (:se_id NOT LIKE '%-%' AND SE_ID = :se_id)
+               (:se_id NOT ILIKE '%-%' AND SE_ID = :se_id)
                OR
-               (:se_id LIKE '%-%' AND :se_id LIKE SE_ID || '%')
+               (:se_id ILIKE '%-%' AND :se_id ILIKE SE_ID || '%')
              )
              AND COALESCE(SE_VER, 1) = :se_ver
              AND SE_SEQ  = :se_seq
@@ -2857,7 +3108,7 @@ async function getPP026Excel(session_id, factory_code, user_code, filters) {
         )
         AND A.BUDAT BETWEEN TO_CHAR(:start_date::date, 'YYYYMMDD')
                         AND TO_CHAR(:end_date::date,   'YYYYMMDD')
-        AND A.MATNR LIKE :mat_code
+        AND A.MATNR ILIKE :mat_code
         AND A.SAP_SEQ = (
           SELECT MAX(SAP_SEQ)
           FROM "mxcp".PP_026OUT2
@@ -2871,7 +3122,7 @@ async function getPP026Excel(session_id, factory_code, user_code, filters) {
             )
             AND BUDAT BETWEEN TO_CHAR(:start_date::date, 'YYYYMMDD')
                           AND TO_CHAR(:end_date::date,   'YYYYMMDD')
-            AND MATNR LIKE :mat_code
+            AND MATNR ILIKE :mat_code
             AND WERKS  = A.WERKS
             AND AUFNR  = A.AUFNR
             AND VORNR  = A.VORNR
@@ -2954,7 +3205,7 @@ async function search(
     fe_date: filters.e_date_4 || null,
     se_id: filters.se_id || "",
     status: filters.status ?? null,
-    cust_id: filters.cust_id ? `%${filters.cust_id}%` : null,
+    cust_id: filters.cust_no ? `%${filters.cust_no}%` : null,
     hg_stoc: filters.hg_stoc || "",
     agent: filters.agent || "",
     ex_status: filters.ex_status || "",
@@ -3017,7 +3268,8 @@ async function search(
           WHEN '1' THEN '1-Waitting'
           WHEN '2' THEN '2-PASS'
           WHEN '9' THEN '9-NG'
-        END AS EX_STATUS,
+        END AS EX_STATUS_NAME,
+        A.EX_STATUS,
         A.STATUS ,
         A.LOCKED_INFORMATION,
         A.GRT_DEPT,
@@ -3028,8 +3280,33 @@ async function search(
         A.LAST_USER,
         "Customs".GF_EMPNM(A.LAST_USER, :p_charset) AS LAST_USERNAME,
         A.LAST_DATE,
-        A.locked_information
+        A.locked_information,
+        (COALESCE(C.SUM_CTNS, 0)) AS SUM_CTNS
       FROM "Customs".SE_PLAN_ORD A
+       LEFT JOIN (
+    SELECT
+        FACTORY_CODE,
+        SE_ID,
+        SE_VER,
+        SE_SEQ,
+        SHIP_SEQ,
+        PACK_GU,
+        SUM(COALESCE(CTNS, 0)) AS SUM_CTNS
+    FROM "Customs".SE_PLAN_SIZE
+    GROUP BY
+        FACTORY_CODE,
+        SE_ID,
+        SE_VER,
+        SE_SEQ,
+        SHIP_SEQ,
+        PACK_GU
+) C
+    ON A.FACTORY_CODE = C.FACTORY_CODE
+    AND A.SE_ID = C.SE_ID
+    AND A.SE_VER = C.SE_VER
+    AND A.SE_SEQ = C.SE_SEQ
+    AND A.SHIP_SEQ = C.SHIP_SEQ
+    AND A.PACK_GU = C.PACK_GU
       INNER JOIN "pac".SD_ORD_M_C B 
         ON A.FACTORY_CODE = B.ORG_ID 
        AND A.SE_ID = B.se_id 
@@ -3044,7 +3321,7 @@ async function search(
         AND (DATE_TRUNC('day', B.NLT) <= DATE_TRUNC('day', :e_date::timestamp) OR :e_date IS NULL)
         AND (COALESCE(A.SE_ID, '')      ILIKE '%' || :se_id     || '%')
         AND (A.STATUS = :status OR :status IS NULL)
-        AND ("Customs".GF_CUSTID_CUSTNO(A.FACTORY_CODE, B.SE_CUSTID) LIKE :cust_id OR :cust_id IS NULL)
+        AND ("Customs".GF_CUSTID_CUSTNO(A.FACTORY_CODE, B.SE_CUSTID) ILIKE :cust_id OR :cust_id IS NULL)
         AND (COALESCE(A.COLUMN1, '')    ILIKE '%' || :hg_stoc   || '%')
         AND (COALESCE(A.COL5, '')       ILIKE '%' || :agent     || '%')
         AND (COALESCE(A.EX_STATUS, '')  ILIKE '%' || :ex_status || '%')
@@ -3071,7 +3348,7 @@ async function search(
         AND (DATE_TRUNC('day', B.NLT) <= DATE_TRUNC('day', :e_date::timestamp) OR :e_date IS NULL)
         AND (COALESCE(A.SE_ID, '')      ILIKE '%' || :se_id     || '%')
         AND (A.STATUS = :status OR :status IS NULL)
-        AND ("Customs".GF_CUSTID_CUSTNO(A.FACTORY_CODE, B.SE_CUSTID) LIKE :cust_id OR :cust_id IS NULL)
+        AND ("Customs".GF_CUSTID_CUSTNO(A.FACTORY_CODE, B.SE_CUSTID) ILIKE :cust_id OR :cust_id IS NULL)
         AND (COALESCE(A.COLUMN1, '')    ILIKE '%' || :hg_stoc   || '%')
         AND (COALESCE(A.COL5, '')       ILIKE '%' || :agent     || '%')
         AND (COALESCE(A.EX_STATUS, '')  ILIKE '%' || :ex_status || '%')
@@ -3171,11 +3448,11 @@ async function searchLink(
           "Customs".GF_CUSTID_CUSTNO(
             T.FACTORY_CODE,
             "Customs".GF_SE_SECUST(T.FACTORY_CODE, T.SE_ID, T.SE_VER)
-          ) LIKE :se_custid OR :se_custid IS NULL
+          ) ILIKE :se_custid OR :se_custid IS NULL
         )
         AND (
           "Customs".GF_SEID_CUST_AGENT(T.FACTORY_CODE, T.SE_ID)
-          LIKE :agent OR :agent IS NULL
+          ILIKE :agent OR :agent IS NULL
         )
         AND (DATE_TRUNC('day', T.P_SHIPDATE) >= DATE_TRUNC('day', :s_pdate::timestamp) OR :s_pdate IS NULL)
         AND (DATE_TRUNC('day', T.P_SHIPDATE) <= DATE_TRUNC('day', :e_pdate::timestamp) OR :e_pdate IS NULL)
@@ -3317,8 +3594,8 @@ async function searchPlanOrd(
         AND a.factory_code = :factory_code
         AND a.status = 7
         AND (a.col7 = '7' OR a.col7 IS NULL)
-        AND (b.se_custid LIKE :cust_id OR :cust_id IS NULL)
-        AND ("Customs".gf_seid_cust_agent(a.factory_code, b.ori_se_id) LIKE :agent OR :agent IS NULL)
+        AND (b.se_custid ILIKE :cust_id OR :cust_id IS NULL)
+        AND ("Customs".gf_seid_cust_agent(a.factory_code, b.ori_se_id) ILIKE :agent OR :agent IS NULL)
         AND (date_trunc('day', a.p_shipdate) >= date_trunc('day', :p_sdate::timestamp) OR :p_sdate IS NULL)
         AND (date_trunc('day', a.p_shipdate) <= date_trunc('day', :p_edate::timestamp) OR :p_edate IS NULL)
         AND NOT EXISTS (
@@ -3352,8 +3629,8 @@ async function searchPlanOrd(
         AND a.factory_code = :factory_code
         AND a.status = 7
         AND (a.col7 = '7' OR a.col7 IS NULL)
-        AND (b.se_custid LIKE :cust_id OR :cust_id IS NULL)
-        AND ("Customs".gf_seid_cust_agent(a.factory_code, b.ori_se_id) LIKE :agent OR :agent IS NULL)
+        AND (b.se_custid ILIKE :cust_id OR :cust_id IS NULL)
+        AND ("Customs".gf_seid_cust_agent(a.factory_code, b.ori_se_id) ILIKE :agent OR :agent IS NULL)
         AND (date_trunc('day', a.p_shipdate) >= date_trunc('day', :p_sdate::timestamp) OR :p_sdate IS NULL)
         AND (date_trunc('day', a.p_shipdate) <= date_trunc('day', :p_edate::timestamp) OR :p_edate IS NULL)
         AND NOT EXISTS (
@@ -3410,9 +3687,11 @@ module.exports = {
   clearTempTextTable,
   createShipSeq,
   createCBM,
+  createMoney,
   add,
   edit,
   deleteItem,
+  deleteItems,
   search,
   searchPlanOrd,
   searchLink,
@@ -3424,5 +3703,7 @@ module.exports = {
   getShipOrder,
   getPP026Excel,
   listAllSePlanOrdDetails,
-  confirm
+  confirm,
+  confirmItems,
+  unconfirmItems
 };

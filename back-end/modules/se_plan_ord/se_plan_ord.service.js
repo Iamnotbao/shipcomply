@@ -227,6 +227,21 @@ async function getCBM(factory_code, se_id, pack_gu, se_seq, se_ver, ship_seq) {
     ship_seq,
   );
 }
+async function getMoney(
+  factory_code,
+  se_id,
+  department_code,
+  user_code,
+  query_level,
+) {
+  return await sePlanOrdRepository.createMoney(
+    factory_code,
+    se_id,
+    department_code,
+    user_code,
+    query_level,
+  );
+}
 async function exportPDF(
   filename,
   factory_code,
@@ -485,9 +500,19 @@ async function deleteSePlanOrd(
   se_seq,
   pack_gu,
   ship_seq,
+  data,
   t,
 ) {
   try {
+    
+    if (Array.isArray(data) && data.length > 0) {
+      const result = await sePlanOrdRepository.deleteItems(data, t);
+      if (!result) {
+        console.log("Cannot delete because data from db is null!");
+        return null;
+      }
+      return result;
+    }
     const existImp = await getSePlanOrdByID(
       factory_code,
       se_id,
@@ -508,6 +533,63 @@ async function deleteSePlanOrd(
     return result;
   } catch (error) {
     console.log("Cannot delete", error);
+    throw error;
+  }
+}
+async function confirmItemsSePlanOrd(
+  factory_code,
+  department_code,
+  user_code,
+  query_level,
+  data,
+  t,
+) {
+  try {
+        
+    console.log("check the data pass",data);
+    
+    if (Array.isArray(data) && data.length > 0) {
+        
+      const result = await sePlanOrdRepository.confirmItems(
+        data,
+        factory_code,
+        department_code,
+        user_code,
+        query_level,
+        t,
+      );
+      return result?.success ? result : null;
+    }
+    return null;
+  } catch (error) {
+    console.log("Cannot confirm", error);
+    throw error;
+  }
+}
+async function unconfirmItemsSePlanOrd(
+  factory_code,
+  department_code,
+  user_code,
+  query_level,
+  data,
+  t,
+) {
+  try {
+    if (Array.isArray(data) && data.length > 0) {
+      const result = await sePlanOrdRepository.unconfirmItems(
+        data,
+        factory_code,
+        department_code,
+        user_code,
+        query_level,
+        t,
+      );
+      return result?.success ? result : null;
+    }
+    return null;
+  } catch (error) {
+    console.log("Cannot unconfirm", error);
+    throw error;
   }
 }
 async function searchSePlanOrd(
@@ -814,6 +896,7 @@ module.exports = {
   getShipSeq,
   getAllFieldDropdown,
   getCBM,
+  getMoney,
   getTempTable,
   getTempTextTable,
   clearTempTable,
@@ -836,5 +919,7 @@ module.exports = {
   exportExcelShipOrder,
   exportToPP026Excel,
   getAllSePlanOrdDetails,
-  confirm
+  confirm,
+  unconfirmItemsSePlanOrd,
+  confirmItemsSePlanOrd,
 };

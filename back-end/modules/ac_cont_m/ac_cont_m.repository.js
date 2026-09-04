@@ -305,21 +305,20 @@ async function fetchFieldByPoVenderM(
   if (isStatusBool) {
     statusCondition = `AND status = '7'`;
   }
-  console.log("thay gia ba", isStatusBool);
   let sql;
   let countSql;
   if (field === "vend_no") {
     sql = `
         SELECT DISTINCT 
           vend_no,
-          "Customs".GF_VEND_FULLNM(FACTORY_CODE,VEND_NO,:language)AS vend_name,
+          "Customs".GF_VEND_FULLNM(org_id,VEND_NO,:language)AS vend_name,
           vend_no as code_no,
           fullnm_e as FULLNM_E,
           address_e as ADDRESS_E,
           pay_cur as PAY_CUR,
           pay_no as PAY_NO
-        FROM "Customs".po_vender_m
-        WHERE factory_code = :factory_code
+        FROM "po".po_vender_m
+        WHERE org_id = :factory_code
           AND ${permissionCondition}
           ${searchCondition}
           ${statusCondition}
@@ -329,8 +328,8 @@ async function fetchFieldByPoVenderM(
       `;
     countSql = `
         SELECT COUNT(DISTINCT vend_no) as total
-        FROM "Customs".po_vender_m
-        WHERE factory_code = :factory_code
+        FROM "po".po_vender_m
+        WHERE org_id = :factory_code
           AND ${permissionCondition}
           ${searchCondition}
           ${statusCondition}
@@ -338,8 +337,8 @@ async function fetchFieldByPoVenderM(
   } else if (isStatusBool && field !== "vend_no") {
     sql = `
         SELECT DISTINCT ${field} as code_no
-        FROM "Customs".po_vender_m
-        WHERE factory_code = :factory_code
+        FROM "po".po_vender_m
+        WHERE org_id = :factory_code
           AND ${permissionCondition}
           ${searchCondition}
           ${statusCondition}
@@ -349,8 +348,8 @@ async function fetchFieldByPoVenderM(
       `;
     countSql = `
         SELECT COUNT(DISTINCT ${field}) as total
-        FROM "Customs".po_vender_m
-        WHERE factory_code = :factory_code
+        FROM "po".po_vender_m
+        WHERE org_id = :factory_code
           AND ${permissionCondition}
           ${searchCondition}
           ${statusCondition}
@@ -358,9 +357,9 @@ async function fetchFieldByPoVenderM(
   } else if (!isStatusBool && field !== "vend_no") {
     sql = `
         SELECT DISTINCT ${field} as code_no
-        FROM "Customs".po_vender_m
+        FROM "po".po_vender_m
         WHERE 
-        factory_code = :factory_code
+        org_id = :factory_code
       AND ${permissionCondition}
         AND vend_no = :vend_no
         ${searchCondition}
@@ -371,8 +370,8 @@ async function fetchFieldByPoVenderM(
       `;
     countSql = `
         SELECT COUNT(DISTINCT ${field}) as total
-        FROM "Customs".po_vender_m
-        WHERE factory_code = :factory_code
+        FROM "po".po_vender_m
+        WHERE org_id = :factory_code
           AND ${permissionCondition}
           ${searchCondition}
           ${statusCondition}

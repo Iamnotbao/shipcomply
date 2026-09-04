@@ -7,6 +7,12 @@ const { readExcel } = require("../../utils/importExcel");
 const AC_SHOE_REF = require("../ac_shoe_ref/ac_shoe_ref.model");
 const AC_SHOE_M = require("./ac_shoe_m.model");
 const acShoeMRepository = require("./ac_shoe_m.repository");
+const acShoeRefService = require("../ac_shoe_ref/ac_shoe_ref.service");
+const pool = require("../../config/db");             
+const { CHUNK_SIZE } = require("../../constants");     
+const { Op } = require("sequelize");
+
+const STATUS_NEW = 1;                                
 
 async function getAllAcShoeM(
   factory_code,
@@ -256,7 +262,14 @@ async function exportExcelAcShoeM(
   });
   return await generateExcel(plainData, "AC_SHOE_M");
 }
-async function importExcel(factory_code, user_code, session_id, fileBuffer) {
+async function importExcel(
+  factory_code,
+  department_code,
+  user_code,
+  query_level,
+  session_id,
+  fileBuffer,
+) {
   const fields = [
     "customs_shoe_id",
     "customs_shoe_name_l",
@@ -272,93 +285,149 @@ async function importExcel(factory_code, user_code, session_id, fileBuffer) {
     "unval_date",
   ];
 
-  const rowsData = readExcel(fileBuffer, fields).filter(
-    (row) => !fields.some((f) => String(row[f] ?? "") === f),
-  );
+  const allRows = readExcel(fileBuffer, fields);   
+  const rowsData = allRows.slice(1);               
 
-  if (!rowsData || rowsData.length === 0) {
+  if (!rowsData?.length) {
     return { total: 0, masters: 0, details: 0 };
   }
 
+  // ======= BULK VALIDATE: 1 query =======
+  const allShoeIds = [
+    ...new Set(
+      rowsData.map((r) => String(r.customs_shoe_id)).filter(Boolean),
+    ),
+  ];
+
+  const existingItems = await AC_SHOE_M.findAll({
+    where: { factory_code, customs_shoe_id: { [Op.in]: allShoeIds } },
+    attributes: ["customs_shoe_id"],
+    raw: true,
+  });
+  const existingSet = new Set(
+    existingItems.map((i) => String(i.customs_shoe_id)),
+  );
+
+  // ======= PHÂN LOẠI VALID / INVALID =======
+  const invalidRows = [];
+  const validRows = [];
+
+  rowsData.forEach((row, index) => {
+    if (existingSet.has(String(row.customs_shoe_id))) {
+      invalidRows.push({
+        row: index + 1,
+        customs_shoe_id: row.customs_shoe_id,
+        prod_no: row.prod_no,
+        reason: "The item already exists in the system",
+      });
+    } else {
+      validRows.push(row);
+    }
+  });
+
+  if (!validRows.length) {
+    return {
+      success: true,
+      total: rowsData.length,
+      masters: 0,
+      details: 0,
+      invalidRows,
+      totalInvalidRows: invalidRows.length,
+    };
+  }
+
+  // ======= GROUP MASTER / DETAIL =======
   const masterMap = new Map();
 
-  for (const row of rowsData) {
+  for (const row of validRows) {
     const key = `${factory_code}-${row.customs_shoe_id}`;
-
     if (!masterMap.has(key)) {
       masterMap.set(key, {
         master: {
-          factory_code:factory_code ?? null,
-          customs_shoe_id: String(row.customs_shoe_id) ?? null,
+          factory_code,
+          customs_shoe_id: String(row.customs_shoe_id),
           customs_shoe_name_l: row.customs_shoe_name_l ?? null,
           customs_shoe_name_t: row.customs_shoe_name_t ?? null,
           customs_shoe_name_e: row.customs_shoe_name_e ?? null,
           customs_tariff: row.customs_tariff ?? null,
           size_type: row.size_type ?? null,
           unit: row.unit ?? null,
-          status: 1,
+          status: STATUS_NEW,
           grt_user: user_code ?? null,
-          grt_dept: null,
-          grt_date: new Date(), 
+          grt_dept: department_code,
+          grt_date: new Date(),
         },
         details: [],
       });
     }
 
-    // ======= ADD DETAIL =======
-    // Chỉ thêm detail nếu có item_no
     if (row.prod_no) {
-
-      
       masterMap.get(key).details.push({
-        factory_code: factory_code ?? null,
+        factory_code,
         customs_shoe_id: String(row.customs_shoe_id),
         prod_no: String(row.prod_no),
         prod_unit: row.prod_unit ?? null,
-        is_valid: String(row.is_valid),
+        is_valid: "Y",
         valid_date: row.valid_date ? new Date(row.valid_date) : null,
         unval_date: row.unval_date ? new Date(row.unval_date) : null,
+        status: STATUS_NEW,
         grt_user: user_code ?? null,
-        status: 1,
-        grt_dept: null,
+        grt_dept: department_code,
         grt_date: new Date(),
       });
     }
   }
 
+  const allMasters = [...masterMap.values()].map((m) => m.master);
+  const allDetails = [...masterMap.values()].flatMap((m) => m.details);
+  const masterShoeIds = allMasters.map((m) => m.customs_shoe_id);
+
   let importedMasters = 0;
   let importedDetails = 0;
 
-  // ======= UPSERT MASTER + DETAIL =======
-  for (const { master, details } of masterMap.values()) {
-    // Upsert AC_ITEM_M
-    await AC_SHOE_M.upsert(master);
-    importedMasters++;
+  // ======= BULK UPSERT TRONG TRANSACTION =======
+  await pool.transaction(async (t) => {
+    // Upsert master theo chunk
+    for (let i = 0; i < allMasters.length; i += CHUNK_SIZE) {
+      const chunk = allMasters.slice(i, i + CHUNK_SIZE);
+      await AC_SHOE_M.bulkCreate(chunk, {
+        updateOnDuplicate: [
+          "customs_shoe_name_l",
+          "customs_shoe_name_t",
+          "customs_shoe_name_e",
+          "customs_tariff",
+          "size_type",
+          "unit",
+        ],
+        transaction: t,
+      });
+      importedMasters += chunk.length;
+    }
 
-    // Xóa detail cũ của master này trước khi insert mới
+    // Xóa detail cũ: 1 query
     await AC_SHOE_REF.destroy({
       where: {
-        factory_code: master.factory_code,
-        customs_shoe_id: master.customs_shoe_id,
+        factory_code,
+        customs_shoe_id: { [Op.in]: masterShoeIds },
       },
+      transaction: t,
     });
-     console.log("check the details",details);
-    // Insert detail mới
-    for (const detail of details) {
-      await AC_SHOE_REF.create(detail);
-      importedDetails++;
-    }
-  }
 
-  console.log(
-    ` Import done: ${importedMasters} masters, ${importedDetails} details`,
-  );
+    // Insert detail theo chunk
+    for (let i = 0; i < allDetails.length; i += CHUNK_SIZE) {
+      const chunk = allDetails.slice(i, i + CHUNK_SIZE);
+      await AC_SHOE_REF.bulkCreate(chunk, { transaction: t });
+      importedDetails += chunk.length;
+    }
+  });
 
   return {
     success: true,
     total: rowsData.length,
     masters: importedMasters,
     details: importedDetails,
+    invalidRows,
+    totalInvalidRows: invalidRows.length,
   };
 }
 module.exports = {
@@ -374,7 +443,7 @@ module.exports = {
   deleteAcShoeM,
   getAcItemnoDropdown,
   getShoeDropdown,
-  importExcel
+  importExcel,
   // exportExcelMaterialAcImp,
   // exportExcelCustomAcImp
 };

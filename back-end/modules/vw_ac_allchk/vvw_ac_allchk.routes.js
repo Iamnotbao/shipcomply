@@ -8,6 +8,7 @@ const {
   approveCont,
   searchVwAcAllChk,
   getDropdownByField,
+  revertApprove
 } = require("./vw_ac_allchk.controller");
 
 const vwAcAllChkRouter = express.Router();
@@ -19,5 +20,6 @@ vwAcAllChkRouter.post("/search", searchVwAcAllChk);
 vwAcAllChkRouter.post("/check", checkB);
 vwAcAllChkRouter.get("/add-contract-number", addContractNumb);
 vwAcAllChkRouter.get("/approve", approveCont);
+vwAcAllChkRouter.get("/revert-approve", revertApprove);
 vwAcAllChkRouter.get("/dropdown_field", getDropdownByField);
 module.exports = vwAcAllChkRouter;

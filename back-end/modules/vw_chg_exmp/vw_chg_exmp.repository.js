@@ -130,7 +130,7 @@ async function getContractDetails(
   WHERE
     ${permissionCondition} AND
     m.factory_code = :factory_code AND
-    (:cont_no IS NULL OR m.cont_no LIKE :cont_no || '%') AND
+    (:cont_no IS NULL OR m.cont_no ILIKE :cont_no || '%') AND
     (m.status = :status OR :status IS NULL) AND
     (DATE_TRUNC('day', m.issued_date) >= DATE_TRUNC('day', :s_issuedate::timestamp) OR :s_issuedate IS NULL) AND
     (DATE_TRUNC('day', m.issued_date) <= DATE_TRUNC('day', :e_issuedate::timestamp) OR :e_issuedate IS NULL) AND
@@ -206,10 +206,10 @@ async function search(
       WHERE
         ${permissionCondition} AND
         factory_code = :factory_code AND
-        (:cont_no IS NULL OR cont_no LIKE '%' || :cont_no || '%') AND
+        (:cont_no IS NULL OR cont_no ILIKE '%' || :cont_no || '%') AND
         (:status IS NULL OR status = :status) AND
-        (:seller IS NULL OR seller LIKE '%' || :seller || '%') AND
-        (:buyer IS NULL OR buyer LIKE '%' || :buyer || '%') AND
+        (:seller IS NULL OR seller ILIKE '%' || :seller || '%') AND
+        (:buyer IS NULL OR buyer ILIKE '%' || :buyer || '%') AND
         (:cont_category IS NULL OR cont_category = :cont_category) AND
         (:s_issuedate IS NULL OR DATE_TRUNC('day', issued_date) >= DATE_TRUNC('day', :s_issuedate::timestamp)) AND
         (:e_issuedate IS NULL OR DATE_TRUNC('day', issued_date) <= DATE_TRUNC('day', :e_issuedate::timestamp)) AND

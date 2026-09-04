@@ -1,7 +1,6 @@
 const createAcShoesRefSchema = require("./ac_shoe_ref.create.dto");
 const acShoeRefService = require("./ac_shoe_ref.service");
 const sequelize = require("../../config/db");
-const { broadcast } = require("../../utils/sseManager");
 const fs = require("fs");
 
 async function getAllAcShoeRef(req, res) {
@@ -178,7 +177,6 @@ async function addAcShoeRef(req, res) {
       page_size,
       t,
     );
-    broadcast({ table: "AC_SHOE_REF", action: "create" });
     if (response.message) {
       await t.rollback();
       return res.status(401).json({
@@ -238,7 +236,6 @@ async function editAcShoeRef(req, res) {
       page_size,
       t,
     );
-    broadcast({table :"AC_SHOE_REF", action: "edit"});
     if (!response) {
       await t.rollback();
       return res.status(401).json({

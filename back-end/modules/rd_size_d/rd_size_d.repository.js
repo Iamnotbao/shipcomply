@@ -4,7 +4,7 @@ const path = require("path");
 const fs = require("fs");
 const RD_SIZE_D = require("./rd_size_d.model.js");
 const FACTORY = require("../factories/factory.model.js");
-const { Op, literal } = require("sequelize");
+const { Op, literal, QueryTypes } = require("sequelize");
 
 async function listAllRSD(
   factory_code,
@@ -74,57 +74,52 @@ async function getBySizeType(
   offset,
 ) {
   try {
-    const whereClause = {
-      factory_code: factory_code,
-      size_type: size_type,
+    const conditions = [`factory_code = :factory_code`, `size_type = :size_type`];
+    const replacements = {
+      factory_code,
+      size_type,
+      limit: parseInt(limit) + 1,
+      offset: parseInt(offset),
     };
+
     if (user_code !== "admin") {
       switch (query_level) {
         case "1":
           break;
         case "2":
           if (department_code) {
-            whereClause.grt_dept = department_code;
+            conditions.push(`grt_dept = :department_code`);
+            replacements.department_code = department_code;
           }
           break;
         case "3":
           if (user_code) {
-            whereClause.grt_user = user_code;
+            conditions.push(`grt_user = :user_code`);
+            replacements.user_code = user_code;
           }
           break;
       }
     }
-    const rows = await RD_SIZE_D.findAll({
-      where: whereClause,
-      order: [
-        ["factory_code", "ASC"],
-        ["size_type", "ASC"],
-        ["size_no", "ASC"],
-      ],
-      limit: limit + 1,
-      offset: offset,
+
+    const whereSql = conditions.join(" AND ");
+
+    const sql = `
+      SELECT DISTINCT ON (size_no) *
+      FROM "Customs"."rd_size_d"
+      WHERE ${whereSql}
+      ORDER BY size_no ASC, size_seq ASC
+      LIMIT :limit OFFSET :offset
+    `;
+
+    const rows = await pool.query(sql, {
+      replacements,
+      type: QueryTypes.SELECT,
     });
-    const hasMore = rows.length > limit;
+
+    const hasMore = rows.length > parseInt(limit);
     const actualRows = hasMore ? rows.slice(0, limit) : rows;
 
     let total = null;
-
-    if (parseInt(offset) === 0) {
-      try {
-        total = await RD_SIZE_D.count({
-          where: whereClause,
-        });
-      } catch (countError) {
-        try {
-          const sequelizeCount = await RD_SIZE_D.count({
-            where: whereClause,
-          });
-          total = parseInt(sequelizeCount) || 0;
-        } catch (fallbackError) {
-          total = 0;
-        }
-      }
-    }
     return {
       rows: actualRows,
       count: total,
@@ -149,7 +144,7 @@ async function getDropdownBySize(
   try {
     const whereClause = {
       factory_code: factory_code,
-      size_type: size_type
+      size_type: size_type,
     };
     // if (user_code !== "admin") {
     //   switch (query_level) {
@@ -297,7 +292,8 @@ async function search(
         whereClause.grt_user = user_code;
       }
     }
-    const rows = await RD_SIZE_D.findAll({
+
+    const allRows = await RD_SIZE_D.findAll({
       where: whereClause,
       include: [
         {
@@ -312,17 +308,25 @@ async function search(
         ["size_type", "ASC"],
         ["size_no", "ASC"],
       ],
-      limit: parseInt(limit) + 1,
-      offset: parseInt(offset),
     });
-    const hasMore = rows.length > limit;
-    const actualRows = hasMore ? rows.slice(0, limit) : rows;
-    let total = null;
-    if (parseInt(offset) === 0) {
-      total = await RD_SIZE_D.count({
-        where: whereClause,
-      });
+
+    const seen = new Set();
+    const distinctRows = [];
+    for (const row of allRows) {
+      if (!seen.has(row.size_no)) {
+        seen.add(row.size_no);
+        distinctRows.push(row);
+      }
     }
+
+    const total = distinctRows.length;
+    const pageRows = distinctRows.slice(
+      parseInt(offset),
+      parseInt(offset) + parseInt(limit) + 1
+    );
+    const hasMore = pageRows.length > parseInt(limit);
+    const actualRows = hasMore ? pageRows.slice(0, limit) : pageRows;
+
     return {
       rows: actualRows,
       count: total,

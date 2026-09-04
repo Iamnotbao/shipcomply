@@ -573,6 +573,7 @@ async function checkDuplicateAGO(
   ac_chgno,
   out_date,
   ac_no,
+  type
 ) {
   return await acChgMRepository.checkDuplicateAcChgno(
     factory_code,
@@ -582,6 +583,7 @@ async function checkDuplicateAGO(
     ac_chgno,
     out_date,
     ac_no,
+    type
   );
 }
 module.exports = {

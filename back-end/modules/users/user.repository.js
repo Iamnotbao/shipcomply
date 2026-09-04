@@ -35,7 +35,7 @@ async function findAll() {
         where: Sequelize.where(
           Sequelize.col("USER.factory_code"),
           "=",
-          Sequelize.col("DEPARTMENT.factory_code")
+          Sequelize.col("DEPARTMENT.factory_code"),
         ),
       },
     ],
@@ -132,13 +132,37 @@ async function getByDepartment(factory_code, department_code) {
   });
   return listByDepartment;
 }
-async function getByFactory(factory_code) {
+async function getByFactory(
+  factory_code,
+  limit,
+  page,
+  search = "",
+  isStatus = true,
+) {
+  const whereClause = {
+    factory_code: factory_code,
+  };
+  const isStatusBool = String(isStatus).toLowerCase() === "true";
+  if (search && search.trim() !== "") {
+    whereClause[Op.or] = [{ user_code: { [Op.like]: `%${search}%` } }];
+  }
+  if (isStatusBool) {
+    whereClause.status = 7;
+  }
+  const total = await USER.count({ where: whereClause });
   const listByFactory = await USER.findAll({
-    where: {
-      factory_code: factory_code,
-    },
+    where: whereClause,
+    order: [["user_code", "ASC"]],
+    limit: parseInt(limit),
+    offset: (parseInt(page) - 1) * parseInt(limit),
   });
-  return listByFactory;
+  return {
+      data: listByFactory,
+      total: total,
+      currentPage: parseInt(page),
+      pageSize: parseInt(limit),
+      totalPages: Math.ceil(total / limit),
+    };
 }
 async function add(user, t) {
   try {
@@ -290,7 +314,7 @@ async function search(keyword) {
         where: Sequelize.where(
           Sequelize.col("USER.factory_code"),
           "=",
-          Sequelize.col("DEPARTMENT.factory_code")
+          Sequelize.col("DEPARTMENT.factory_code"),
         ),
       });
     }

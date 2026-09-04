@@ -50,7 +50,6 @@ async function getListOfContImp(
         replacements.permission_user = user_code;
       }
     }
-    console.log("oalala");
 
     const sql = `
       SELECT 
@@ -68,7 +67,7 @@ async function getListOfContImp(
       WHERE
         ${permissionCondition} AND
         factory_code = :factory_code AND
-        (:cont_no IS NULL OR cont_no LIKE :cont_no || '%') AND
+        (:cont_no IS NULL OR cont_no ILIKE :cont_no || '%') AND
         (status = :status OR :status IS NULL) AND
         (DATE_TRUNC('day', issued_date) >= DATE_TRUNC('day', :s_issuedate::timestamp) OR :s_issuedate IS NULL) AND
         (DATE_TRUNC('day', issued_date) <= DATE_TRUNC('day', :e_issuedate::timestamp) OR :e_issuedate IS NULL) AND
@@ -152,7 +151,7 @@ async function getContractDetails(
   WHERE
     ${permissionCondition} AND
     m.factory_code = :factory_code AND
-    (:cont_no IS NULL OR m.cont_no LIKE :cont_no || '%') AND
+    (:cont_no IS NULL OR m.cont_no ILIKE :cont_no || '%') AND
     (m.status = :status OR :status IS NULL) AND
     (DATE_TRUNC('day', m.issued_date) >= DATE_TRUNC('day', :s_issuedate::timestamp) OR :s_issuedate IS NULL) AND
     (DATE_TRUNC('day', m.issued_date) <= DATE_TRUNC('day', :e_issuedate::timestamp) OR :e_issuedate IS NULL) AND
@@ -218,8 +217,8 @@ async function getContractSetting(
         m.CONT_NO,
         m.CONT_CATEGORY,
         CASE m.CONT_CATEGORY 
-          WHEN '1' THEN '1-小合同' 
-          WHEN '2' THEN '2-大合同' 
+          WHEN '1' THEN '1-Small contract' 
+          WHEN '2' THEN '2-Main contract' 
         END AS cont_category_name,
         m.ISSUED_DATE,
         m.EXPIRE_DATE,
@@ -259,7 +258,7 @@ async function getContractSetting(
             WHEN 'E' THEN ADDRESS_E
             ELSE ADDRESS_E
           END
-        FROM "Customs".PO_VENDER_M             
+        FROM "po".po_vender_m             
         WHERE FACTORY_CODE = m.FACTORY_CODE             
         AND VEND_NO = m.VEND_NO) AS S_ADDR,
         
@@ -699,7 +698,7 @@ async function fetchInContDataDropdown(
   if (search && search !== undefined && search.trim() !== "") {
     searchCondition = `
       AND (
-        ${field} ILIKE :search OR
+        ${field} ILIKE :search
       )
     `;
     replacements.search = `%${search.trim()}%`;
@@ -1374,8 +1373,8 @@ async function search(
         m.CONT_NO,
         m.CONT_CATEGORY,
          CASE m.CONT_CATEGORY 
-          WHEN '1' THEN '1-小合同' 
-          WHEN '2' THEN '2-大合同' 
+          WHEN '1' THEN '1-Small contract' 
+          WHEN '2' THEN '2-Main contract' 
         END AS cont_category_name,
         m.ISSUED_DATE,
         m.EXPIRE_DATE,
@@ -1415,7 +1414,7 @@ async function search(
             WHEN 'E' THEN ADDRESS_E
             ELSE ADDRESS_E
           END
-        FROM "Customs".PO_VENDER_M             
+        FROM "po".po_vender_m             
         WHERE FACTORY_CODE = m.FACTORY_CODE             
         AND VEND_NO = m.VEND_NO) AS S_ADDR,
         
@@ -1460,10 +1459,10 @@ async function search(
       FROM "Customs".VW_CONT_IMP m
       WHERE
         ${permissionCondition} AND
-        (:cont_no IS NULL OR cont_no LIKE '%' || :cont_no || '%') AND
+        (:cont_no IS NULL OR cont_no ILIKE '%' || :cont_no || '%') AND
         (:status IS NULL OR status = :status) AND
-        (:seller IS NULL OR seller LIKE '%' || :seller || '%') AND
-        (:buyer IS NULL OR buyer LIKE '%' || :buyer || '%') AND
+        (:seller IS NULL OR seller ILIKE '%' || :seller || '%') AND
+        (:buyer IS NULL OR buyer ILIKE '%' || :buyer || '%') AND
         (:cont_category IS NULL OR cont_category = :cont_category) AND
         (:s_date_1 IS NULL OR DATE_TRUNC('day', issued_date) >= DATE_TRUNC('day', :s_date_1::timestamp)) AND
         (:e_date_1 IS NULL OR DATE_TRUNC('day', issued_date) <= DATE_TRUNC('day', :e_date_1::timestamp)) AND
@@ -1487,10 +1486,10 @@ async function search(
       WHERE
         ${permissionCondition} AND
         factory_code = :factory_code AND
-        (:cont_no IS NULL OR cont_no LIKE '%' || :cont_no || '%') AND
+        (:cont_no IS NULL OR cont_no ILIKE '%' || :cont_no || '%') AND
         (:status IS NULL OR status = :status) AND
-        (:seller IS NULL OR seller LIKE '%' || :seller || '%') AND
-        (:buyer IS NULL OR buyer LIKE '%' || :buyer || '%') AND
+        (:seller IS NULL OR seller ILIKE '%' || :seller || '%') AND
+        (:buyer IS NULL OR buyer ILIKE '%' || :buyer || '%') AND
         (:cont_category IS NULL OR cont_category = :cont_category) AND
         (:s_date_1 IS NULL OR DATE_TRUNC('day', issued_date) >= DATE_TRUNC('day', :s_date_1::timestamp)) AND
         (:e_date_1 IS NULL OR DATE_TRUNC('day', issued_date) <= DATE_TRUNC('day', :e_date_1::timestamp)) AND

@@ -42,13 +42,13 @@ async function getListOfAcChgExp(
   m.ac_no,
   m.ac_type,
   CASE m.ac_type
-    WHEN '1' THEN '1-進口報關'
-    WHEN '2' THEN '2-出口報關'
+    WHEN '1' THEN '1-Import Customs Declaration'
+    WHEN '2' THEN '2-Export Customs Declaration'
   END AS ac_type_name,
   m.d_type,
   CASE m.d_type
-    WHEN '1' THEN '1-外銷'
-    WHEN '2' THEN '2-內銷'
+    WHEN '1' THEN '1-Export'
+    WHEN '2' THEN '2-Domestic sales'
   END AS d_type_name,
   m.ac_chgs,
   m.ac_chgn,
@@ -300,19 +300,19 @@ async function getContractSetting(
             WHEN 'E' THEN ADDRESS_E
             ELSE ADDRESS_E
           END
-        FROM "Customs".PO_VENDER_M             
-        WHERE FACTORY_CODE = m.FACTORY_CODE             
+        FROM "po".po_vender_m          
+        WHERE org_id = m.FACTORY_CODE             
         AND VEND_NO = m.VEND_NO) AS S_ADDR,
         
         -- Thông tin tiền tệ và thanh toán từ PO_VENDER_M
         (SELECT PAY_CUR               
-        FROM "Customs".PO_VENDER_M              
-        WHERE FACTORY_CODE = m.FACTORY_CODE                
+        FROM "po".po_vender_m              
+        WHERE org_id = m.FACTORY_CODE                
         AND VEND_NO = m.VEND_NO) AS CURRENCY,
         
         (SELECT PAY_NO 
-        FROM "Customs".PO_VENDER_M
-        WHERE FACTORY_CODE = m.FACTORY_CODE             
+        FROM "po".po_vender_m
+        WHERE org_id = m.FACTORY_CODE             
         AND VEND_NO = m.VEND_NO) AS TERM_PAY,
         
         -- Tên điều khoản thanh toán
@@ -903,13 +903,13 @@ async function search(
   m.ac_no,
   m.ac_type,
   CASE m.ac_type
-    WHEN '1' THEN '1-進口報關'
-    WHEN '2' THEN '2-出口報關'
+    WHEN '1' THEN '1-Import Customs Declaration'
+    WHEN '2' THEN '2-Export Customs Declaration'
   END AS ac_type_name,
   m.d_type,
   CASE m.d_type
-    WHEN '1' THEN '1-外銷'
-    WHEN '2' THEN '2-內銷'
+    WHEN '1' THEN '1-Export'
+    WHEN '2' THEN '2-Domestic sales'
   END AS d_type_name,
   m.ac_chgs,
   m.ac_chgn,

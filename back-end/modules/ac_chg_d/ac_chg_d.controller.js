@@ -44,6 +44,15 @@ async function refreshP(req, res) {
     tableName: "AC_CHG_D",
   });
 }
+async function calculateRefPrice(req, res) {
+  const t = await sequelize.transaction();
+  const { factory_code, com_invoice, item_acno} = req.query;
+  const result = await acChgDService.calculateRefPrice(factory_code, com_invoice, item_acno, t);
+  return res.status(200).json({
+    result: result,
+    tableName: "AC_CHG_D",
+  });
+}
 async function copyItemsFromShoe(req, res) {
   const { factory_code, ac_no, cont_no, shoe_id, language } = req.query;
   const result = await acChgDService.copyItemsFromShoe(
@@ -71,6 +80,36 @@ async function getAllAcCDWithView(req, res) {
     offset,
   } = req.query;
   const result = await acChgDService.getAllAcCDWithView(
+    factory_code,
+    department_code,
+    user_code,
+    query_level,
+    language,
+    ac_no,
+    limit,
+    offset,
+  );
+  return res.status(200).json({
+    message: "ok",
+    success: true,
+    data: result.rows,
+    total: result.count,
+    hasMore: result.hasMore,
+    tableName: "AC_CHG_D",
+  });
+}
+async function getAllAcCDExpWithView(req, res) {
+  const {
+    factory_code,
+    department_code,
+    user_code,
+    query_level,
+    language,
+    ac_no,
+    limit,
+    offset,
+  } = req.query;
+  const result = await acChgDService.getAllAcCDExpWithView(
     factory_code,
     department_code,
     user_code,
@@ -524,6 +563,7 @@ async function exportCustomToExcel(req, res) {
 module.exports = {
   getAllAcCD,
   getAllAcCDWithView,
+  getAllAcCDExpWithView,
   getAcChgDByID,
   getSum,
   getUnitByGoodsCode,
@@ -537,5 +577,6 @@ module.exports = {
   exportCustomToExcel,
   refreshS,
   copyItemsFromShoe,
-  refreshP
+  refreshP,
+  calculateRefPrice
 };

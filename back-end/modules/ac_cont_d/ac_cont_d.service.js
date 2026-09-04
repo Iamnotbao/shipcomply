@@ -40,6 +40,25 @@ async function getAllAcCDWithView(
     offset,
   );
 }
+async function getFieldWithFunction(
+  factory_code,
+  department_code,
+  user_code,
+  query_level,
+  field,
+  ac_itemno,
+  type,
+) {
+  return await acContDRepository.fetchFieldWithFunction(
+    factory_code,
+    department_code,
+    user_code,
+    query_level,
+    field,
+    ac_itemno,
+    type,
+  );
+}
 async function getAcContDByID(factory_code, cont_no, seq) {
   return await acContDRepository.getByID(factory_code, cont_no, seq);
 }
@@ -52,6 +71,7 @@ async function getDropdownGoods(
   limit,
   search,
   isStatus,
+  isExport,
 ) {
   return await acContDRepository.fetchDropdownGoodsCode(
     factory_code,
@@ -62,6 +82,7 @@ async function getDropdownGoods(
     limit,
     search,
     isStatus,
+    isExport,
   );
 }
 async function getDropdownGoodsWithFunc(
@@ -99,6 +120,7 @@ async function getUnitByGoodsCode(
   limit,
   search,
   isStatus,
+  isExport,
 ) {
   return await acContDRepository.fetchUnitByGoodsCode(
     factory_code,
@@ -110,6 +132,7 @@ async function getUnitByGoodsCode(
     limit,
     search,
     isStatus,
+    isExport,
   );
 }
 async function getContPriceDrop(
@@ -283,6 +306,7 @@ module.exports = {
   getDropdownGoods,
   getUnitByGoodsCode,
   getDropdownGoodsWithFunc,
+  getFieldWithFunction,
   getContPriceDrop,
   addAcContD,
   editAcContD,
@@ -291,5 +315,5 @@ module.exports = {
   deleteAcContD,
   exportExcelMaterialAcImp,
   exportExcelCustomAcImp,
-  getSumData
+  getSumData,
 };

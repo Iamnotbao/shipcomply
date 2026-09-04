@@ -2,7 +2,7 @@ const QueryHelper = require("../../utils/queryHelper");
 const DEPARTMENTS = require("../factory_departments/factory_deparments.model");
 const FACTORY = require("./factory.model");
 const pool = require("../../config/db.js");
-const { Op } = require("sequelize"); // ✅ thêm Op
+const { Op } = require("sequelize"); 
 const path = require("path");
 const fs = require("fs");
 
@@ -12,7 +12,6 @@ async function test() {
   return rows;
 }
 
-// ✅ Fix: handle null/undefined limit offset chuẩn
 async function listAllFactories(limit, offset) {
   const parsedLimit  = !isNaN(parseInt(limit))  ? parseInt(limit)  : null;
   const parsedOffset = !isNaN(parseInt(offset)) ? parseInt(offset) : null;

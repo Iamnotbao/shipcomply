@@ -2,7 +2,6 @@ const createAcItemMSchema = require("./ac_item_m.create.dto");
 const acItemMService = require("./ac_item_m.service");
 const sequelize = require("../../config/db");
 const fs = require("fs");
-const { broadcast } = require("../../utils/sseManager");
 
 async function getAllAcIM(req, res) {
   const {
@@ -109,6 +108,51 @@ async function fetchGroupFieldDrop(req, res) {
     });
   }
 }
+async function fetchFieldDropdown(req, res) {
+  try {
+    const {
+      factory_code,
+      department_code,
+      user_code,
+      query_level,
+      language,
+      field,
+      page,
+      limit,
+      search,
+      is_status,
+    } = req.query;
+
+    const result = await acItemMService.fetchFieldDropDown(
+      factory_code,
+      department_code,
+      user_code,
+      query_level,
+      language,
+      field,
+      page,
+      limit,
+      search,
+      is_status,
+    );
+
+    return res.status(200).json({
+      message: "ok",
+      success: true,
+      data: result.data,
+      total: result.total,
+      currentPage: result.currentPage,
+      pageSize: result.pageSize,
+      tableName: "AC_ITEM_M",
+    });
+  } catch (error) {
+    console.error("Error fetching field from PO_VENDER_M:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Internal server error",
+    });
+  }
+}
 async function fetchFieldWithFunction(req, res) {
   try {
     const {
@@ -118,8 +162,18 @@ async function fetchFieldWithFunction(req, res) {
       query_level,
       field,
       ac_itemno,
+      item_acno,
       type,
     } = req.query;
+
+    const selectedItemAcno = item_acno || ac_itemno;
+
+    if (!factory_code || !selectedItemAcno) {
+      return res.status(400).json({
+        success: false,
+        message: "factory_code and item_acno are required",
+      });
+    }
 
     const result = await acItemMService.fetchFieldWithFunction(
       factory_code,
@@ -127,7 +181,7 @@ async function fetchFieldWithFunction(req, res) {
       user_code,
       query_level,
       field,
-      ac_itemno,
+      selectedItemAcno,
       type,
     );
 
@@ -168,7 +222,6 @@ async function addAcIM(req, res) {
       page_size,
       t,
     );
-    broadcast({ table: "AC_ITEM_M", action: "create" });
     if (response.message) {
       await t.rollback();
       return res.status(401).json({
@@ -226,7 +279,6 @@ async function editAcIM(req, res) {
       page_size,
       t,
     );
-    broadcast({ table: "AC_ITEM_M", action: "edit" });
     if (!response) {
       await t.rollback();
       return res.status(401).json({
@@ -243,7 +295,6 @@ async function editAcIM(req, res) {
       offset: response.offset,
       position: response.position,
     });
-
   } catch (error) {
     console.log("Can not edit ac item m from controller!");
     await t.rollback();
@@ -368,7 +419,6 @@ async function exportExcelAcIM(req, res) {
   } catch (error) {
     console.error(" Export Excel error:", error);
 
-    // Prevent "Cannot set headers after they are sent"
     if (!res.headersSent) {
       res.status(500).json({
         success: false,
@@ -380,36 +430,49 @@ async function exportExcelAcIM(req, res) {
 async function importExcel(req, res) {
   try {
     const { factory_code, user_code } = req.query;
-    if (!req.file) {
-      return res
-        .status(400)
-        .json({ success: false, message: "No file uploaded" });
+    const fileBuffer = req.file?.buffer;
+
+    if (!fileBuffer) {
+      return res.status(400).json({
+        success: false,
+        message: "No file uploaded",
+      });
     }
-    const authHeader = req.headers["authorization"];
-    const token = authHeader && authHeader.split(" ")[1];
+
+    if (!factory_code || !user_code) {
+      return res.status(400).json({
+        success: false,
+        message: "factory_code and user_code are required",
+      });
+    }
+
     const result = await acItemMService.importExcel(
       factory_code,
       user_code,
-      token,
-      req.file.buffer,
+      fileBuffer
     );
 
-    return res.json({
+    return res.status(200).json({
       success: true,
-      message: `Imported ${result.total} rows successfully`,
+      message: `Import completed: ${result.masters} masters, ${result.details} details`,
       ...result,
     });
   } catch (error) {
-    console.error("Error in importOrders:", error);
-    return res.status(500).json({ success: false, message: error.message });
+    console.error("importExcel controller error:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Internal server error",
+    });
   }
 }
+
 module.exports = {
   getAllAcIM,
   getAcIMByID,
   getAcIMByIA,
   fetchGroupFieldDrop,
   fetchFieldWithFunction,
+  fetchFieldDropdown,
   addAcIM,
   editAcIM,
   deleteAcIM,

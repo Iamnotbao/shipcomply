@@ -111,6 +111,8 @@ async function listAllWithCategory(
   department_code,
   user_code,
   query_level,
+  limit = 10,
+  offset = 0,
 ) {
   console.log(
     "listAll with category join",
@@ -165,30 +167,13 @@ async function listAllWithCategory(
       ["code_no", "ASC"],
     ],
   });
-  const hasMore = rows.length > limit;
-  const actualRows = hasMore ? rows.slice(0, limit) : rows;
-
+  const hasMore = rows.length > parseInt(limit);
+  const actualRows = hasMore ? rows.slice(0, parseInt(limit)) : rows;
+ 
   let total = null;
-
-  if (parseInt(offset) === 0) {
-    try {
-      // Build WHERE clause cho raw query
-      total = await BASIC_DATA.count({
-        where: whereClause,
-      });
-    } catch (countError) {
-      try {
-        const sequelizeCount = await BASIC_DATA.count({
-          where: whereClause,
-        });
-        total = parseInt(sequelizeCount) || 0;
-      } catch (fallbackError) {
-        total = 0;
-      }
-    }
-  }
+ 
   return {
-    rows: actualRows,
+    rows: rows,
     count: total,
     hasMore: hasMore,
   };
@@ -451,27 +436,34 @@ async function getDropdownByCate(
   limit,
   search = "",
   isStatus = true,
+  language = "en",
 ) {
   try {
+    const charset = {
+      vi: "L",
+      en: "E",
+      zh: "T",
+    };
+    let nameField;
+    switch (language) {
+      case "vi":
+        nameField = "name_l";
+        break;
+      case "zh":
+        nameField = "name_t";
+        break;
+      case "en":
+      default:
+        nameField = "name_e";
+        break;
+    }
+
     const whereClause = {
       factory_code: factory_code,
       category_code: category_code,
     };
     const isStatusBool = String(isStatus).toLowerCase() === "true";
-    // if (user_code !== "admin") {
-    //   switch (query_level) {
-    //     case "2":
-    //       if (department_code) {
-    //         whereClause.grt_dept = department_code;
-    //       }
-    //       break;
-    //     case "3":
-    //       if (user_code) {
-    //         whereClause.grt_user = user_code;
-    //       }
-    //       break;
-    //   }
-    // }
+
     if (search && search.trim() !== "") {
       whereClause[Op.or] = [
         { code_no: { [Op.like]: `%${search}%` } },
@@ -483,10 +475,17 @@ async function getDropdownByCate(
     if (isStatusBool) {
       whereClause.status = 7;
     }
+
     const total = await BASIC_DATA.count({ where: whereClause });
     const result = await BASIC_DATA.findAll({
       where: whereClause,
-      attributes: ["code_no", "name_e", "name_l", "name_t"],
+      attributes: [
+        "code_no",
+        "name_e",
+        "name_l",
+        "name_t",
+        [nameField, "name"],
+      ],
       order: [
         ["factory_code", "ASC"],
         ["category_code", "ASC"],

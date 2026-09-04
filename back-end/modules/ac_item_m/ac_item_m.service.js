@@ -10,6 +10,11 @@ const { readExcel } = require("../../utils/importExcel");
 const AC_ITEM_M = require("./ac_item_m.model");
 const AC_ITEM_REF = require("../ac_item_ref/ac_item_ref.model");
 const mmItemService = require("../mm_item/mm_item.service");
+const pool = require("../../config/db");
+const { CHUNK_SIZE } = require("../../constants");
+const { Op, QueryTypes } = require("sequelize");
+
+const STATUS_NEW = 1;
 
 async function getAllAcIM(
   factory_code,
@@ -59,6 +64,33 @@ async function fetchGroupFieldDrop(
     isStatus,
   );
 }
+
+async function fetchFieldDropDown(
+  factory_code,
+  department_code,
+  user_code,
+  query_level,
+  language,
+  field = null,
+  page,
+  limit,
+  search,
+  isStatus = true,
+) {
+  return await acItemMRepository.fetchFieldDropDown(
+  factory_code,
+  department_code,
+  user_code,
+  query_level,
+  language,
+  field = null,
+  page,
+  limit,
+  search,
+  isStatus = true,
+  );
+}
+
 async function fetchFieldWithFunction(
   factory_code,
   department_code,
@@ -231,47 +263,95 @@ async function exportExcelAcIM(data, sheetName = "AC_ITEM_M") {
 // async function exportExcelCustomAcImp(filename, filters) {
 //   return await exportExcelCustoms(filename, filters);
 // }
-async function importExcel(factory_code, user_code, session_id, fileBuffer) {
+async function importExcel(factory_code, user_code, fileBuffer) {
   const fields = [
     "item_acno",
     "item_acname_e",
+    "item_acname_l",
+    "item_acname_t",
     "ac_item",
     "unit",
     "tax_per",
     "loss_per",
     "ac_type",
     "item_no",
-    "item_unit",
     "formula",
   ];
 
-  const rowsData = readExcel(fileBuffer, fields).filter(
-    (row) => !fields.some((f) => String(row[f] ?? "") === f),
-  );
+  const allRows = readExcel(fileBuffer, fields);
+  const rowsData = allRows.slice(1);
 
-  if (!rowsData || rowsData.length === 0) {
+  if (!rowsData?.length) {
     return { total: 0, masters: 0, details: 0 };
   }
 
-  // ======= GROUP MASTER =======
-  // Gom các row cùng item_acno thành 1 master
-  const masterMap = new Map();
-  let invalidRows = [];
-  for (const eachRow of rowsData) {
-    const isValidRow = await mmItemService.checkValidData(row);
-    if (!isValidRow) {
-      invalidRows.push({
-        item_no: row.item_no,
+  // ======= BULK VALIDATE: 1 query =======
+    // ======= BULK VALIDATE: 1 query =======
+  const allAcnos = [
+    ...new Set(rowsData.map((r) => String(r.item_acno)).filter(Boolean)),
+  ];
+
+  const existingItems = await AC_ITEM_M.findAll({
+    where: { factory_code, item_acno: { [Op.in]: allAcnos } },
+    attributes: ["item_acno"],
+    raw: true,
+  });
+  const existingSet = new Set(existingItems.map((i) => i.item_acno));
+
+  // ======= CHỈ ĐÁNH DẤU ĐỂ BÁO CÁO, KHÔNG LOẠI TRỪ NỮA =======
+  const overwrittenRows = [];
+  rowsData.forEach((row, index) => {
+    if (existingSet.has(String(row.item_acno))) {
+      overwrittenRows.push({
+        row: index + 1,
         item_acno: row.item_acno,
-        reason:"The item is exist in the system",
+        item_no: row.item_no,
+        reason: "Item already exists — will be overwritten",
       });
-      continue;
     }
+  });
+
+  const validRows = rowsData;
+
+  if (!validRows.length) {
+   return {
+    success: true,
+    total: rowsData.length,
+    masters: importedMasters,
+    details: importedDetails,
+    overwrittenRows,
+    totalOverwrittenRows: overwrittenRows.length,
+  };
+  }
+
+  // ======= BULK LOOKUP item_unit TỪ MM_ITEM (theo item_no + org_id) =======
+  const detailItemNos = [
+    ...new Set(validRows.map((r) => String(r.item_no ?? "")).filter(Boolean)),
+  ];
+
+  const itemUnitMap = new Map();
+  if (detailItemNos.length) {
+    const mmItems = await pool.query(
+      `SELECT item_no, unit FROM "public".mm_item WHERE org_id = :factory_code AND item_no IN (:itemNos)`,
+      {
+        replacements: { factory_code, itemNos: detailItemNos },
+        type: QueryTypes.SELECT,
+      },
+    );
+    mmItems.forEach((r) => {
+      itemUnitMap.set(String(r.item_no), r.unit);
+    });
+  }
+
+  // ======= GROUP MASTER / DETAIL =======
+  const masterMap = new Map();
+
+  for (const row of validRows) {
     const key = `${factory_code}-${row.item_acno}`;
     if (!masterMap.has(key)) {
       masterMap.set(key, {
         master: {
-          factory_code: factory_code ?? null,
+          factory_code,
           item_acno: String(row.item_acno),
           item_acname_e: row.item_acname_e ?? null,
           item_acname_l: row.item_acname_l ?? null,
@@ -281,7 +361,7 @@ async function importExcel(factory_code, user_code, session_id, fileBuffer) {
           tax_per: row.tax_per ?? null,
           loss_per: row.loss_per ?? null,
           ac_type: row.ac_type ?? null,
-          status: 1,
+          status: STATUS_NEW,
           grt_user: user_code ?? null,
           grt_dept: null,
           grt_date: new Date(),
@@ -290,16 +370,17 @@ async function importExcel(factory_code, user_code, session_id, fileBuffer) {
       });
     }
 
-    // ======= ADD DETAIL =======
-    // Chỉ thêm detail nếu có item_no
     if (row.item_no) {
+      const mappedUnit = itemUnitMap.get(String(row.item_no));
+      console.log("e");
+      
       masterMap.get(key).details.push({
-        factory_code: factory_code ?? null,
+        factory_code,
         item_acno: String(row.item_acno),
         item_no: String(row.item_no),
-        item_unit: row.item_unit ?? null,
+        item_unit: mappedUnit ?? mappedUnit ?? null,
         formula: row.formula ? parseInt(row.formula) : null,
-        status: 1,
+        status: STATUS_NEW,
         grt_user: user_code ?? null,
         grt_dept: null,
         grt_date: new Date(),
@@ -307,41 +388,57 @@ async function importExcel(factory_code, user_code, session_id, fileBuffer) {
     }
   }
 
+  const allMasters = [...masterMap.values()].map((m) => m.master);
+  const allDetails = [...masterMap.values()].flatMap((m) => m.details);
+  const masterAcnos = allMasters.map((m) => m.item_acno);
+
+  
+
   let importedMasters = 0;
   let importedDetails = 0;
 
-  // ======= UPSERT MASTER + DETAIL =======
-  for (const { master, details } of masterMap.values()) {
-    // Upsert AC_ITEM_M
-    await AC_ITEM_M.upsert(master);
-    importedMasters++;
+  // ======= BULK UPSERT TRONG TRANSACTION =======
+  await pool.transaction(async (t) => {
+    // Upsert master theo chunk
+    for (let i = 0; i < allMasters.length; i += CHUNK_SIZE) {
+      const chunk = allMasters.slice(i, i + CHUNK_SIZE);
+      await AC_ITEM_M.bulkCreate(chunk, {
+        updateOnDuplicate: [
+          "item_acname_e",
+          "item_acname_l",
+          "item_acname_t",
+          "ac_item",
+          "unit",
+          "tax_per",
+          "loss_per",
+          "ac_type",
+        ],
+        transaction: t,
+      });
+      importedMasters += chunk.length;
+    }
 
-    // Xóa detail cũ của master này trước khi insert mới
+    // Xóa detail cũ: 1 query
     await AC_ITEM_REF.destroy({
-      where: {
-        factory_code: master.factory_code,
-        item_acno: master.item_acno,
-      },
+      where: { factory_code, item_acno: { [Op.in]: masterAcnos } },
+      transaction: t,
     });
 
-    // Insert detail mới
-    for (const detail of details) {
-      await AC_ITEM_REF.create(detail);
-      importedDetails++;
+    // Insert detail theo chunk
+    for (let i = 0; i < allDetails.length; i += CHUNK_SIZE) {
+      const chunk = allDetails.slice(i, i + CHUNK_SIZE);
+      await AC_ITEM_REF.bulkCreate(chunk, { transaction: t });
+      importedDetails += chunk.length;
     }
-  }
-
-  console.log(
-    ` Import done: ${importedMasters} masters, ${importedDetails} details`,
-  );
+  });
 
   return {
     success: true,
     total: rowsData.length,
     masters: importedMasters,
     details: importedDetails,
-    invalidRows,
-    totalInvalidRows: invalidRows.length,
+    overwrittenRows,
+    totalOverwrittenRows: overwrittenRows.length,
   };
 }
 module.exports = {
@@ -350,6 +447,7 @@ module.exports = {
   getAllACIMByItemAcno,
   fetchGroupFieldDrop,
   fetchFieldWithFunction,
+  fetchFieldDropDown,
   addAcIM,
   editAcIM,
   exportPDFAcIM,

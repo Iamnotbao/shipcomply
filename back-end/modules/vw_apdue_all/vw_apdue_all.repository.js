@@ -22,7 +22,7 @@ async function getListOfVwApDueAll(
       vend_no: vend_no || null,
       com_invoice: com_invoice || null,
       col6: col6 || null,
-      col4: parseInt(col4) || null,
+      col4: col4 || null,
       limit: parseInt(limit) || 10,
       offset: parseInt(offset) || 0,
     };
@@ -52,7 +52,7 @@ const sql = `
     A.AC_VEND = :vend_no 
     AND A.COLUMN2 = :com_invoice 
     AND (:col6 IS NULL OR A.SRC = :col6)
-    AND A.STATUS > 1 
+    AND A.STATUS::NUMERIC > 1 
     AND (:col4 IS NULL OR A.INVOICE_ID = :col4)
   ORDER BY 
     A.factory_code,
@@ -74,7 +74,7 @@ const sql = `
         A.AC_VEND = :vend_no 
         AND A.COLUMN2 = :com_invoice 
       AND (:col6 IS NULL OR A.SRC = :col6)
-      AND A.STATUS > 1 
+      AND A.STATUS::NUMERIC > 1 
       AND (:col4 IS NULL OR A.INVOICE_ID = :col4)
     `;
     const rows = await pool.query(sql, {
@@ -142,7 +142,7 @@ async function listAllVwApDueAllWithDetails(
       WHERE A.AC_VEND = :vend_no
         AND A.COLUMN2 = :com_invoice
         AND A.SRC = :col6
-        AND A.STATUS > 1
+        AND A.STATUS::NUMERIC > 1
         AND A.INVOICE_ID = :col4::NUMERIC
       ORDER BY A.AP_REFNO, A.AP_REFSEQ
     `;

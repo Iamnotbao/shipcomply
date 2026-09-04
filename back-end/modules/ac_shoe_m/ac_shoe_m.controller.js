@@ -1,7 +1,6 @@
 const createAcShoesMSchema = require("./ac_shoe_m.create.dto");
 const acShoeMService = require("./ac_shoe_m.service");
 const sequelize = require("../../config/db");
-const { broadcast } = require("../../utils/sseManager");
 const fs = require("fs");
 
 async function getAllAcShoe(req, res) {
@@ -186,7 +185,6 @@ async function addAcShoeM(req, res) {
       page_size,
       t,
     );
-    broadcast({ table: "AC_SHOE_M", action: "create" });
     if (response.message) {
       await t.rollback();
       return res.status(401).json({
@@ -243,7 +241,6 @@ async function editAcShoeM(req, res) {
       page_size,
       t,
     );
-    broadcast({table : "AC_SHOE_M", action: "edit"});
     if (!response) {
       await t.rollback();
       return res.status(401).json({
@@ -361,7 +358,7 @@ async function exportExcelAcShoeM(req, res) {
 
 async function importExcel(req, res) {
   try {
-    const { factory_code, user_code } = req.query;
+    const { factory_code, department_code, user_code, query_level } = req.query;
     if (!req.file) {
       return res
         .status(400)
@@ -371,7 +368,9 @@ async function importExcel(req, res) {
     const token = authHeader && authHeader.split(" ")[1];
     const result = await acShoeMService.importExcel(
       factory_code,
+      department_code,
       user_code,
+      query_level,
       token,
       req.file.buffer,
     );
@@ -399,5 +398,5 @@ module.exports = {
   exportExcelAcShoeM,
   getAcItemnoDropdown,
   getShoeDropdown,
-  importExcel
+  importExcel,
 };

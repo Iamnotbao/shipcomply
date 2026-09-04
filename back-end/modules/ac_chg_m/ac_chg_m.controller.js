@@ -45,6 +45,7 @@ async function checkDuplicateAGO(req, res) {
     ac_chgno,
     out_date,
     ac_no,
+    type
   } = req.query;
   let result;
   try {
@@ -56,6 +57,7 @@ async function checkDuplicateAGO(req, res) {
       ac_chgno,
       out_date,
       ac_no,
+      type
     );
     return res.status(200).json({
       success: result?.success,
@@ -667,7 +669,7 @@ async function cancelActivateAcCMExp(req, res) {
     console.log(error);
     return res.status(500).json({
       success: false,
-      message: "Internal server error",
+      message: error.message,
     });
   }
 }

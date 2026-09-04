@@ -1,5 +1,6 @@
 // SE_PLAN_ORD.controller.js
 const planOrdService = require("./plan_ord.service");
+
 async function getAllPlanOrd(req, res) {
   const {
     factory_code,
@@ -27,7 +28,52 @@ async function getAllPlanOrd(req, res) {
     tableName: "SE_PLAN_ORD",
   });
 }
+async function deletePlanOrd(req, res) {
+  try {
+    const {
+      factory_code,
+      ac_no,
+      se_id,
+      se_seq,
+      ship_seq,
+      se_ver,
+      pack_gu,
+      status1,
+      language,
+      resetCol7Value,
+    } = req.query;
 
+    const isDelete = await planOrdService.deletePlanOrd(
+      factory_code,
+      ac_no,
+      se_id,
+      se_seq,
+      ship_seq,
+      se_ver,
+      pack_gu,
+      status1,
+      language,
+      resetCol7Value,
+    );
+    if (!isDelete) {
+      return res.status(401).json({
+        success: false,
+        message: "Cannot delete because null!",
+      });
+    }
+    return res.status(200).json({
+      success: true,
+      message: "Delete import material tracking successfully!",
+    });
+  } catch (error) {
+    await t.rollback();
+    console.log("Something error from delete controller:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+}
 async function searchPD(req, res) {
   const { search } = req.body;
   const {
@@ -77,7 +123,7 @@ async function checkBox(req, res) {
     is_check,
     factory_code,
   } = req.query;
-  const { filters,isAll } = req.body;
+  const { filters, isAll } = req.body;
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];
   const result = await planOrdService.checkBox(
@@ -91,7 +137,7 @@ async function checkBox(req, res) {
     token,
     filters,
     factory_code,
-    isAll
+    isAll,
   );
   if (!result) {
     return res.status(401).json({
@@ -176,4 +222,5 @@ module.exports = {
   confirmPD,
   getTempTable,
   clearTempTable,
+  deletePlanOrd
 };

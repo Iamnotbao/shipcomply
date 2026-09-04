@@ -2,6 +2,9 @@ const basicDataRepo = require("./basic_data.repository");
 const factoryService = require("../factories/factory.service");
 const QueryHelper = require("../../utils/queryHelper");
 const { generatePDF } = require("../../utils/pdf");
+const {
+  getBasicCategoryDataByID,
+} = require("../basic_data_category/basic_data_category.service");
 async function getAll(
   factory_code,
   department_code,
@@ -108,8 +111,23 @@ async function getDropdownByCategory(
   limit,
   search,
   isStatus,
+  language,
 ) {
   try {
+    const valid_category = await getBasicCategoryDataByID(
+      factory_code,
+      category_code,
+    );
+    if (!valid_category) {
+      throw new Error(
+        `Category is not exist: factory_code=${factory_code}, category_code=${category_code}`,
+      );
+    }
+
+    if (valid_category.status !== 7) {
+      throw new Error("Category is inactive");
+    }
+
     const bd = await basicDataRepo.getDropdownByCate(
       factory_code,
       category_code,
@@ -120,6 +138,7 @@ async function getDropdownByCategory(
       limit,
       search,
       isStatus,
+      language,
     );
     return bd;
   } catch (error) {

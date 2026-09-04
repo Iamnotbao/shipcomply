@@ -29,6 +29,9 @@ const {
   exportShipOrderToExcel,
   exportToPP026Excel,
   confirm,
+  getMoney,
+  confirmItemsSePlanOrd,
+  unconfirmItemsSePlanOrd,
 } = require("./se_plan_ord.controller");
 
 const sePlanOrdRouter = express.Router();
@@ -39,6 +42,7 @@ sePlanOrdRouter.get("/field_dropdown", getAllFieldDropdown);
 sePlanOrdRouter.get("/plan_date", getAllPlanOrd);
 sePlanOrdRouter.get("/ship_seq", getShipSeq);
 sePlanOrdRouter.get("/cbm", getCBM);
+sePlanOrdRouter.get("/money", getMoney);
 sePlanOrdRouter.get("/", getSePlanOrdByID);
 sePlanOrdRouter.post("/confirm_all_check", confirmCheckBox);
 sePlanOrdRouter.post("/check_box", checkBoxItem);
@@ -57,6 +61,8 @@ sePlanOrdRouter.post("/export_excel_pp026", exportToPP026Excel);
 sePlanOrdRouter.post("/search", searchSePlanOrd);
 sePlanOrdRouter.post("/search_plan_date", searchPD);
 sePlanOrdRouter.post("/search_link", searchSePlanOrdLink);
+sePlanOrdRouter.post("/confirm_check_items", confirmItemsSePlanOrd);
+sePlanOrdRouter.post("/unconfirm_check_items", unconfirmItemsSePlanOrd);
 sePlanOrdRouter.post("/", addSePlanOrd);
 sePlanOrdRouter.put("/edit", editSePlanOrd);
 sePlanOrdRouter.delete("/", deleteSePlanOrd);

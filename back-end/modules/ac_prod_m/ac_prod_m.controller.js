@@ -2,7 +2,6 @@ const createAcShoesRefSchema = require("./ac_prod_m.create.dto");
 const AcProdMService = require("./ac_prod_m.service");
 const sequelize = require("../../config/db");
 const fs = require("fs");
-const { broadcast } = require("../../utils/sseManager");
 const createAcProdMSchema = require("./ac_prod_m.create.dto");
 
 async function getAllAcProdM(req, res) {
@@ -165,7 +164,6 @@ async function addAcProdM(req, res) {
       page_size,
       t,
     );
-    broadcast({ table: "AC_PROD_M", action: "create" });
     if (response.message) {
       await t.rollback();
       return res.status(401).json({
@@ -225,7 +223,6 @@ async function editAcProdM(req, res) {
       page_size,
       t,
     );
-    broadcast({table : "AC_PROD_M", action: "edit"});
     if (!response) {
       await t.rollback();
       return res.status(401).json({

@@ -3,6 +3,7 @@ const AC_ITEM_M = require("./ac_item_m.model.js");
 const FACTORY = require("../factories/factory.model.js");
 const pool = require("../../config/db.js");
 const { Op } = require("sequelize");
+const { CHUNK_SIZE } = require("../../constants");
 
 async function listAllIM(
   factory_code,
@@ -140,22 +141,22 @@ async function fetchGroupFieldDropdown(
     statusCondition = `AND status = '7'`;
   }
   const sql = `
-       SELECT ac_item,item_acno,"Customs".gf_ac_itemname(:factory_code,item_acno,:language) AS itemnm
-        FROM "Customs".ac_item_m 
+       SELECT ac_item,item_acno,"Customs".gf_ac_itemname(:factory_code,item_acno,:language) AS itemnm,ac_type
+        FROM "Customs".ac_item_m
         WHERE ${permissionCondition}
         ${statusCondition}
         ${searchCondition}
-        AND item_acno = :ac_itemno 
-        GROUP BY ac_item,item_acno
+        AND item_acno = :ac_itemno
+        GROUP BY ac_item,item_acno,ac_type
       `;
   const countSql = `
      SELECT COUNT(*) as total
-     FROM "Customs".ac_item_m 
+     FROM "Customs".ac_item_m
         WHERE ${permissionCondition}
            ${statusCondition}
             ${searchCondition}
-        AND item_acno = :ac_itemno 
-        GROUP BY ac_item,item_acno
+        AND item_acno = :ac_itemno
+        GROUP BY ac_item,item_acno,ac_type
 
 `;
   try {
@@ -197,21 +198,45 @@ async function fetchFieldWithFunction(
   };
 
   let sql;
-  if (field === "tax_rate") {
+  if (field === "tax_rate" && type === "1") {
     sql = `
      SELECT "Customs".gf_ac_itemtax_per(:factory_code, :ac_itemno) as tax_rate
      WHERE ${permissionCondition}
       `;
+  } else if (field === "tax_rate" && type === "2") {
+    sql = `
+     SELECT "Customs".gf_ac_itemtax_per (:factory_code, :ac_itemno) as tax_rate
+     WHERE ${permissionCondition}
+      `;
   } else if (field === "unit" && type === "1") {
     sql = `
-     SELECT "Customs".gf_ac_itemunit(:factory_code, :ac_itemno) as unit 
+     SELECT "Customs".gf_ac_itemunit(:factory_code, :ac_itemno) as unit
       WHERE ${permissionCondition}
       `;
-  } else if (field === "shoe_id") {
-    sql = `SELECT "Customs".gf_ac_itemunit(:factory_code, :ac_itemno) as shoe_id`;
+  } else if (field === "unit" && type === "2") {
+    sql = `
+     SELECT "Customs".gf_ac_prod_unit(:factory_code, :ac_itemno) as unit
+      WHERE ${permissionCondition}
+      `;
+  } else if (field === "item_unit") {
+    sql = `
+     SELECT "Customs".gf_ac_itemunit(:factory_code, :ac_itemno) as item_unit
+      WHERE ${permissionCondition}
+      `;
+  } else if (field === "shoe_id" && type === "1") {
+    sql = `
+     SELECT "Customs".??? (:factory_code, :ac_itemno) as shoe_id
+      WHERE ${permissionCondition}
+      `;
+  } else if (field === "shoe_id" && type === "2") {
+    sql = `
+     SELECT "Customs".gf_ac_shoeid(:factory_code, :ac_itemno) as shoe_id
+      WHERE ${permissionCondition}
+      `;
   } else {
     sql = `SELECT "Customs".gf_ac_itemunit(:factory_code, :ac_itemno) as unit`;
   }
+
   try {
     const rows = await pool.query(sql, {
       replacements,
@@ -221,6 +246,78 @@ async function fetchFieldWithFunction(
     return rows[0];
   } catch (error) {
     console.error("Error in unit list by good codes:", error);
+    throw error;
+  }
+}
+async function fetchFieldDropDown(
+  factory_code,
+  department_code,
+  user_code,
+  query_level,
+  language,
+  field = null,
+  page,
+  limit,
+  search,
+  isStatusBool = true,
+) {
+  const charset = { en: "E", zh: "T", vi: "L" };
+  let permissionCondition = "1=1";
+  let replacements = {
+    factory_code,
+    language: charset[language] || "E",
+    limit: parseInt(limit) || 10,
+    offset: (parseInt(page) - 1) * parseInt(limit) || 0,
+  };
+
+  let searchCondition = "";
+  if (search && search.trim() !== "") {
+    const searchField = field || "item_acno";
+    searchCondition = `AND (${searchField} ILIKE :search)`;
+    replacements.search = `%${search.trim()}%`;
+  }
+
+  let statusCondition = isStatusBool ? `AND status = '7'` : "";
+
+  const sql = `
+    SELECT ac_item, item_acno,
+           "Customs".gf_ac_itemname(:factory_code, item_acno, :language) AS itemnm,
+           ac_type
+    FROM "Customs".ac_item_m
+    WHERE ${permissionCondition}
+    ${statusCondition}
+    ${searchCondition}
+    GROUP BY ac_item, item_acno, ac_type
+    LIMIT :limit OFFSET :offset
+  `;
+
+  const countSql = `
+    SELECT COUNT(*) as total
+    FROM "Customs".ac_item_m
+    WHERE ${permissionCondition}
+    ${statusCondition}
+    ${searchCondition}
+    GROUP BY ac_item, item_acno, ac_type
+  `;
+
+  try {
+    const rows = await pool.query(sql, {
+      replacements,
+      type: pool.QueryTypes.SELECT,
+    });
+    const totalResult = await pool.query(countSql, {
+      replacements,
+      type: pool.QueryTypes.SELECT,
+    });
+    const total = parseInt(totalResult[0]?.total || 0);
+    return {
+      data: rows,
+      total,
+      pageSize: parseInt(limit) || 10,
+      currentPage: parseInt(page) || 1,
+    };
+  } catch (error) {
+    console.error("Error in fetchFieldDropDown:", error);
     throw error;
   }
 }
@@ -254,7 +351,15 @@ async function getPosition(item_acno, pageSize, t, permission) {
     throw error;
   }
 }
-
+async function bulkUpsertMaster(data, t) {
+  for (let i = 0; i < data.length; i += CHUNK_SIZE) {
+    const chunk = data.slice(i, i + CHUNK_SIZE);
+    await AC_ITEM_M.bulkCreate(chunk, {
+      updateOnDuplicate: ["item_acno"],
+      transaction: t,
+    });
+  }
+}
 async function add(
   factory_code,
   user_code,
@@ -398,10 +503,12 @@ module.exports = {
   getAllACIMByIA,
   fetchGroupFieldDropdown,
   fetchFieldWithFunction,
+  fetchFieldDropDown,
   getByID,
   add,
   edit,
   deleteIM,
   search,
   getPosition,
+  bulkUpsertMaster,
 };

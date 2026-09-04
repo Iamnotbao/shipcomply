@@ -40,14 +40,14 @@ async function getUserByDepartment(factory_code, department_code) {
     console.log("The error in user by deparment", error);
   }
 }
-async function getUserByFactory(factory_code) {
+async function getUserByFactory(factory_code, limit, page, search,isStatus) {
   try {
     const existFactory = await factoryService.getFactoryByID(factory_code);
     if (!existFactory) {
       console.log("The factory is not exist");
       return null;
     }
-    return await userRepo.getByFactory(factory_code);
+    return await userRepo.getByFactory(factory_code, limit, page, search,isStatus);
   } catch (error) {
     console.log("The error in user by deparment", error);
   }

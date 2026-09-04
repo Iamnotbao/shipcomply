@@ -166,7 +166,7 @@ async function editAcIR(
 }
 async function deleteAcIR(factory_code, item_acno, item_no, t) {
   try {
-    const existIR = await getAcIRByID(factory_code, item_acno, item_no, acIR);
+    const existIR = await getAcIRByID(factory_code, item_acno, item_no);
     if (!existIR) {
       console.log("ac item ref is not exist !");
       return null;

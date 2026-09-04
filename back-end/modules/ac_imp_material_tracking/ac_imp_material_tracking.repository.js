@@ -189,14 +189,14 @@ async function getComInvoice(
     SELECT COLUMN2 as invoice_no
     FROM "Customs".VW_APDUE_ALL
     WHERE (VEND_NO=:vend_no OR AC_VEND=:vend_no) 
-    AND STATUS > 1 
+    AND STATUS::NUMERIC > 1 
     GROUP BY COLUMN2 ORDER BY COLUMN2
     `;
     countSql = `
     SELECT COUNT(DISTINCT COLUMN2) as total
     FROM "Customs".VW_APDUE_ALL
     WHERE (VEND_NO=:vend_no OR AC_VEND=:vend_no) 
-    AND STATUS > 1 
+    AND STATUS::NUMERIC > 1 
     GROUP BY COLUMN2 ORDER BY COLUMN2
     `;
     }
@@ -509,67 +509,168 @@ async function search(
   query_level,
   limit,
   offset,
+  language,
 ) {
   try {
-    const queryHelper = new QueryHelper(query, {
-      AC_IMP_MATERIAL_TRACKING: [
-        "invoice_no",
-        "declaration_category",
-        "actual_delivery_date",
-        "actual_delivery_date",
-        "estimated_delivery_date",
-        "loading_way",
-        "declaration_retrieve_date",
-        "record_date",
-        "sort",
-        "status",
-      ],
-      FACTORY: ["factory_code"],
-    }).filter();
-    const whereClause = queryHelper.whereMap.AC_IMP_MATERIAL_TRACKING || {};
+    const charset = { en: "E", zh: "T", vi: "L" };
+
+    // Các field thuộc bảng AC_IMP_MATERIAL_TRACKING được phép filter
+    const trackingFields = [
+      "invoice_no",
+      "declaration_category",
+      "actual_delivery_date",
+      "estimated_delivery_date",
+      "loading_way",
+      "declaration_retrieve_date",
+      "record_date",
+      "sort",
+      "status",
+    ];
+
+    const search =
+      query && typeof query.search === "object" && query.search !== null
+        ? query.search
+        : {};
+
+    let conditions = ["1=1"];
+    let replacements = {
+      limit: parseInt(limit) + 1 || 10,
+      offset: parseInt(offset) || 0,
+      charset: charset[language] || "E",
+    };
+
+    let paramIdx = 0;
+    const nextKey = (base) => `${base}_${paramIdx++}`;
+
+    Object.entries(search).forEach(([key, val]) => {
+      if (val === null || val === undefined) return;
+      if (typeof val === "string" && val.trim() === "") return;
+
+      // Search tên factory theo cả 3 ngôn ngữ
+      if (key === "factory_name") {
+        const k = nextKey("factory_name");
+        replacements[k] = `%${val}%`;
+        conditions.push(
+          `(f.factory_name_e ILIKE  :${k} OR f.factory_name_l ILIKE :${k} OR f.factory_name_t ILIKE :${k})`
+        );
+        return;
+      }
+
+      // Field thuộc bảng FACTORY
+      if (key === "factory_code") {
+        const k = nextKey("factory_code");
+        if (typeof val === "number") {
+          replacements[k] = val;
+          conditions.push(`f.factory_code = :${k}`);
+        } else {
+          replacements[k] = `%${val}%`;
+          conditions.push(`f.factory_code ILIKE  :${k}`);
+        }
+        return;
+      }
+
+      // Field thuộc bảng chính AC_IMP_MATERIAL_TRACKING
+      if (trackingFields.includes(key)) {
+        if (/^\d{4}-\d{2}-\d{2}$/.test(val)) {
+          const [year, month, day] = val.split("-").map(Number);
+          const startDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
+          const endDate = new Date(Date.UTC(year, month - 1, day, 23, 59, 59, 999));
+          const kStart = nextKey(`${key}_start`);
+          const kEnd = nextKey(`${key}_end`);
+          replacements[kStart] = startDate;
+          replacements[kEnd] = endDate;
+          conditions.push(`t.${key} BETWEEN :${kStart} AND :${kEnd}`);
+        } else if (typeof val === "number") {
+          const k = nextKey(key);
+          replacements[k] = val;
+          conditions.push(`t.${key} = :${k}`);
+        } else {
+          const k = nextKey(key);
+          replacements[k] = `%${val}%`;
+          conditions.push(`t.${key} ILIKE  :${k}`);
+        }
+      }
+    });
+
+    // Điều kiện phân quyền
     if (user_code !== "admin") {
       if (query_level === "1" && factory_code) {
-        whereClause.factory_code = factory_code;
-      } else if (query_level === "2" && department_code) {
-        whereClause.grt_dept = department_code;
-        whereClause.factory_code = factory_code;
+        conditions.push("t.factory_code = :permission_factory");
+        replacements.permission_factory = factory_code;
+      } else if (query_level === "2" && department_code && factory_code) {
+        conditions.push(
+          "t.grt_dept = :permission_dept AND t.factory_code = :permission_factory"
+        );
+        replacements.permission_dept = department_code;
+        replacements.permission_factory = factory_code;
       } else if (query_level === "3" && user_code) {
-        whereClause.grt_user = user_code;
+        conditions.push("t.grt_user = :permission_user");
+        replacements.permission_user = user_code;
       }
     }
-    const rows = await AC_IMP_MATERIAL_TRACKING.findAll({
-      where: whereClause,
-      include: [
-        {
-          model: FACTORY,
-          where: queryHelper.whereMap.FACTORY || {},
-          required: true,
-          attributes: [],
-        },
-      ],
-      order: [
-        ["factory_code", "ASC"],
-        ["invoice_no", "ASC"],
-        ["sort", "ASC"],
-      ],
-      limit: parseInt(limit) + 1,
-      offset: parseInt(offset),
+
+    const whereClause = conditions.join(" AND ");
+
+    const countSql = `
+      SELECT COUNT(*)::int AS count
+      FROM "Customs".ac_imp_material_tracking t
+      INNER JOIN "Customs".factory f
+        ON f.factory_code = t.factory_code
+      WHERE ${whereClause}
+    `;
+
+    const sql = `
+      SELECT
+        t.*,
+        CONCAT(
+          t.declaration_category,
+          ' - ',
+          COALESCE(
+            CASE :charset
+              WHEN 'E' THEN bd.name_e
+              WHEN 'T' THEN bd.name_t
+              WHEN 'L' THEN bd.name_l
+              ELSE bd.name_e
+            END,
+            ''
+          )
+        ) AS declaration_category_name
+      FROM "Customs".ac_imp_material_tracking t
+      INNER JOIN "Customs".factory f
+        ON f.factory_code = t.factory_code
+      LEFT JOIN "Customs".basic_data bd
+        ON bd.factory_code = t.factory_code
+        AND bd.category_code = 'CDC'
+        AND bd.code_no = t.declaration_category
+      WHERE ${whereClause}
+      ORDER BY t.factory_code ASC, t.invoice_no ASC, t.sort ASC
+      LIMIT :limit OFFSET :offset
+    `;
+
+    const rows = await pool.query(sql, {
+      replacements,
+      type: pool.QueryTypes.SELECT,
     });
-    const hasMore = rows.length > limit;
-    const actualRows = hasMore ? rows.slice(0, limit) : rows;
+
+    const hasMore = rows.length > parseInt(limit);
+    const actualRows = hasMore ? rows.slice(0, parseInt(limit)) : rows;
+
     let total = null;
     if (parseInt(offset) === 0) {
-      total = await AC_IMP_MATERIAL_TRACKING.count({
-        where: whereClause,
+      const countResult = await pool.query(countSql, {
+        replacements,
+        type: pool.QueryTypes.SELECT,
       });
+      total = countResult[0]?.count ?? 0;
     }
+
     return {
       rows: actualRows,
       count: total,
-      hasMore: hasMore,
+      hasMore,
     };
   } catch (error) {
-    console.log("Database can not search the data", error);
+    console.error("Error in search:", error);
     throw error;
   }
 }

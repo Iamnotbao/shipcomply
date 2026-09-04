@@ -123,6 +123,7 @@ async function getDropdownByCategory(req, res) {
     limit = 10,
     search = "",
     is_status,
+    language
   } = req.query;
 
   try {
@@ -136,6 +137,7 @@ async function getDropdownByCategory(req, res) {
       limit,
       search,
       is_status,
+      language
     );
 
     return res.status(200).json({

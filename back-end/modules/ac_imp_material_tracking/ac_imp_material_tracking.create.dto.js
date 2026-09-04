@@ -2,7 +2,7 @@ const Joi = require("joi");
 
 const createAcImpMaterialTrackingSchema = Joi.object({
   factory_code: Joi.string().max(20).required(),
-  invoice_no: Joi.string().max(20).required(),
+  invoice_no: Joi.string().max(200).required(),
   sort: Joi.string().max(20).required(),
   declaration_category: Joi.string().max(30).allow(null).empty('').default(null).optional(),
   record_date: Joi.date().allow(null).empty('').default(null).optional(),

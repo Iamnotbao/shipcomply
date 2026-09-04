@@ -146,6 +146,7 @@ async function fetchDropdownGoodsCode(
   limit,
   search,
   isStatus = true,
+  isExport = false,
 ) {
   let permissionCondition = "1=1";
   let replacements = {
@@ -153,8 +154,6 @@ async function fetchDropdownGoodsCode(
     limit: parseInt(limit) || 10,
     offset: (parseInt(page) - 1) * parseInt(limit) || 0,
   };
-  console.log("cho do ", replacements);
-
   if (user_code !== "admin") {
     if (query_level === "1" && factory_code) {
       permissionCondition = "factory_code = :factory_code";
@@ -174,13 +173,17 @@ async function fetchDropdownGoodsCode(
     replacements.search = `%${search.trim()}%`;
   }
   const isStatusBool = String(isStatus).toLowerCase() === "true";
+  const isExportBool = String(isExport).toLowerCase() === "true";
   let statusCondition = "";
   if (isStatusBool) {
     statusCondition = `AND status = '7'`;
   }
-  const sql = `
-    SELECT DISTINCT item_acno
-    FROM "Customs".ac_item_m
+  let sql;
+  let countSql;
+  if(isExportBool){
+   sql = `
+    SELECT DISTINCT customs_shoe_id as item_acno
+    FROM "Customs".ac_prod_m
     WHERE factory_code = :factory_code
       AND ${permissionCondition}
       ${searchCondition}
@@ -189,14 +192,35 @@ async function fetchDropdownGoodsCode(
     LIMIT :limit
     OFFSET :offset
   `;
-  const countSql = `
-    SELECT COUNT(DISTINCT item_acno) as total
-    FROM "Customs".ac_item_m
+   countSql = `
+    SELECT COUNT(DISTINCT customs_shoe_id) as total
+    FROM "Customs".ac_prod_m
     WHERE factory_code = :factory_code
       AND ${permissionCondition}
       ${searchCondition}
       ${statusCondition}
   `;
+  } else{
+      sql = `
+   SELECT DISTINCT ITEM_ACNO
+    FROM "Customs".AC_ITEM_M where 
+    factory_code=:factory_code
+      AND ${permissionCondition}
+      ${searchCondition}
+      ${statusCondition}
+    ORDER BY item_acno ASC
+    LIMIT :limit
+    OFFSET :offset
+  `;
+   countSql = `
+    SELECT COUNT(DISTINCT ITEM_ACNO) as total
+    FROM "Customs".AC_ITEM_M
+    WHERE factory_code = :factory_code
+      AND ${permissionCondition}
+      ${searchCondition}
+      ${statusCondition}
+  `;
+  }
   try {
     const rows = await pool.query(sql, {
       replacements: replacements,
@@ -231,6 +255,7 @@ async function fetchUnitByGoodsCode(
   limit,
   search,
   isStatus = true,
+  isExport = false
 ) {
   let permissionCondition = "1=1";
   let replacements = {
@@ -257,21 +282,38 @@ async function fetchUnitByGoodsCode(
     searchCondition = `unit ILIKE :search`;
     replacements.search = `%${search.trim()}%`;
   }
-   const isStatusBool = String(isStatus).toLowerCase() === "true";
+  const isStatusBool = String(isStatus).toLowerCase() === "true";
+  const isExportBool = String(isExport).toLowerCase() === "true";
   let statusCondition = "";
   if (isStatusBool) {
     statusCondition = `AND status = '7'`;
   }
-  const sql = `
+  let sql ;
+  let countSql;
+  if(isExportBool){
+   sql = `
+       Select "Customs".GF_AC_PROD_UNIT(:factory_code,:goods_code) as unit 
+      `;
+   countSql = `
+  SELECT COUNT(*) as total
+  FROM (
+    SELECT "Customs".GF_AC_PROD_UNIT(:factory_code, :goods_code) as unit
+  ) as subquery
+  ${searchCondition}
+`;
+  }
+  else{
+      sql = `
        Select "Customs".GF_AC_ITEMunit(:factory_code,:goods_code) as unit 
       `;
-  const countSql = `
+   countSql = `
   SELECT COUNT(*) as total
   FROM (
     SELECT "Customs".GF_AC_ITEMunit(:factory_code, :goods_code) as unit
   ) as subquery
   ${searchCondition}
 `;
+  }
   try {
     const rows = await pool.query(sql, {
       replacements,
@@ -290,6 +332,55 @@ async function fetchUnitByGoodsCode(
       pageSize: parseInt(limit) || 10,
       currentPage: parseInt(page) || 1,
     };
+  } catch (error) {
+    console.error("Error in unit list by good codes:", error);
+    throw error;
+  }
+}
+
+async function fetchFieldWithFunction(
+  factory_code,
+  department_code,
+  user_code,
+  query_level,
+  field,
+  ac_itemno,
+  type = "1",
+) {
+  let permissionCondition = "1=1";
+  let replacements = {
+    factory_code: factory_code,
+    ac_itemno: ac_itemno,
+  };
+
+  let sql;
+  if (field === "tax_rate") {
+    sql = `
+     SELECT "Customs".gf_ac_itemtax_per(:factory_code, :ac_itemno) as tax_rate
+     WHERE ${permissionCondition}
+      `;
+  } else if (field === "unit" && type === "1") {
+    sql = `
+     SELECT "Customs".gf_ac_prod_unit(:factory_code, :ac_itemno) as unit
+      WHERE ${permissionCondition}
+      `;
+  } else if (field === "item_unit") {
+    sql = `
+     SELECT "Customs".gf_ac_prod_unit(:factory_code, :ac_itemno) as item_unit
+      WHERE ${permissionCondition}
+      `;
+  } else if (field === "shoe_id") {
+    sql = `SELECT "Customs".gf_ac_shoeid(:factory_code, :ac_itemno) as shoe_id`;
+  } else {
+    sql = `SELECT "Customs".gf_ac_prod_unit(:factory_code, :ac_itemno) as unit`;
+  }
+  try {
+    const rows = await pool.query(sql, {
+      replacements,
+      type: pool.QueryTypes.SELECT,
+    });
+
+    return rows[0];
   } catch (error) {
     console.error("Error in unit list by good codes:", error);
     throw error;
@@ -334,7 +425,7 @@ async function fetchDropdownGoodsCodeWithFunction(
   // }
   let searchCondition = "";
   if (search && search.trim() !== "") {
-    searchCondition = `AND goods_code ILIKE :search`;
+    searchCondition = mark === "A" ? `AND goods_code ILIKE :search` : `AND item_acno ILIKE :search OR (name_e ILIKE :search OR name_t ILIKE :search OR name_s ILIKE :search) or ac_item ILIKE :search`;
     replacements.search = `%${search.trim()}%`;
   }
   let sql, countSql;
@@ -379,7 +470,7 @@ async function fetchDropdownGoodsCodeWithFunction(
 `;
     countSql = `
     SELECT COUNT(*) as total
-    FROM "Customs".ac_cont_d 
+    FROM "Customs".AC_ITEM_M
     WHERE 
       ${permissionCondition}
       ${searchCondition}
@@ -743,6 +834,7 @@ module.exports = {
   listAllAcContD,
   listAllAcContDWithView,
   fetchDropdownGoodsCode,
+  fetchFieldWithFunction,
   fetchDropdownGoodsCodeWithFunction,
   fetchUnitByGoodsCode,
   fetchContPriceDropdown,

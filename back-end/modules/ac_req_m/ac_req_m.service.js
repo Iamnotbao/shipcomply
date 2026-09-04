@@ -5,6 +5,7 @@ const {
 const { generatePDF } = require("../../utils/pdf");
 const acReqMRepository = require("./ac_req_m.repository");
 const userService = require("../users/user.service");
+const { generateExcelWithSub } = require("../../utils/excel");
 
 async function getAllARM(
   factory_code,
@@ -19,8 +20,7 @@ async function getAllARM(
     const message = "User is not exist or null from service!";
     return { message };
   }
-
-  const result = await acReqMRepository.listAllARM(
+  return await acReqMRepository.listAllARM(
     factory_code,
     department_code,
     user_code,
@@ -28,16 +28,28 @@ async function getAllARM(
     limit,
     offset,
   );
-
-  if (Array.isArray(result)) {
-    return {
-      rows: result,
-      count: result.length,
-      hasMore: false,
-    };
+}
+async function getAllSubByARM(
+  factory_code,
+  req_no,
+  department_code,
+  user_code,
+  query_level,
+  search,
+) {
+  const existUser = await userService.getUniqueUser(user_code);
+  if (!existUser) {
+    const message = "User is not exist or null from service!";
+    return { message };
   }
-
-  return result;
+  return await acReqMRepository.listAllSubByARM(
+    factory_code,
+    req_no,
+    department_code,
+    user_code,
+    query_level,
+    search,
+  );
 }
 async function getARMByID(factory_code, req_no) {
   return await acReqMRepository.getByID(factory_code, req_no);
@@ -266,24 +278,52 @@ async function searchARM(
     console.log(error);
   }
 }
-async function exportPDFARM(
+async function exportExcelARM(
   filename,
   factory_code,
   department_code,
   user_code,
   query_level,
+  req_no,
+  search,
 ) {
-  const data = await getAllARM(
+  const {rows} = await getAllSubByARM(
     factory_code,
+    req_no,
     department_code,
     user_code,
     query_level,
+    search
   );
-  console.log("dataa", data);
+  console.log("chec all  rows",rows);
+  
+  const defaultColumns = [
+    { header: "Application No", key: "req_no", width: 20 },
+    { header: "Item No", key: "req_seq", width: 15 },
+    { header: "Source ID", key: "src_id", width: 20 },
+    { header: "Procurement Type", key: "order_type", width: 15 },
+    { header: "PO Date", key: "order_date", width: 20 },
+    { header: "PO Number", key: "order_no", width: 20 },
+    { header: "Order Item", key: "order_seq", width: 20 },
+    { header: "Delivery Method", key: "ac_send", width: 15 },
+    { header: "Contract No.", key: "cont_no", width: 40 },
+    { header: "Customs No.", key: "ac_no", width: 20 },
+    { header: "Factory Item No.", key: "ac_code", width: 20 },
+    { header: "Customs Material No.", key: "item_acno", width: 20 },
+    { header: "Customs quantity", key: "order_acqty", width: 20 },
+    { header: "Requested Customs Qty", key: "req_acqty", width: 20 },
+    { header: "Declared Qty.", key: "chge_qty", width: 20 },
+    { header: "Received Qty", key: "y_rcpt", width: 20 },
+    { header: "Qualified Qty", key: "pass_qty", width: 20 },
+    { header: "Applied Qty", key: "req_qty", width: 20 },
+    { header: "Currency", key: "currency", width: 20 },
+    { header: "Price", key: "price", width: 20 },
+    { header: "Amount", key: "amount", width: 20 },
+    { header: "Receipt No.", key: "chk_no", width: 20 },
+    { header: "Check Item No.", key: "chk_seq", width: 20 },
+  ];
 
-  const plainFactory = data.rows.map((d) => d.get({ plain: true }));
-  await generatePDF(plainFactory, filename, "AC_REQ_M");
-  return filename;
+  return await generateExcelWithSub(rows, filename, defaultColumns);
 }
 async function exportExcelMaterialARM(filename, filters) {
   return await exportExcelMaterial(filename, filters);
@@ -304,7 +344,7 @@ module.exports = {
   getAcTypeDropdown,
   addARM,
   editARM,
-  exportPDFARM,
+  exportExcelARM,
   searchARM,
   deleteARM,
   exportExcelMaterialARM,

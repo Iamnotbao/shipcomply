@@ -282,23 +282,28 @@ async function searchBasicDataCategory(req, res) {
     });
   }
 }
-async function exportPDFBasicDataCategory(req, res) {
+async function exportExcelBasicDataCategory(req, res) {
   try {
-    const filename = "basic_data.pdf";
+    const filename = "basic_data.xlsx";
     const { factory_code, department_code, user_code, query_level } = req.query;
-    const pdf = await basicDataCategoryService.exportPDFBasicDataCategory(
+    const workbook = await basicDataCategoryService.exportExcelBasicDataCategory(
       filename,
       factory_code,
       department_code,
       user_code,
       query_level,
     );
-    res.download(pdf, (err) => {
-      if (err) {
-        res.status(500).send("Error downloading file");
-      }
-      fs.unlinkSync(filename);
-    });
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    );
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=AC_ITEM_M_${Date.now()}.xlsx`,
+    );
+
+    await workbook.xlsx.write(res);
+    res.end();
   } catch (error) {
     console.error(error);
     res
@@ -316,5 +321,5 @@ module.exports = {
   deleteBasicData,
   deleteAllFactoryDepartment,
   searchBasicDataCategory,
-  exportPDFBasicDataCategory,
+  exportExcelBasicDataCategory,
 };

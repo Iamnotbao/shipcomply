@@ -5,7 +5,6 @@ const fs = require("fs");
 const ExcelJS = require("exceljs");
 const { Op } = require("sequelize");
 const createAcBomMSchema = require("./ac_bom_m.create.dto");
-const { broadcast } = require("../../utils/sseManager");
 
 async function getAllABM(req, res) {
   const {
@@ -78,7 +77,6 @@ async function addABM(req, res) {
       page_size,
       t,
     );
-    broadcast({ table: "AC_BOM_M", action: "create" });
     if (response.message) {
       await t.rollback();
       return res.status(401).json({
@@ -138,7 +136,6 @@ async function editABM(req, res) {
       page_size,
       t,
     );
-    broadcast({ table: "AC_BOM_M", action: "update" });
     if (!response) {
       await t.rollback();
       return res.status(401).json({

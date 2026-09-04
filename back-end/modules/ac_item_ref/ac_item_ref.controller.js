@@ -2,7 +2,6 @@ const createAcItemRefSchema = require("./ac_item_ref.create.dto");
 const acItemRefService = require("./ac_item_ref.service");
 const sequelize = require("../../config/db");
 const fs = require("fs");
-const { broadcast } = require("../../utils/sseManager");
 
 async function getAllAcIR(req, res) {
   const {
@@ -157,16 +156,22 @@ async function updateStatusAcIR(req, res) {
 async function addAcIR(req, res) {
   const { page_size, factory_code, department_code, user_code, query_level } =
     req.query;
-  
   const { data } = req.body;
   const { error, value } = createAcItemRefSchema.validate(data);
-  broadcast({ table: "AC_ITEM_REF", action: "add" });
   if (error) {
     return res.status(402).json({
       success: false,
       message: error.details[0].message,
     });
   }
+  console.log(
+    "ldldalda",
+    page_size,
+    factory_code,
+    department_code,
+    user_code,
+    query_level,
+  );
 
   const t = await sequelize.transaction();
   try {
@@ -179,7 +184,6 @@ async function addAcIR(req, res) {
       page_size,
       t,
     );
-    broadcast({ table: "AC_ITEM_REF", action: "create" });
     if (response.message) {
       await t.rollback();
       return res.status(401).json({
@@ -239,7 +243,6 @@ async function editAcIR(req, res) {
       page_size,
       t,
     );
-    broadcast({ table: "AC_ITEM_REF", action: "edit" });
     if (!response) {
       await t.rollback();
       return res.status(401).json({

@@ -3,7 +3,7 @@ const sequelize = require("../../config/db");
 const createUserSchema = require("./user.create.dto");
 const editUserSchema = require("./user.edit.dto");
 const { generateExcel } = require("../../utils/excel");
-const fs = require("fs")
+const fs = require("fs");
 
 async function listUsers(req, res) {
   try {
@@ -24,17 +24,16 @@ async function getUserByID(req, res) {
     let user = await userService.getUserByID(
       factory_code,
       department_code,
-      user_code
+      user_code,
     );
     user = user.toJSON();
     const supervisor = await userService.getUserByID(
       user.factory_code,
       user.department_code,
-      user.supervisor_id
+      user.supervisor_id,
     );
     const { supervisor_name } = supervisor;
     user = { ...user, supervisor_name };
-
 
     return res.json({
       message: "Get single user successfully!",
@@ -51,7 +50,7 @@ async function getUserByDepartment(req, res) {
     const { factory_code, department_code } = req.query;
     const response = await userService.getUserByDepartment(
       factory_code,
-      department_code
+      department_code,
     );
     if (!response) {
       return res.status(400).json({
@@ -69,11 +68,17 @@ async function getUserByDepartment(req, res) {
 }
 async function getUserByFactory(req, res) {
   try {
-    const { factory_code } = req.query;
-    const response = await userService.getUserByFactory(
+    const { factory_code, limit, page, search, isStatus } = req.query;
+    const result = await userService.getUserByFactory(
       factory_code,
+      limit,
+      page,
+      search,
+      isStatus,
     );
-    if (!response) {
+    console.log("check lai di ",result);
+    
+    if (!result) {
       return res.status(400).json({
         message: "Cannot receive the user by factory",
         success: false,
@@ -82,7 +87,11 @@ async function getUserByFactory(req, res) {
     return res.status(200).json({
       message: "Get the users by factory",
       success: true,
-      data: response,
+      data: result.data,
+      total: result.total,
+      currentPage: result.currentPage,
+      pageSize: result.pageSize,
+      totalPages: result.totalPages,
       tableName: "USER",
     });
   } catch (error) {}
@@ -132,7 +141,7 @@ async function editUser(req, res) {
       department_code,
       user_code,
       value,
-      t
+      t,
     );
     const { message } = response;
     if (message) {
@@ -157,10 +166,7 @@ async function deleteUser(req, res) {
   try {
     const t = await sequelize.transaction();
     const { user_code } = req.query;
-    const user = await userService.deleteUser(
-      user_code,
-      t
-    );
+    const user = await userService.deleteUser(user_code, t);
     if (!user) {
       await t.rollback();
       return res.status(401).json({
@@ -236,7 +242,7 @@ async function exportUserExcel(req, res) {
     const workbook = await generateExcel(excelUser, "USER");
     res.setHeader(
       "Content-Type",
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     );
 
     res.setHeader("Content-Disposition", "attachment; filename=user.xlsx");

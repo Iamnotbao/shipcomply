@@ -63,7 +63,7 @@ async function checkBox(
   session_id,
   filters,
   factory_code,
-  isAll
+  isAll,
 ) {
   try {
     const acImpFound = await planOrdRepository.checkPlanItem(
@@ -77,7 +77,7 @@ async function checkBox(
       session_id,
       filters,
       factory_code,
-      isAll
+      isAll,
     );
     return acImpFound;
   } catch (error) {
@@ -122,6 +122,40 @@ async function clearPlanSession(session_id) {
     console.log(error);
   }
 }
+async function deletePlanOrd(
+  factory_code,
+  ac_no,
+  se_id,
+  se_seq,
+  ship_seq,
+  se_ver,
+  pack_gu,
+  status1,
+  language,
+  resetCol7Value,
+) {
+  try {
+    const result = await planOrdRepository.deletePOrd(
+      factory_code,
+      ac_no,
+      se_id,
+      se_seq,
+      ship_seq,
+      se_ver,
+      pack_gu,
+      status1,
+      language,
+      resetCol7Value,
+    );
+    if (!result) {
+      console.log("Cannot delete because data from db is null!");
+      return null;
+    }
+    return result;
+  } catch (error) {
+    console.log("Cannot delete", error);
+  }
+}
 module.exports = {
   getAllPlanOrd,
   searchPD,
@@ -129,4 +163,5 @@ module.exports = {
   confirmPD,
   getPlanSelections,
   clearPlanSession,
+  deletePlanOrd
 };

@@ -16,6 +16,7 @@ const {
   getPackingSeid,
   exportPDFToPakingList,
   closeSeInvM,
+  exportExcel,
 } = require("./se_inv_m.controller");
 
 const seInvMRouter = express.Router();
@@ -32,7 +33,7 @@ seInvMRouter.get("/invoice", getInvoiceDropdown);
 seInvMRouter.get("/packing_seid", getPackingSeid);
 seInvMRouter.post("/pdf_packing_list", exportPDFToPakingList);
 seInvMRouter.get("/close", closeSeInvM);
-// seInvMRouter.post("/excel", exportExcel);
+seInvMRouter.post("/excel", exportExcel);
 seInvMRouter.post("/search", searchSeInvM);
 seInvMRouter.post("/", addSeInvM);
 seInvMRouter.put("/edit", editSeInvM);

@@ -1,6 +1,6 @@
 const sdOrdMCService = require("./sd_ord_m_c.service");
 async function getAllFieldDropdown(req, res) {
-  const { factory_code, field, language, page, limit, search, extraField } =
+  const { factory_code, field, language, page, limit, search, extraField,conditionField } =
     req.query;
   const result = await sdOrdMCService.getAllFieldDropdown(
     factory_code,
@@ -10,6 +10,7 @@ async function getAllFieldDropdown(req, res) {
     limit,
     search,
     extraField,
+    conditionField
   );
   return res.status(200).json({
     message: "ok",
