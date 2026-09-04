@@ -1,9 +1,6 @@
 import {
   Box,
   Button,
-  ButtonGroup,
-  Divider,
-  Grid,
   Toolbar,
   TextField,
   MenuItem,
@@ -11,8 +8,9 @@ import {
   Select,
   Checkbox,
   CircularProgress,
+  Tooltip,
 } from "@mui/material";
-import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
+import { forwardRef, useImperativeHandle, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import SearchBar from "../search/SearchBar";
@@ -22,7 +20,6 @@ import Dropdown from "../dropdown/Dropdown";
 const ToolbarKit = forwardRef(
   (
     {
-      total = 0,
       onSearch,
       onCancel,
       onConfirm,
@@ -49,11 +46,9 @@ const ToolbarKit = forwardRef(
       isCheckMax,
       onExtend,
       onConfirmAll,
-      onApprove,
       onAddContractNumber,
       isLoadingBom,
       language,
-      onFetchData,
       dropDownValues,
       setDropdownValues,
       onAutoAdd,
@@ -1942,7 +1937,9 @@ const ToolbarKit = forwardRef(
     const handleSearch = () => {
       const updateSearch = { ...searchValue };
       if (updateSearch.status !== undefined && updateSearch.status !== "") {
-        if (statusMap.hasOwnProperty(updateSearch.status)) {
+        if (
+          Object.prototype.hasOwnProperty.call(statusMap, updateSearch.status)
+        ) {
           updateSearch.status = statusMap[updateSearch.status];
         } else {
           updateSearch.status = -1;
@@ -1989,39 +1986,69 @@ const ToolbarKit = forwardRef(
         display: "flex",
         flexDirection: "column",
         gap: 0.5,
-        minWidth: 150,
+        minWidth: 0,
+        width: "100%",
+        "& > .MuiBox-root": {
+          alignItems: "stretch",
+          flexDirection: "column",
+          gap: 0.5,
+          width: "100%",
+        },
+        "& > .MuiBox-root > .MuiTypography-root": {
+          display: "-webkit-box",
+          overflow: "hidden",
+          WebkitBoxOrient: "vertical",
+          WebkitLineClamp: 2,
+          lineHeight: 1.2,
+        },
+        "& > .MuiBox-root > .MuiPaper-root": {
+          boxSizing: "border-box",
+          width: "100%",
+        },
+        "& .MuiFormControl-root": {
+          ml: 0,
+          minWidth: 0,
+          width: "100%",
+        },
       };
 
       const labelStyles = {
         variant: "body2",
         fontWeight: "bold",
         fontSize: "12px",
+        lineHeight: 1.2,
+        display: "-webkit-box",
+        overflow: "hidden",
+        WebkitBoxOrient: "vertical",
+        WebkitLineClamp: 2,
       };
       if (f.type === "dropdown" && f.name === "status") {
         return (
           <Box key={index} sx={fieldBoxStyles}>
-            <TextField
-              select
-              fullWidth
-              label={f.title}
-              size="small"
-              value={searchValue[f.name] || ""}
-              onChange={(e) => {
-                setSearchValue((prev) => ({
-                  ...prev,
-                  [f.name]: e.target.value,
-                }));
-              }}
-            >
-              <MenuItem value="">
-                {getControlLabel("ddl_None", "None")}
-              </MenuItem>
-              {statusOptions.map((option) => (
-                <MenuItem key={option.value} value={option.value}>
-                  {t(option.label)}
+            <Tooltip title={f.title || ""} placement="top" arrow>
+              <TextField
+                select
+                fullWidth
+                label={f.title}
+                size="small"
+                value={searchValue[f.name] || ""}
+                onChange={(e) => {
+                  setSearchValue((prev) => ({
+                    ...prev,
+                    [f.name]: e.target.value,
+                  }));
+                }}
+              >
+                <MenuItem value="">
+                  {getControlLabel("ddl_None", "None")}
                 </MenuItem>
-              ))}
-            </TextField>
+                {statusOptions.map((option) => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {t(option.label)}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Tooltip>
           </Box>
         );
       }
@@ -2039,7 +2066,9 @@ const ToolbarKit = forwardRef(
       if (f.type === "date" && dateFields.includes(f.name)) {
         return (
           <Box key={index} sx={fieldBoxStyles}>
-            <Typography {...labelStyles}>{f.title}</Typography>
+            <Tooltip title={f.title || ""} placement="top" arrow>
+              <Typography {...labelStyles}>{f.title}</Typography>
+            </Tooltip>
             <TextField
               type="date"
               size="small"
@@ -2175,202 +2204,125 @@ const ToolbarKit = forwardRef(
 
         const currentConfig =
           dateLabelMapping[table] || dateLabelMapping.VW_CONT_IMP;
+        const dateRanges = [
+          { number: 1, label: currentConfig.row1Label, visible: true },
+          {
+            number: 2,
+            label: currentConfig.row2Label,
+            visible: currentConfig.hasRow2,
+          },
+          {
+            number: 3,
+            label: currentConfig.row3Label,
+            visible: currentConfig.hasRow3,
+          },
+          {
+            number: 4,
+            label: currentConfig.row4Label,
+            visible: currentConfig.hasRow4,
+          },
+        ].filter((range) => range.visible);
 
         return (
           <Box
             key={index}
             sx={{
-              flexBasis: "100%",
-              display: "flex",
-              flexDirection: "row",
-              flexWrap: "wrap",
+              display: "grid",
+              gridColumn: "1 / -1",
+              gridTemplateColumns:
+                "repeat(auto-fit, minmax(min(100%, 360px), 1fr))",
               gap: 1,
               alignItems: "center",
-              flex: "1 1 auto",
               minWidth: 0,
+              maxWidth: "100%",
             }}
           >
-            {/* Hàng 1 */}
-            <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
-              <Typography
-                fontSize={"13px"}
-                fontWeight={"bold"}
-                sx={{ flexShrink: 0 }}
-              >
-                {currentConfig.row1Label}
-              </Typography>
-              <TextField
-                type="date"
-                size="small"
-                sx={{ width: 140 }}
-                value={searchValue.s_date_1 || ""}
-                onChange={(e) =>
-                  setSearchValue((prev) => ({
-                    ...prev,
-                    s_date_1: e.target.value,
-                  }))
-                }
-                InputLabelProps={{ shrink: true }}
-              />
-              <Typography sx={{ fontSize: "14px", fontWeight: "bold" }}>
-                -
-              </Typography>
-              <TextField
-                type="date"
-                size="small"
-                sx={{ width: 140 }}
-                value={searchValue.e_date_1 || ""}
-                onChange={(e) =>
-                  setSearchValue((prev) => ({
-                    ...prev,
-                    e_date_1: e.target.value,
-                  }))
-                }
-                InputLabelProps={{ shrink: true }}
-              />
-            </Box>
+            {dateRanges.map((range) => {
+              const startName = `s_date_${range.number}`;
+              const endName = `e_date_${range.number}`;
 
-            {/* Hàng 2 - nằm ngay bên phải hàng 1 */}
-            {currentConfig.hasRow2 && (
-              <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
-                <Typography
-                  fontSize={"13px"}
-                  fontWeight={"bold"}
-                  sx={{ flexShrink: 0 }}
+              return (
+                <Box
+                  key={range.number}
+                  sx={{
+                    display: "grid",
+                    gridTemplateColumns: {
+                      xs: "minmax(0, 1fr) auto minmax(0, 1fr)",
+                      sm: "minmax(72px, max-content) 136px auto 136px",
+                    },
+                    alignItems: "center",
+                    gap: 0.75,
+                    minWidth: 0,
+                    maxWidth: "100%",
+                  }}
                 >
-                  {currentConfig.row2Label}
-                </Typography>
-                <TextField
-                  type="date"
-                  size="small"
-                  sx={{ width: 140 }}
-                  value={searchValue.s_date_2 || ""}
-                  onChange={(e) =>
-                    setSearchValue((prev) => ({
-                      ...prev,
-                      s_date_2: e.target.value,
-                    }))
-                  }
-                  InputLabelProps={{ shrink: true }}
-                />
-                <Typography sx={{ fontSize: "14px", fontWeight: "bold" }}>
-                  -
-                </Typography>
-                <TextField
-                  type="date"
-                  size="small"
-                  sx={{ width: 140 }}
-                  value={searchValue.e_date_2 || ""}
-                  onChange={(e) =>
-                    setSearchValue((prev) => ({
-                      ...prev,
-                      e_date_2: e.target.value,
-                    }))
-                  }
-                  InputLabelProps={{ shrink: true }}
-                />
-              </Box>
-            )}
-
-            {/* Hàng 3 */}
-            {currentConfig.hasRow3 && (
-              <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
-                <Typography
-                  fontSize={"13px"}
-                  fontWeight={"bold"}
-                  sx={{ flexShrink: 0 }}
-                >
-                  {currentConfig.row3Label}
-                </Typography>
-                <TextField
-                  type="date"
-                  size="small"
-                  sx={{ width: 140 }}
-                  value={searchValue.s_date_3 || ""}
-                  onChange={(e) =>
-                    setSearchValue((prev) => ({
-                      ...prev,
-                      s_date_3: e.target.value,
-                    }))
-                  }
-                  InputLabelProps={{ shrink: true }}
-                />
-                <Typography sx={{ fontSize: "14px", fontWeight: "bold" }}>
-                  -
-                </Typography>
-                <TextField
-                  type="date"
-                  size="small"
-                  sx={{ width: 140 }}
-                  value={searchValue.e_date_3 || ""}
-                  onChange={(e) =>
-                    setSearchValue((prev) => ({
-                      ...prev,
-                      e_date_3: e.target.value,
-                    }))
-                  }
-                  InputLabelProps={{ shrink: true }}
-                />
-              </Box>
-            )}
-
-            {/* Hàng 4 */}
-            {currentConfig.hasRow4 && (
-              <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
-                <Typography
-                  fontSize={"13px"}
-                  fontWeight={"bold"}
-                  sx={{ flexShrink: 0 }}
-                >
-                  {currentConfig.row4Label}
-                </Typography>
-                <TextField
-                  type="date"
-                  size="small"
-                  sx={{ width: 140 }}
-                  value={searchValue.s_date_4 || ""}
-                  onChange={(e) =>
-                    setSearchValue((prev) => ({
-                      ...prev,
-                      s_date_4: e.target.value,
-                    }))
-                  }
-                  InputLabelProps={{ shrink: true }}
-                />
-                <Typography sx={{ fontSize: "14px", fontWeight: "bold" }}>
-                  -
-                </Typography>
-                <TextField
-                  type="date"
-                  size="small"
-                  sx={{ width: 140 }}
-                  value={searchValue.e_date_4 || ""}
-                  onChange={(e) =>
-                    setSearchValue((prev) => ({
-                      ...prev,
-                      e_date_4: e.target.value,
-                    }))
-                  }
-                  InputLabelProps={{ shrink: true }}
-                />
-              </Box>
-            )}
+                  <Tooltip title={range.label || ""} placement="top" arrow>
+                    <Typography
+                      fontSize="12px"
+                      fontWeight="bold"
+                      sx={{
+                        gridColumn: { xs: "1 / -1", sm: "auto" },
+                        display: "-webkit-box",
+                        overflow: "hidden",
+                        WebkitBoxOrient: "vertical",
+                        WebkitLineClamp: 2,
+                        lineHeight: 1.2,
+                      }}
+                    >
+                      {range.label}
+                    </Typography>
+                  </Tooltip>
+                  <TextField
+                    type="date"
+                    size="small"
+                    sx={{ minWidth: 0, width: { xs: "100%", sm: 136 } }}
+                    value={searchValue[startName] || ""}
+                    onChange={(e) =>
+                      setSearchValue((prev) => ({
+                        ...prev,
+                        [startName]: e.target.value,
+                      }))
+                    }
+                    InputLabelProps={{ shrink: true }}
+                  />
+                  <Typography sx={{ fontSize: "14px", fontWeight: "bold" }}>
+                    -
+                  </Typography>
+                  <TextField
+                    type="date"
+                    size="small"
+                    sx={{ minWidth: 0, width: { xs: "100%", sm: 136 } }}
+                    value={searchValue[endName] || ""}
+                    onChange={(e) =>
+                      setSearchValue((prev) => ({
+                        ...prev,
+                        [endName]: e.target.value,
+                      }))
+                    }
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Box>
+              );
+            })}
           </Box>
         );
       }
       if (f.name === "is_max") {
         return (
-          <>
-            <Typography display={"flex"} alignItems={"center"}>
-              {f.title}
-            </Typography>
+          <Box
+            key={index}
+            sx={{ display: "flex", alignItems: "center", minWidth: 0 }}
+          >
+            <Tooltip title={f.title || ""} placement="top" arrow>
+              <Typography {...labelStyles}>{f.title}</Typography>
+            </Tooltip>
             <Checkbox
               checked={isCheckMax === "Y"}
               onChange={(e) => {
                 onCheckMax(e);
               }}
             />
-          </>
+          </Box>
         );
       }
       if (f.type === "dropdown" && f.fetchKey && getFetchData[f.fetchKey]) {
@@ -2455,25 +2407,6 @@ const ToolbarKit = forwardRef(
             type={f.typeInput || "text"}
           />
         </Box>
-      );
-    };
-    const getNonDateFields = () => {
-      if (!tableConfig?.filter) return [];
-      return tableConfig.filter.filter(
-        (f) =>
-          f.type !== "date" &&
-          f.type !== "checkbox" &&
-          f.type !== "dateRangeGroup",
-      );
-    };
-
-    const getDateFields = () => {
-      if (!tableConfig?.filter) return [];
-      return tableConfig.filter.filter(
-        (f) =>
-          f.type === "date" ||
-          f.type === "checkbox" ||
-          f.type === "dateRangeGroup",
       );
     };
     const buttons = [
@@ -3119,10 +3052,8 @@ const ToolbarKit = forwardRef(
 
     return (
       <Toolbar
+        disableGutters
         sx={{
-          maxHeight: "none",
-          overflowX: "visible",
-          overflowY: "visible",
           position: isPopup ? "static" : "sticky",
           top: isPopup ? "auto" : "var(--shipcomply-toolbar-sticky-top, 107px)",
           zIndex: isPopup ? "auto" : 7,
@@ -3133,30 +3064,36 @@ const ToolbarKit = forwardRef(
           display: "flex",
           flexDirection: "column",
           alignItems: "stretch",
-          py: mapAdd[table]?.filter ? 1 : 0,
-          minHeight: mapAdd[table]?.filter ? "auto" : "fit-content !important",
+          minHeight: "0 !important",
+          px: { xs: 1, sm: 1.25 },
+          py: tableConfig?.filter ? 1 : 0.5,
         }}
       >
         {!subTable ? (
           <Box
             sx={{
-              display: "flex",
+              display: "grid",
+              gridTemplateColumns: {
+                xs: "minmax(0, 1fr)",
+                lg: tableConfig?.filter
+                  ? "minmax(0, 1fr) fit-content(46%)"
+                  : "minmax(0, 1fr)",
+              },
               width: "100%",
-              gap: 2,
-              alignItems: table === "SD_ORD_M" ? "center" : "flex-start",
-              height: "100%",
+              gap: 1,
+              alignItems: "start",
+              minWidth: 0,
             }}
           >
             {tableConfig?.filter && (
               <Box
                 sx={{
-                  flex: "1 1 auto",
-                  display: "flex",
-                  flexDirection: "row",
-                  flexWrap: "wrap",
-                  gap: 1.5,
+                  display: "grid",
+                  gridTemplateColumns:
+                    "repeat(auto-fit, minmax(min(100%, 160px), 1fr))",
+                  gap: 1,
                   minWidth: 0,
-                  alignItems: "center",
+                  alignItems: "start",
                 }}
               >
                 {tableConfig.filter.map((f, index) =>
@@ -3164,49 +3101,26 @@ const ToolbarKit = forwardRef(
                 )}
               </Box>
             )}
-            <Divider orientation="vertical" flexItem />
             <Box
               sx={{
-                flex:
-                  table === "USER_PERMISSION" ||
-                  table === "BASIC_DATA" ||
-                  table === "AC_VEND_BASE" ||
-                  table === "AC_SEND_BASE" ||
-                  table === "AC_REQ_ORDER" ||
-                  table === "VW_AC_SRCORDER" ||
-                  table === "VW_AC_ALLCHK" ||
-                  table === "IV_TRANS_D_TW" ||
-                  table === "AC_SHOE_REF" ||
-                  table === "AC_REQ_M" ||
-                  table === "AC_CONT_D" ||
-                  table === "AC_INM_D" ||
-                  table === "AC_INM_M" ||
-                  table === "VW_CONT_USE" ||
-                  table === "SE_PAY" ||
-                  table === "VW_CHG_EXMP" ||
-                  table === "AC_CHG_D" ||
-                  table === "AC_CHG_A" ||
-                  table === "AC_DESC_CHG" ||
-                  table === "AC_PROC_D" ||
-                  table === "AC_PROC_D_1" ||
-                  table === "SE_SHIPING_D" ||
-                  table === "SE_PLAN_SIZE" ||
-                  table === "AC_DESC_PROC" ||
-                  table === "SE_INV_D" ||
-                  table === "AC_ISSUE_MATD_T" ||
-                  table === "VW_AC_ISSUE_T" ||
-                  table === "AC_CHK_T" ||
-                  table === "AC_PLAN_SIZE" ||
-                  table === "AC_PLAN_ORD" ||
-                  table === "RD_TEMP"
-                    ? "1 1 auto"
-                    : "0 0 auto",
                 display: "flex",
-                flexShrink: 0,
                 flexDirection: "column",
-                justifyContent: "flex-start",
                 alignItems: "flex-end",
-                gap: 1.5,
+                justifySelf: "end",
+                width: "fit-content",
+                maxWidth: "100%",
+                minWidth: 0,
+                pl: { xs: 0, lg: tableConfig?.filter ? 1 : 0 },
+                pt: { xs: tableConfig?.filter ? 1 : 0, lg: 0 },
+                borderLeft: {
+                  xs: 0,
+                  lg: tableConfig?.filter ? "1px solid" : 0,
+                },
+                borderTop: {
+                  xs: tableConfig?.filter ? "1px solid" : 0,
+                  lg: 0,
+                },
+                borderColor: "divider",
               }}
             >
               <Box
@@ -3216,84 +3130,24 @@ const ToolbarKit = forwardRef(
                   alignItems: "center",
                   justifyContent: "flex-end",
                   gap: 1,
-                  maxWidth:
-                    table !== "AC_SHOE_REF" &&
-                    table !== "AC_SHOE_M" &&
-                    table !== "AC_PROC_M" &&
-                    table !== "AC_PROC_M_1" &&
-                    table !== "VW_CHG_M" &&
-                    table !== "IV_TRANS_D_TW" &&
-                    table !== "AC_ISSUE_M_T" &&
-                    table !== "AC_EXPECT_M" &&
-                    table !== "RD_TEMP" &&
-                    // table !== "AC_CHG_A" &&
-                    // table !== "AC_CHG_D" &&
-                    //   type === "2" &&
-                    table !== "SE_PLAN_ORD" &&
-                    table !== "VW_CHG_M" &&
-                    table !== "VW_CHG_EXP" &&
-                    table !== "SE_INV_M" &&
-                    table !== "AC_IMP_MATERIAL_TRACKING" &&
-                    table !== "AC_REQ_M" &&
-                    table !== "VW_AC_CHGSUM" &&
-                    table !== "AC_CO_M" &&
-                    table !== "VW_CONT_IMP" &&
-                    table !== "AC_INM_M" &&
-                    table !== "VW_CONT_EXP"
-                      ? "100%"
-                      : table === "AC_PROC_M" || table === "AC_PROC_M_1"
-                        ? "165px"
-                        : table === "VW_CHG_M"
-                          ? "160px"
-                          : table === "VW_CHG_EXP"
-                            ? "235px"
-                            : table === "AC_EXPECT_M"
-                              ? "600px"
-                              : table === "SE_PLAN_ORD"
-                                ? "400px"
-                                : table === "AC_ISSUE_M_T"
-                                  ? "80px"
-                                  : table === "VW_AC_CHGSUM"
-                                    ? "180px"
-                                    : table === "AC_CO_M"
-                                      ? "310px"
-                                      : table === "VW_CONT_IMP"
-                                        ? language === "zh"
-                                          ? "360px"
-                                          : "270px"
-                                        : table === "VW_CONT_EXP"
-                                          ? language === "zh"
-                                            ? "360px"
-                                            : "270px"
-                                          : table === "AC_INM_M"
-                                            ? language === "zh"
-                                              ? "360px"
-                                              : "270px"
-                                            : "385px",
+                  width: "100%",
+                  maxWidth: "100%",
                 }}
               >
-                <Box
-                  sx={{
-                    display: "flex",
-                    flexWrap: "wrap",
-                    alignItems: "center",
-                    gap: 1,
-                  }}
-                >
-                  {/* Nút Import + tên file tách riêng */}
-                  {table === "RD_TEMP" && (
-                    <Box
-                      sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
+                {table === "RD_TEMP" && (
+                  <Box
+                    sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
+                  >
+                    <Button
+                      variant="contained"
+                      size="small"
+                      color="secondary"
+                      onClick={() => fileInputRef.current?.click()}
                     >
-                      <Button
-                        variant="contained"
-                        size="small"
-                        color="secondary"
-                        onClick={() => fileInputRef.current?.click()}
-                      >
-                        {t(getControlLabel("btn_import", "Import Order"))}
-                      </Button>
-                      {importFileName && (
+                      {t(getControlLabel("btn_import", "Import Order"))}
+                    </Button>
+                    {importFileName && (
+                      <Tooltip title={importFileName} placement="top" arrow>
                         <Box
                           sx={{
                             display: "flex",
@@ -3312,87 +3166,116 @@ const ToolbarKit = forwardRef(
                             color="text.secondary"
                             noWrap
                           >
-                            📄 {importFileName}
+                            {importFileName}
                           </Typography>
                           <Typography
+                            component="button"
+                            type="button"
+                            aria-label="Clear imported file"
                             fontSize="12px"
                             color="error"
-                            sx={{ cursor: "pointer", flexShrink: 0 }}
+                            sx={{
+                              p: 0,
+                              border: 0,
+                              bgcolor: "transparent",
+                              cursor: "pointer",
+                              flexShrink: 0,
+                            }}
                             onClick={() => {
                               setImportFileName("");
                               if (fileInputRef.current)
                                 fileInputRef.current.value = "";
                             }}
                           >
-                            ✕
+                            X
                           </Typography>
                         </Box>
-                      )}
-                    </Box>
-                  )}
+                      </Tooltip>
+                    )}
+                  </Box>
+                )}
 
-                  {/* ButtonGroup giữ nguyên, chỉ filter bỏ nút Import ra */}
-                  <ButtonGroup
-                    variant="contained"
-                    size="small"
-                    sx={{
-                      flexWrap: "wrap",
-                      "& .MuiButton-root": {
-                        flex: "1 1 auto",
-                        minWidth: { xs: "100%", sm: "auto" },
-                      },
-                    }}
-                  >
-                    {buttons
-                      .filter(
-                        (btn) =>
-                          btn.label !==
-                          getControlLabel("btn_import_1", "Import Order"),
-                      )
-                      .map((btn, idx) => (
-                        <Button
-                          key={idx}
-                          color={
-                            btn.color !== "#686868" ? btn.color : "inherit"
-                          }
-                          onClick={btn.onClick}
-                          disabled={btn.isLoading}
-                          sx={{
-                            ...(btn.color === "#686868" && {
-                              color: "#686868",
-                              border: "1px solid #686868",
-                              backgroundColor: "transparent",
-                              "&:hover": {
-                                borderColor: "#484848",
-                                color: "#484848",
-                                backgroundColor: "#f5f5f5",
-                              },
-                            }),
-                            position: "relative",
-                          }}
+                {buttons
+                  .filter(
+                    (btn) =>
+                      btn.label !==
+                      getControlLabel("btn_import_1", "Import Order"),
+                  )
+                  .map((btn, idx) => {
+                    const translatedLabel = t(btn.label);
+
+                    return (
+                      <Tooltip
+                        key={`${btn.label}-${idx}`}
+                        title={translatedLabel}
+                        placement="top"
+                        arrow
+                      >
+                        <Box
+                          component="span"
+                          sx={{ display: "inline-flex", maxWidth: "100%" }}
                         >
-                          {btn.isLoading && (
-                            <CircularProgress
-                              size={20}
-                              sx={{
-                                position: "absolute",
-                                left: "50%",
-                                marginLeft: "-10px",
-                                color: "inherit",
-                              }}
-                            />
-                          )}
-                          <span
-                            style={{
-                              visibility: btn.isLoading ? "hidden" : "visible",
+                          <Button
+                            variant={
+                              btn.color === "#686868"
+                                ? "outlined"
+                                : "contained"
+                            }
+                            size="small"
+                            color={
+                              btn.color !== "#686868" ? btn.color : "inherit"
+                            }
+                            onClick={btn.onClick}
+                            disabled={btn.isLoading}
+                            sx={{
+                              ...(btn.color === "#686868" && {
+                                color: "#686868",
+                                borderColor: "#686868",
+                                "&:hover": {
+                                  borderColor: "#484848",
+                                  color: "#484848",
+                                  backgroundColor: "#f5f5f5",
+                                },
+                              }),
+                              position: "relative",
+                              minWidth: 0,
+                              minHeight: 32,
+                              maxWidth: 180,
+                              px: 1.25,
+                              py: 0.5,
+                              lineHeight: 1.15,
                             }}
                           >
-                            {t(btn.label)}
-                          </span>
-                        </Button>
-                      ))}
-                  </ButtonGroup>
-                </Box>
+                            {btn.isLoading && (
+                              <CircularProgress
+                                size={18}
+                                sx={{
+                                  position: "absolute",
+                                  left: "50%",
+                                  marginLeft: "-9px",
+                                  color: "inherit",
+                                }}
+                              />
+                            )}
+                            <Box
+                              component="span"
+                              sx={{
+                                display: "-webkit-box",
+                                overflow: "hidden",
+                                WebkitBoxOrient: "vertical",
+                                WebkitLineClamp: 2,
+                                visibility: btn.isLoading
+                                  ? "hidden"
+                                  : "visible",
+                              }}
+                            >
+                              {translatedLabel}
+                            </Box>
+                          </Button>
+                        </Box>
+                      </Tooltip>
+                    );
+                  })}
               </Box>
             </Box>
           </Box>
