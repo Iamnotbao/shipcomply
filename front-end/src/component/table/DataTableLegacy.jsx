@@ -1931,6 +1931,8 @@ export default function DataTable({
         maxWidth: "100%",
         height: "100%",
         boxSizing: "border-box",
+        minWidth: 0,
+        overflowX: "clip",
       }}
     >
       {isToolbar ? (
@@ -2300,7 +2302,8 @@ export default function DataTable({
               sx={{
                 flexGrow: 1,
                 minHeight: 0,
-                overflow: "visible",
+                overflowX: "clip",
+                overflowY: "visible",
                 width: "100%",
                 minWidth: 0,
               }}
