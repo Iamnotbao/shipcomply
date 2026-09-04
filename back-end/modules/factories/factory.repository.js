@@ -12,26 +12,49 @@ async function test() {
   return rows;
 }
 
-async function listAllFactories(limit, offset) {
-  const parsedLimit  = !isNaN(parseInt(limit))  ? parseInt(limit)  : null;
-  const parsedOffset = !isNaN(parseInt(offset)) ? parseInt(offset) : null;
+async function listAllFactories(limit, offset, search = "") {
+  const parsedLimit = !Number.isNaN(Number.parseInt(limit, 10))
+    ? Number.parseInt(limit, 10)
+    : null;
+  const parsedOffset = !Number.isNaN(Number.parseInt(offset, 10))
+    ? Number.parseInt(offset, 10)
+    : 0;
+  const searchValue = typeof search === "string" ? search.trim() : "";
+
+  const where = searchValue
+    ? {
+        [Op.or]: [
+          { factory_code: { [Op.iLike]: `%${searchValue}%` } },
+          { factory_name_e: { [Op.iLike]: `%${searchValue}%` } },
+          { factory_name_l: { [Op.iLike]: `%${searchValue}%` } },
+          { factory_name_t: { [Op.iLike]: `%${searchValue}%` } },
+          { factory_abbreviation: { [Op.iLike]: `%${searchValue}%` } },
+        ],
+      }
+    : {};
 
   const findOptions = {
+    where,
     order: [["factory_code", "ASC"]],
     raw: true,
   };
 
   if (parsedLimit !== null) {
-    findOptions.limit  = parsedLimit + 1;
-    findOptions.offset = parsedOffset ?? 0;
+    findOptions.limit = Math.max(parsedLimit, 1);
+    findOptions.offset = Math.max(parsedOffset, 0);
   }
 
-  const rows = await FACTORY.findAll(findOptions);
+  const [rows, count] = await Promise.all([
+    FACTORY.findAll(findOptions),
+    FACTORY.count({ where }),
+  ]);
 
   return {
-    rows:    parsedLimit !== null ? rows.slice(0, parsedLimit) : rows,
-    count:   rows.length,
-    hasMore: parsedLimit !== null && rows.length === parsedLimit + 1,
+    rows,
+    count,
+    hasMore:
+      parsedLimit !== null &&
+      Math.max(parsedOffset, 0) + rows.length < count,
   };
 }
 
