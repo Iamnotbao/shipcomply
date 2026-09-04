@@ -194,6 +194,8 @@ export default function Sidebar() {
   const drawerWidth = desktopOpen
     ? APP_SHELL.drawerWidth
     : APP_SHELL.collapsedDrawerWidth;
+  const menuScrollRef = React.useRef(null);
+  const groupRefs = React.useRef(new Map());
 
   const setDesktopDrawer = (value) => {
     setDesktopOpen(value);
@@ -213,10 +215,49 @@ export default function Sidebar() {
     goToPath(getNavigationPath(item));
   };
 
+  const setGroupExpanded = React.useCallback((itemId, expanded) => {
+    setExpandedMenus((previous) => {
+      if (previous[itemId] === expanded) return previous;
+      const next = { ...previous, [itemId]: expanded };
+      localStorage.setItem("expandedMenus", JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
   const toggleGroup = (item) => {
-    const next = { ...expandedMenus, [item.id]: !expandedMenus[item.id] };
-    setExpandedMenus(next);
-    localStorage.setItem("expandedMenus", JSON.stringify(next));
+    setGroupExpanded(item.id, !expandedMenus[item.id]);
+  };
+
+  const scrollGroupToTop = React.useCallback((itemId) => {
+    const container = menuScrollRef.current;
+    const element = groupRefs.current.get(itemId);
+    if (!container || !element) return;
+
+    const containerRect = container.getBoundingClientRect();
+    const elementRect = element.getBoundingClientRect();
+    const nextTop =
+      container.scrollTop + elementRect.top - containerRect.top - 4;
+
+    container.scrollTo({
+      top: Math.max(0, nextTop),
+      behavior: "smooth",
+    });
+  }, []);
+
+  const openGroupFirstPage = (item) => {
+    if (!item.children?.length) {
+      goTo(item);
+      return;
+    }
+
+    const firstAccessibleChild = item.children[0];
+    setGroupExpanded(item.id, true);
+
+    if (desktopOpen || isMobile) {
+      requestAnimationFrame(() => scrollGroupToTop(item.id));
+    }
+
+    goTo(firstAccessibleChild);
   };
 
   const renderIcon = (item, size = 20) => {
@@ -285,6 +326,7 @@ export default function Sidebar() {
       <Divider sx={{ borderColor: "rgba(85, 112, 138, 0.16)" }} />
 
       <Box
+        ref={menuScrollRef}
         sx={{
           flex: 1,
           overflowY: "auto",
@@ -314,6 +356,10 @@ export default function Sidebar() {
             return (
               <React.Fragment key={item.id}>
                 <ListItem
+                  ref={(node) => {
+                    if (node) groupRefs.current.set(item.id, node);
+                    else groupRefs.current.delete(item.id);
+                  }}
                   disablePadding
                   sx={{
                     mb: 0.4,
@@ -341,7 +387,7 @@ export default function Sidebar() {
                   >
                     <ListItemButton
                       selected={groupActive}
-                      onClick={() => (hasChildren ? toggleGroup(item) : goTo(item))}
+                      onClick={() => (hasChildren ? openGroupFirstPage(item) : goTo(item))}
                       sx={{
                         minHeight: 42,
                         px: desktopOpen || isMobile ? 1.5 : 1,
@@ -392,12 +438,47 @@ export default function Sidebar() {
                               },
                             }}
                           />
-                          {hasChildren &&
-                            (expanded ? (
-                              <ExpandLessRoundedIcon fontSize="small" />
-                            ) : (
-                              <ExpandMoreRoundedIcon fontSize="small" />
-                            ))}
+                          {hasChildren && (
+                            <Tooltip
+                              title={
+                                expanded
+                                  ? getControlLabel("lbl_collapse_section", "Collapse section")
+                                  : getControlLabel("lbl_expand_section", "Expand section")
+                              }
+                              placement="right"
+                              arrow
+                            >
+                              <IconButton
+                                component="span"
+                                size="small"
+                                aria-label={
+                                  expanded ? "Collapse section" : "Expand section"
+                                }
+                                onClick={(event) => {
+                                  event.preventDefault();
+                                  event.stopPropagation();
+                                  toggleGroup(item);
+                                }}
+                                sx={{
+                                  ml: 0.5,
+                                  p: 0.25,
+                                  color: "inherit",
+                                  flexShrink: 0,
+                                  "&:hover": {
+                                    bgcolor: groupActive
+                                      ? "rgba(255,255,255,0.14)"
+                                      : "rgba(85,112,138,0.12)",
+                                  },
+                                }}
+                              >
+                                {expanded ? (
+                                  <ExpandLessRoundedIcon fontSize="small" />
+                                ) : (
+                                  <ExpandMoreRoundedIcon fontSize="small" />
+                                )}
+                              </IconButton>
+                            </Tooltip>
+                          )}
                         </>
                       )}
                     </ListItemButton>
