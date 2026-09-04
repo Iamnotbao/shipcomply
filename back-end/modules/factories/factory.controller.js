@@ -25,8 +25,9 @@ async function getAllFactories(req, res) {
   const limit =
     req.query.limit !== undefined ? parseInt(req.query.limit, 10) : null;
   const offset =
-    req.query.offset !== undefined ? parseInt(req.query.offset, 0) : null;
-  const result = await factoryService.getAllFactories(limit, offset);
+    req.query.offset !== undefined ? parseInt(req.query.offset, 10) : null;
+  const search = typeof req.query.search === "string" ? req.query.search : "";
+  const result = await factoryService.getAllFactories(limit, offset, search);
   return res.status(200).json({
     message: "ok",
     success: true,
