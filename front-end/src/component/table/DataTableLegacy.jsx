@@ -208,6 +208,8 @@ export default function DataTable({
   const [focusContext, setFocusContext] = React.useState("table");
   const [tableData, setTableData] = React.useState(data);
   const [isPaginationChanging, setIsPaginationChanging] = React.useState(false);
+  const toolbarStickyRef = React.useRef(null);
+  const [toolbarStickyHeight, setToolbarStickyHeight] = React.useState(0);
   const title =
     tableName === "USER_PERMISSION_DEPARTMENT" ? "PERMISSION" : tableName;
   const [pageSize, setPageSize] = React.useState(
@@ -222,6 +224,37 @@ export default function DataTable({
         }
       : getInitialPaginationModel(title),
   );
+
+  React.useLayoutEffect(() => {
+    if (!isToolbar || !toolbarStickyRef.current) {
+      setToolbarStickyHeight(0);
+      return undefined;
+    }
+
+    const element = toolbarStickyRef.current;
+    const updateHeight = () => {
+      const nextHeight = Math.ceil(element.getBoundingClientRect().height);
+      setToolbarStickyHeight((current) =>
+        current === nextHeight ? current : nextHeight,
+      );
+    };
+
+    updateHeight();
+
+    if (typeof ResizeObserver === "undefined") {
+      window.addEventListener("resize", updateHeight);
+      return () => window.removeEventListener("resize", updateHeight);
+    }
+
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(element);
+
+    return () => observer.disconnect();
+  }, [isToolbar, title, language]);
+
+  const stickyMasterHeaderTop = isToolbar
+    ? `calc(var(--shipcomply-toolbar-sticky-top, 107px) + ${toolbarStickyHeight}px)`
+    : "var(--shipcomply-toolbar-sticky-top, 107px)";
 
   const pendingSelectIndexRef = useRef(null);
   const [isFocused, setIsFocused] = React.useState(false);
@@ -1901,7 +1934,8 @@ export default function DataTable({
       }}
     >
       {isToolbar ? (
-        <ToolbarKit
+        <Box ref={toolbarStickyRef} sx={{ width: "100%" }}>
+          <ToolbarKit
           table={title}
           onSetFilter={onSetFilter}
           onAdd={onAdd}
@@ -1992,6 +2026,7 @@ export default function DataTable({
           onGeneratePM={onGeneratePM}
           onImportLink={onImportLink}
         />
+        </Box>
       ) : (
         <></>
       )}
@@ -2262,7 +2297,7 @@ export default function DataTable({
               sx={{
                 flexGrow: 1,
                 minHeight: 0,
-                overflow: "auto",
+                overflow: "visible",
                 width: "100%",
                 minWidth: 0,
               }}
@@ -2307,6 +2342,20 @@ export default function DataTable({
                   border: 1,
                   borderColor: "#ccc",
                   width: "100%",
+                  overflow: "clip",
+                  "& .MuiDataGrid-columnHeaders": {
+                    position:
+                      !isSubTable && !isPopup ? "sticky" : "relative",
+                    top:
+                      !isSubTable && !isPopup
+                        ? stickyMasterHeaderTop
+                        : "auto",
+                    zIndex: !isSubTable && !isPopup ? 6 : "auto",
+                    boxShadow:
+                      !isSubTable && !isPopup
+                        ? "0 2px 6px rgba(15, 23, 42, 0.10)"
+                        : "none",
+                  },
                   "& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within":
                     {
                       outline: "none !important",
