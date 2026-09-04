@@ -414,3 +414,25 @@ On desktop, do not leave a separate hamburger button floating in the content
 header when the sidebar is collapsed. Put the desktop sidebar toggle in the
 sidebar brand/avatar zone. A mobile AppBar menu button is still acceptable
 because the temporary Drawer is otherwise off-screen.
+
+
+## 21. Table-local scrolling and AppBar title alignment
+
+For screens with multiple independently scrollable tables/lists:
+
+- mouse wheel input should scroll the table/list currently under the pointer
+- DataGrid virtual scrollers should use `overscroll-behavior: contain` so wheel
+  scrolling does not unexpectedly chain to the page while the pointer is inside
+  that grid
+- independent side lists should follow the same rule when they have their own
+  vertical overflow
+- preserve horizontal scrolling inside the hovered DataGrid
+- do not add manual global wheel listeners unless native container scrolling is
+  insufficient; prefer CSS overflow/overscroll behavior
+
+For the main desktop AppBar:
+
+- keep company/factory identity on the left
+- keep site/factory/department/date context on the right
+- center the active page/module title visually in the AppBar
+- on narrow/mobile layouts the title may return to normal flow to avoid overlap
