@@ -633,6 +633,7 @@ export default function Sidebar() {
             maxWidth: APP_SHELL.contentMaxWidth,
             mx: "auto",
             p: APP_SHELL.contentPadding,
+            overflowX: "clip",
             "--shipcomply-toolbar-sticky-top": `${APP_SHELL.appBarHeight + 43}px`,
           }}
         >
