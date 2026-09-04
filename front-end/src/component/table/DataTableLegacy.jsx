@@ -1932,7 +1932,6 @@ export default function DataTable({
         height: "100%",
         boxSizing: "border-box",
         minWidth: 0,
-        overflowX: "clip",
       }}
     >
       {isToolbar ? (
@@ -2077,7 +2076,6 @@ export default function DataTable({
                   maxHeight: "calc(100vh - 350px)",
                   overflowY: "auto",
                   overflowX: "hidden",
-                  overscrollBehavior: "contain",
                 }}
               >
                 <div
@@ -2116,7 +2114,6 @@ export default function DataTable({
                       : tableHeight || "calc(100vh - 350px)",
                   overflowY: "auto",
                   overflowX: "hidden",
-                  overscrollBehavior: "contain",
                 }}
               >
                 <div
@@ -2152,7 +2149,6 @@ export default function DataTable({
                       : tableHeight || "calc(100vh - 350px)",
                   overflowY: "auto",
                   overflowX: "hidden",
-                  overscrollBehavior: "contain",
                 }}
               >
                 <div
@@ -2302,8 +2298,6 @@ export default function DataTable({
               sx={{
                 flexGrow: 1,
                 minHeight: 0,
-                overflowX: "clip",
-                overflowY: "visible",
                 width: "100%",
                 minWidth: 0,
               }}
@@ -2349,21 +2343,7 @@ export default function DataTable({
                   borderColor: "#ccc",
                   width: "100%",
                   overflow: "clip",
-                  "& .MuiDataGrid-columnHeaders": {
-                    position:
-                      !isSubTable && !isPopup ? "sticky" : "relative",
-                    top:
-                      !isSubTable && !isPopup
-                        ? stickyMasterHeaderTop
-                        : "auto",
-                    zIndex: !isSubTable && !isPopup ? 6 : "auto",
-                    boxShadow:
-                      !isSubTable && !isPopup
-                        ? "0 2px 6px rgba(15, 23, 42, 0.10)"
-                        : "none",
-                  },
                   "& .MuiDataGrid-virtualScroller": {
-                    overscrollBehavior: "contain",
                     scrollbarWidth: "thin",
                     scrollbarColor: "rgba(71, 85, 105, 0.48) transparent",
                   },
@@ -2400,6 +2380,17 @@ export default function DataTable({
                     borderBottom: "1px solid #ccc",
                   },
                   "& .MuiDataGrid-columnHeaders": {
+                    position:
+                      !isSubTable && !isPopup ? "sticky" : "relative",
+                    top:
+                      !isSubTable && !isPopup
+                        ? stickyMasterHeaderTop
+                        : "auto",
+                    zIndex: !isSubTable && !isPopup ? 6 : "auto",
+                    boxShadow:
+                      !isSubTable && !isPopup
+                        ? "0 2px 6px rgba(15, 23, 42, 0.10)"
+                        : "none",
                     borderBottom: "1px solid #ccc",
                     borderTop: "1px solid #ccc",
                     borderRight: "1px solid #ccc",

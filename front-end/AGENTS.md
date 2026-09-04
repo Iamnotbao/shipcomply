@@ -416,19 +416,16 @@ sidebar brand/avatar zone. A mobile AppBar menu button is still acceptable
 because the temporary Drawer is otherwise off-screen.
 
 
-## 21. Table-local scrolling and AppBar title alignment
+## 21. Table scrolling and AppBar title alignment
 
-For screens with multiple independently scrollable tables/lists:
+For dashboard tables and side lists:
 
-- mouse wheel input should scroll the table/list currently under the pointer
-- DataGrid virtual scrollers should use `overscroll-behavior: contain` so wheel
-  scrolling does not unexpectedly chain to the page while the pointer is inside
-  that grid
-- independent side lists should follow the same rule when they have their own
-  vertical overflow
-- preserve horizontal scrolling inside the hovered DataGrid
-- do not add manual global wheel listeners unless native container scrolling is
-  insufficient; prefer CSS overflow/overscroll behavior
+- use the page's normal vertical scrolling
+- keep a side list's own vertical scrollbar where its content requires one
+- let the DataGrid virtual scroller be the single horizontal scroll owner when
+  columns overflow
+- do not add table-local wheel containment or `overscroll-behavior` rules
+- do not add ancestor overflow wrappers to manage DataGrid horizontal scrolling
 
 For the main desktop AppBar:
 
