@@ -338,22 +338,22 @@ export default function Sidebar() {
                         px: desktopOpen || isMobile ? 1.5 : 1,
                         borderRadius: 0.75,
                         justifyContent: desktopOpen || isMobile ? "initial" : "center",
-                        color: groupActive ? "#24543e" : "#3d2b0d",
+                        color: groupActive ? "#ffffff" : "#3d2b0d",
                         boxShadow: groupActive
-                          ? "inset 3px 0 0 #2f6b4f"
+                          ? "inset 3px 0 0 #40566c"
                           : "inset 3px 0 0 transparent",
                         "& .MuiListItemIcon-root": { color: "inherit" },
                         "&&.Mui-selected": {
-                          bgcolor: "rgba(255,255,255,0.22) !important",
-                          color: "#24543e !important",
+                          bgcolor: "#55708a !important",
+                          color: "#ffffff !important",
                         },
                         "&&.Mui-selected .MuiTypography-root, &&.Mui-selected .MuiListItemIcon-root": {
-                          color: "#24543e !important",
+                          color: "#ffffff !important",
                         },
                         "&&.Mui-selected:hover": {
-                          bgcolor: "rgba(255,255,255,0.30) !important",
+                          bgcolor: "#48627a !important",
                         },
-                        "&:hover": { bgcolor: "rgba(255,255,255,0.22)" },
+                        "&:hover": { bgcolor: "rgba(85,112,138,0.14)" },
                       }}
                     >
                       <ListItemIcon
@@ -403,22 +403,22 @@ export default function Sidebar() {
                                 pr: 1.25,
                                 py: 0.45,
                                 borderRadius: 0.5,
-                                color: active ? "#24543e" : "#5b3a08",
+                                color: active ? "#31475c" : "#5b3a08",
                                 boxShadow: active
-                                  ? "inset 2px 0 0 rgba(47,107,79,0.85)"
+                                  ? "inset 2px 0 0 #55708a"
                                   : "inset 2px 0 0 transparent",
                                 "&&.Mui-selected": {
-                                  bgcolor: "rgba(255,255,255,0.16) !important",
-                                  color: "#24543e !important",
+                                  bgcolor: "rgba(85,112,138,0.20) !important",
+                                  color: "#31475c !important",
                                 },
                                 "&&.Mui-selected .MuiTypography-root": {
-                                  color: "#24543e !important",
+                                  color: "#31475c !important",
                                 },
                                 "&&.Mui-selected:hover": {
-                                  bgcolor: "rgba(255,255,255,0.24) !important",
+                                  bgcolor: "rgba(85,112,138,0.28) !important",
                                 },
                                 "&:hover": {
-                                  bgcolor: "rgba(255,255,255,0.14)",
+                                  bgcolor: "rgba(85,112,138,0.12)",
                                 },
                               }}
                             >
