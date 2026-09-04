@@ -1,12 +1,19 @@
 import axios from "axios";
 const API = "/factory";
-export const fetchFactory = async (limit = null, offset = null) => {
+export const fetchFactory = async (
+  limit = null,
+  offset = null,
+  search = "",
+) => {
   const params = {};
   if (limit !== null) {
     params.limit = limit;
   }
   if (offset !== null) {
     params.offset = offset;
+  }
+  if (typeof search === "string" && search.trim() !== "") {
+    params.search = search.trim();
   }
   const response = await axios.get(`${API}/all`, {
     headers: {
