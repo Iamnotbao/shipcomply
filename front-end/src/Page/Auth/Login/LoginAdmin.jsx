@@ -20,7 +20,7 @@ import { fnQuery } from "../../../utils/fnQuery";
 import { loginAsAdmin } from "../../../service/auth/Auth";
 import useAuth from "../../../hooks/useAuth";
 import { useTranslation } from "react-i18next";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import { useColumnTranslation } from "../../../context/ColumnTranslationContext";
 const LoginAdmin = () => {
   const navigation = useNavigate();
@@ -91,7 +91,6 @@ const LoginAdmin = () => {
   };
   return (
     <>
-      <ToastContainer />
       <Box
         sx={{
           backgroundImage: `url(${BackGround})`,

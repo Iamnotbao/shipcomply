@@ -1,6 +1,13 @@
 
 import { toast } from "react-toastify";
 
+const TOAST_DURATION = {
+  success: 4500,
+  info: 5500,
+  warning: 7000,
+  error: 8000,
+};
+
 export const showToast = (
   getControlLabel,
   type = "info",
@@ -25,7 +32,8 @@ export const showToast = (
   });
   
   const toastOptions = {
-    autoClose: 1000,
+    autoClose: TOAST_DURATION[type] || TOAST_DURATION.info,
+    toastId: `${type}:${translationKey}:${message}`,
     ...options,
   };
   

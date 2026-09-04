@@ -1,7 +1,6 @@
 import axios from "axios";
 import { createContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { refresh } from "../service/auth/Auth";
 export const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -66,8 +65,8 @@ export const AuthProvider = ({ children }) => {
       ACTF_0202: "/actf_020_2",
       ACTF_021: "/actf_021",
       ACTF_410: "/actf_410",
-      ACTF_4101: "/actf_4101",
-      ACTF_4102: "/actf_4102",
+      ACTF_4101: "/actf_410_1",
+      ACTF_4102: "/actf_410_2",
       ACTF_110: "/actf_110",
       ACTF_1101: "/actf_1101",
       ACTF_1102: "/actf_1102",
@@ -146,6 +145,7 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
+    localStorage.removeItem("user");
     localStorage.removeItem("language");
     localStorage.removeItem("programCodeList");
     delete axios.defaults.headers.common["authorization"]; 
@@ -164,37 +164,33 @@ export const AuthProvider = ({ children }) => {
     setProgramCodeList(data);
     localStorage.setItem("programCodeList", JSON.stringify(data));
   };
+
   useEffect(() => {
-    const interceptor = axios.interceptors.response.use(
-      (res) => res,
-      async (err) => {
-        const originalRequest = err.config;
-        if (err.response?.status === 401 && !originalRequest._retry) {
-          originalRequest._retry = true;
-          const refreshToken = localStorage.getItem("refresh_token");
-          if (refreshToken) {
-            const res = await refresh(refreshToken);
-            if (res.access_token) {
-              localStorage.setItem("access_token", res.access_token);
-              axios.defaults.headers.common["authorization"] = `Bearer ${res.access_token}`;
-              setUser((prev) => ({
-                ...prev,
-                access_token: res.access_token,
-                refresh_token: refreshToken,
-              }));
-              originalRequest.headers["authorization"] =
-                `Bearer ${res.access_token}`;
-              return axios(originalRequest);
-            } else {
-              logout();
-            }
-          }
-        }
-        return Promise.reject(err);
-      },
-    );
-    return () => axios.interceptors.response.eject(interceptor);
-  }, []);
+    const handleExpiredSession = () => {
+      localStorage.removeItem("user");
+      localStorage.removeItem("programCodeList");
+      setUser(null);
+      setProgramCodeList([]);
+      navigation("/login", { replace: true });
+    };
+    const handleRefreshedToken = (event) => {
+      setUser((currentUser) =>
+        currentUser
+          ? { ...currentUser, access_token: event.detail.accessToken }
+          : currentUser,
+      );
+    };
+
+    window.addEventListener("shipcomply:auth-expired", handleExpiredSession);
+    window.addEventListener("shipcomply:token-refreshed", handleRefreshedToken);
+    return () => {
+      window.removeEventListener("shipcomply:auth-expired", handleExpiredSession);
+      window.removeEventListener(
+        "shipcomply:token-refreshed",
+        handleRefreshedToken,
+      );
+    };
+  }, [navigation]);
   return (
     <AuthContext.Provider
       value={{

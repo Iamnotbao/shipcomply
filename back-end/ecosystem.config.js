@@ -4,6 +4,7 @@ module.exports = {
       name: "api-local",
       script: "./server.js",
       env: {
+        SITE_KEY: "LOCAL",
         PORT: 3002,
         DB_NAME: "legacydb",
         DB_USER: "legacyuser",
@@ -19,6 +20,7 @@ module.exports = {
     //   name: "api-taiwan",
     //   script: "./server.js",
     //   env: {
+    //     SITE_KEY: "TAIWAN",
     //     PORT: 3003,
     //     DB_NAME: "legacydb",
     //     DB_USER: "legacyuser",
@@ -34,6 +36,7 @@ module.exports = {
       name: "api-vg350",
       script: "./server.js",
       env: {
+        SITE_KEY: "VG350",
         PORT: 3004,
         DB_NAME: "legacydb_u2",
         DB_USER: "wapi",
@@ -49,6 +52,7 @@ module.exports = {
       name: "api-vg380",
       script: "./server.js",
       env: {
+        SITE_KEY: "VG380",
         PORT: 3005,
         DB_NAME: "legacydb_u1",
         DB_USER: "wapi",
@@ -64,6 +68,7 @@ module.exports = {
       name: "api-aw350",
       script: "./server.js",
       env: {
+        SITE_KEY: "AW350",
         PORT: 3006,
         DB_NAME: "legacydb_u4",
         DB_USER: "wapi",
@@ -79,6 +84,7 @@ module.exports = {
       name: "api-aw380",
       script: "./server.js",
       env: {
+        SITE_KEY: "AW380",
         PORT: 3007,
         DB_NAME: "legacydb_u3",
         DB_USER: "wapi",

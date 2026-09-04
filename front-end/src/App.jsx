@@ -1,10 +1,9 @@
-import { useRoutes } from 'react-router-dom';
-import routes from './route';
-import './App.css';
-import { restoreApiSite } from './utils/config/severSwitch';
+import { useRoutes } from "react-router-dom";
+import routes from "./route";
+import "./App.css";
+
 function App() {
- const routing = useRoutes(routes);
-   return routing;
+  return useRoutes(routes);
 }
-restoreApiSite();
-export default App
+
+export default App;

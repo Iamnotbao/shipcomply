@@ -16,8 +16,8 @@ const palette = {
   border: "#e2e8f0",
   surface: "#ffffff",
   canvas: "#f8fafc",
-  selected: "yellow",
-  selectedHover: "#787878",
+  selected: "#dff7f3",
+  selectedHover: "#c9eee8",
   hover: "#f8fafc",
 };
 
@@ -55,50 +55,6 @@ const appTheme = createTheme({
         "*": { boxSizing: "border-box" },
         "input[type='checkbox']": {
           accentColor: palette.primary,
-        },
-
-        // Restore the shell colors used before the navy/teal redesign while
-        // keeping the newer responsive sidebar structure and navigation logic.
-        "body .MuiDrawer-root .MuiDrawer-paper": {
-          backgroundColor: "orange !important",
-          color: "black !important",
-        },
-        "body .MuiDrawer-root .MuiTypography-root": {
-          color: "black !important",
-        },
-        "body .MuiDrawer-root .MuiListItemIcon-root": {
-          color: "inherit",
-        },
-        "body .MuiDrawer-root .MuiListItemButton-root": {
-          color: "black !important",
-        },
-        "body .MuiDrawer-root .MuiListItemButton-root.Mui-selected": {
-          backgroundColor: "#1b5e20 !important",
-          color: "white !important",
-        },
-        "body .MuiDrawer-root .MuiListItemButton-root.Mui-selected .MuiTypography-root, body .MuiDrawer-root .MuiListItemButton-root.Mui-selected .MuiListItemIcon-root": {
-          color: "white !important",
-        },
-        "body .MuiDrawer-root .MuiListItemButton-root.Mui-selected:hover": {
-          backgroundColor: "#154d15 !important",
-        },
-        "body .MuiDrawer-root .MuiList-root .MuiList-root .MuiListItemButton-root.Mui-selected": {
-          backgroundColor: "#154d15 !important",
-          color: "white !important",
-        },
-        "body .MuiDrawer-root .MuiList-root .MuiList-root .MuiListItemButton-root.Mui-selected:hover": {
-          backgroundColor: "#0d3a0d !important",
-        },
-        "body .MuiDrawer-root .MuiDivider-root": {
-          borderColor: "rgba(0, 0, 0, 0.18) !important",
-        },
-        "body .MuiAppBar-root": {
-          backgroundColor: "green !important",
-          color: "white !important",
-          backdropFilter: "none !important",
-        },
-        "body .MuiAppBar-root .MuiTypography-root, body .MuiAppBar-root .MuiSvgIcon-root, body .MuiAppBar-root .MuiBreadcrumbs-root": {
-          color: "white !important",
         },
 
         "body .MuiDataGrid-root .MuiDataGrid-columnHeader": {
@@ -214,16 +170,16 @@ const appTheme = createTheme({
       styleOverrides: {
         root: {
           "&.Mui-selected": {
-            backgroundColor: "yellow !important",
-            color: "black !important",
+            backgroundColor: `${palette.primaryTint} !important`,
+            color: `${palette.primaryDark} !important`,
             borderColor: "transparent !important",
             boxShadow: "none !important",
           },
           "&.Mui-selected .MuiTypography-root, &.Mui-selected .MuiListItemIcon-root": {
-            color: "black !important",
+            color: `${palette.primaryDark} !important`,
           },
           "&.Mui-selected:hover": {
-            backgroundColor: "#686868 !important",
+            backgroundColor: `${palette.primarySoft} !important`,
           },
         },
       },

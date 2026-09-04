@@ -93,6 +93,8 @@ const acPlanPackRouter = require("./modules/ac_plan_pack/ac_plan_size.routes.js"
 const rdSizeMRouter = require("./modules/rd_size_m/rd_size_m.routes.js");
 const sdPackMRouter = require("./modules/sd_pack_m/sd_pack_m.routes.js");
 const sseRouter = require("./modules/sse/sse.routes");
+const healthRouter = require("./modules/health/health.routes");
+const realtimeMutationMiddleware = require("./utils/realtime.middleware");
 require("./core/association");
 
 const app = express();
@@ -118,14 +120,16 @@ app.use(
     credentials: true,
   }),
 );
-app.use("/api/sse", sseRouter);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use("/api/health", healthRouter);
+app.use("/api/sse", authMiddleware, sseRouter);
+app.use("/api", realtimeMutationMiddleware);
 
 sequelize
   .authenticate()
   .then(() => console.log("Database synced"))
-  .catch((err) => console.error("Sync error:", err));
+  .catch(() => console.error("Database unavailable during startup"));
 
 app.get("/", (req, res) => {
   res.send(" Server for basic_data test is running!");

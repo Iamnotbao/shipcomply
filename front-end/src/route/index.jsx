@@ -111,7 +111,7 @@ const routes = [
       },
       {
         path: "actf_410_1",
-        element: <PrivateRoute requiredProgram="ACTF_4101" />,
+        element: <PrivateRoute requiredProgram="ACTF_410" />,
         children: AcReqMRoute,
       },
       {

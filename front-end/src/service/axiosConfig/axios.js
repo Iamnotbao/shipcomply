@@ -1,71 +1,82 @@
 import axios from "axios";
+import { getCurrentSite, getSiteApiBaseUrl } from "../../config/sites";
 
-let activeUrl = localStorage.getItem("activeUrl") || import.meta.env.VITE_API_URL;
+const isAbsoluteUrl = (url = "") => /^https?:\/\//i.test(url);
 
-export const setActiveUrl = (url) => {
-  activeUrl = url;
-  localStorage.setItem("activeUrl", url);
-};
-export const getActiveUrl = () => activeUrl;
+axios.defaults.baseURL = getSiteApiBaseUrl();
 
-// 1. Đổi URL theo site đang chọn
 axios.interceptors.request.use((config) => {
-  config.url = config.url.replace(import.meta.env.VITE_API_URL, activeUrl);
-  const token = localStorage.getItem("access_token"); // đổi key khớp AuthContext
+  if (!isAbsoluteUrl(config.url)) {
+    config.baseURL = getSiteApiBaseUrl(getCurrentSite());
+  }
+
+  const token = localStorage.getItem("access_token");
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
-// 3. Xử lý 401 -> tự refresh token -> retry request cũ
-let isRefreshing = false;
-let failedQueue = [];
+let refreshPromise = null;
 
-const processQueue = (error, token = null) => {
-  failedQueue.forEach((p) => (error ? p.reject(error) : p.resolve(token)));
-  failedQueue = [];
+const clearExpiredSession = () => {
+  localStorage.removeItem("access_token");
+  localStorage.removeItem("refresh_token");
+  window.dispatchEvent(new Event("shipcomply:auth-expired"));
+};
+
+const refreshAccessToken = async () => {
+  if (refreshPromise) return refreshPromise;
+
+  const refreshToken = localStorage.getItem("refresh_token");
+  if (!refreshToken) throw new Error("Missing refresh token");
+
+  refreshPromise = axios
+    .post(
+      "/authentication/refresh",
+      { token: refreshToken },
+      { skipAuthRefresh: true },
+    )
+    .then(({ data }) => {
+      if (!data?.access_token) throw new Error("Refresh did not return a token");
+      localStorage.setItem("access_token", data.access_token);
+      axios.defaults.headers.common.authorization = `Bearer ${data.access_token}`;
+      window.dispatchEvent(
+        new CustomEvent("shipcomply:token-refreshed", {
+          detail: { accessToken: data.access_token },
+        }),
+      );
+      return data.access_token;
+    })
+    .finally(() => {
+      refreshPromise = null;
+    });
+
+  return refreshPromise;
 };
 
 axios.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+    const shouldRefresh =
+      error.response?.status === 401 &&
+      originalRequest &&
+      !originalRequest._retry &&
+      !originalRequest.skipAuthRefresh;
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      if (isRefreshing) {
-        return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject });
-        }).then((token) => {
-          originalRequest.headers.Authorization = `Bearer ${token}`;
-          return axios(originalRequest);
-        });
-      }
+    if (!shouldRefresh) return Promise.reject(error);
 
-      originalRequest._retry = true;
-      isRefreshing = true;
+    originalRequest._retry = true;
 
-      try {
-        const refreshToken = localStorage.getItem("refreshToken");
-        const { data } = await axios.post(
-          `${activeUrl}/authentication/refresh`,
-          { token: refreshToken }
-        );
-        localStorage.setItem("accessToken", data.accessToken);
-        processQueue(null, data.accessToken);
-        originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
-        return axios(originalRequest);
-      } catch (err) {
-        processQueue(err, null);
-        localStorage.removeItem("accessToken");
-        localStorage.removeItem("refreshToken");
-        window.location.href = "/login";
-        return Promise.reject(err);
-      } finally {
-        isRefreshing = false;
-      }
+    try {
+      const token = await refreshAccessToken();
+      originalRequest.headers.Authorization = `Bearer ${token}`;
+      return axios(originalRequest);
+    } catch (refreshError) {
+      clearExpiredSession();
+      return Promise.reject(refreshError);
     }
-
-    return Promise.reject(error);
   }
 );
 
+export const getActiveUrl = () => getSiteApiBaseUrl(getCurrentSite());
 export default axios;

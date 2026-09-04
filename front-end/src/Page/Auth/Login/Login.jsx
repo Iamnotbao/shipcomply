@@ -1,4 +1,4 @@
-import { Box, TextField, Typography } from "@mui/material";
+import { Alert, Box, CircularProgress, TextField, Typography } from "@mui/material";
 import BackGround from "../../../assets/images/bg3.png";
 import Logo from "../../../assets/images/logo.png";
 import AirportShuttleIcon from "@mui/icons-material/AirportShuttle";
@@ -16,7 +16,7 @@ import {
   fetchDepartments,
 } from "../../../service/factory_departments/FacDepartmentService";
 import { useTranslation } from "react-i18next";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import { useColumnTranslation } from "../../../context/ColumnTranslationContext";
 import {
   fetchPermissionByFactoryAndUser,
@@ -24,10 +24,10 @@ import {
 } from "../../../service/users_permission/UsersPermission";
 import NotificationPermission from "../../../component/dialog/NotificationPermission";
 import { fetchUPDByUser } from "../../../service/users_permisison_department/usersPermissionDepartmentService";
-import { setActiveUrl } from "../../../service/axiosConfig/axios";
 import { showErrorToast } from "../../../utils/notification/Notification";
 import { AUTH_ERROR_MAP } from "../../../constants/errors/authErrors";
-import { restoreApiSite, setApiSite } from "../../../utils/config/severSwitch";
+import { DEFAULT_SITE_KEY } from "../../../config/sites";
+import { useSite } from "../../../context/siteContext";
 
 // ─── Design tokens — Green + Orange (match Sidebar) ──────────────────────────
 const GREEN = "#1a6b1a";
@@ -164,8 +164,8 @@ const Login = () => {
   const [userList, setUserList] = useState([]);
   const [selectUser, setSelectUser] = useState(null);
   const [openNotification, setOpenNotification] = useState(false);
-  const [envOptions, setEnvOptions] = useState([]);
-  const [selectedEnv, setSelectedEnv] = useState("");
+  const [envOptions, setEnvOptions] = useState(FACTORY_ENV_MAP[2210]);
+  const [selectedEnv, setSelectedEnv] = useState(DEFAULT_SITE_KEY);
   const [dbFactories, setDbFactories] = useState([]);
   const [selectDbFactory, setselectDbFactory] = useState(null);
   const formRef = useRef(null);
@@ -174,6 +174,14 @@ const Login = () => {
   const navigation = useNavigate();
   const { login, programCodeList, updateProgramCodeList, getDefaultRoute } =
     useAuth();
+  const {
+    siteKey,
+    selectSite,
+    isHealthy,
+    isChecking,
+    isUnavailable,
+    retryHealth,
+  } = useSite();
   const { t } = useTranslation();
   const { i18n } = useTranslation();
   const { updateLanguage, fetchTableControlTranslations, language } =
@@ -196,9 +204,8 @@ const Login = () => {
   };
 
   const handleSiteChange = (siteKey) => {
-    setApiSite(siteKey);
+    selectSite(siteKey);
     setSelectedEnv(siteKey);
-    fetchAllTranslations();
     setUserCode("");
     setSelectUser(null);
     formRef.current?.reset();
@@ -228,6 +235,16 @@ const Login = () => {
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    if (!isHealthy) {
+      toast.error(
+        t("site_unavailable", {
+          site: siteKey,
+          defaultValue: `{{site}} database is unavailable. Select another environment or retry.`,
+        }),
+        { toastId: `site-unavailable:${siteKey}` },
+      );
+      return;
+    }
     if (!userCode) {
       toast.error(t("Please select a user code"));
       return;
@@ -289,8 +306,10 @@ const Login = () => {
 
   const fetchAllTranslations = async () => {
     try {
-      const controls = await fetchTableControlTranslations("LOGIN");
-      const sysMessages = await fetchTableControlTranslations("SYS_MESG");
+      const [controls, sysMessages] = await Promise.all([
+        fetchTableControlTranslations("LOGIN"),
+        fetchTableControlTranslations("SYS_MESG"),
+      ]);
       const mergedControls = [...controls?.data, ...sysMessages?.data];
       if (mergedControls.length > 0) {
         setControlTranslations(mergedControls);
@@ -354,7 +373,10 @@ const Login = () => {
       const data = result[0]?.data ?? [];
       setDbFactories(data);
       if (data.length > 0) {
-        setselectDbFactory(data[0]);
+        setselectDbFactory(
+          data.find((factoryItem) => factoryItem.factory_code === "2210") ||
+            data[0],
+        );
       }
     } catch (err) {
       console.error("fetchDbFactories error", err);
@@ -383,15 +405,18 @@ const Login = () => {
     };
   };
   useEffect(() => {
-    fetchUPByUser();
-  }, [userCode]);
+    selectSite(DEFAULT_SITE_KEY);
+    setSelectedEnv(DEFAULT_SITE_KEY);
+  }, [selectSite]);
   useEffect(() => {
-    fetchAllTranslations();
-  }, [language]);
+    if (isHealthy && userCode) fetchUPByUser();
+  }, [userCode, isHealthy]);
   useEffect(() => {
-    setApiSite("VG350");
-    fetchDbFactories();
-  }, []);
+    if (isHealthy) fetchAllTranslations();
+  }, [language, siteKey, isHealthy]);
+  useEffect(() => {
+    if (isHealthy) fetchDbFactories();
+  }, [siteKey, isHealthy]);
   useEffect(() => {
     if (!selectDbFactory?.factory_code) return;
 
@@ -400,8 +425,7 @@ const Login = () => {
 
     if (opts.length > 0) {
       setSelectedEnv(opts[0].value);
-      setApiSite(opts[0].value);
-      fetchAllTranslations();
+      selectSite(opts[0].value);
     }
     if (isFirstDbFactory.current) {
       isFirstDbFactory.current = false;
@@ -417,10 +441,10 @@ const Login = () => {
     setSelectFactory({});
     setSelectDepartment({});
     setUserPermissions([]);
-  }, [selectDbFactory]);
+  }, [selectDbFactory, selectSite]);
   useEffect(() => {
-    fetchDep();
-  }, []);
+    if (isHealthy) fetchDep();
+  }, [siteKey, isHealthy]);
   useEffect(() => {
     if (selectFactory?.factory_code) {
       const found = facDept.find(
@@ -453,8 +477,6 @@ const Login = () => {
 
   return (
     <>
-      <ToastContainer position="top-right" autoClose={3000} />
-
       {/* ── Full-page background ─────────────────────────────────────── */}
       <Box
         sx={{
@@ -718,6 +740,31 @@ const Login = () => {
                   ))}
                 </Box>
               )}
+              {isChecking && (
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 1 }}>
+                  <CircularProgress size={14} />
+                  <Typography sx={{ fontSize: "0.72rem", color: MUTED }}>
+                    {getControlLabel("msg_checking_site", "Checking database...")}
+                  </Typography>
+                </Box>
+              )}
+              {isUnavailable && !isChecking && (
+                <Alert
+                  severity="error"
+                  variant="outlined"
+                  sx={{ mt: 1, py: 0, fontSize: "0.72rem" }}
+                  action={
+                    <Button color="inherit" size="small" onClick={() => retryHealth()}>
+                      {getControlLabel("btn_retry", "Retry")}
+                    </Button>
+                  }
+                >
+                  {getControlLabel(
+                    "msg_site_unavailable",
+                    `${selectedEnv} database is unavailable`,
+                  )}
+                </Alert>
+              )}
             </Box>
             {/* divider */}
             <Box
@@ -814,6 +861,7 @@ const Login = () => {
               {/* Login — green fill */}
               <Button
                 type="submit"
+                disabled={!isHealthy || isChecking}
                 sx={{
                   flex: 1,
                   height: 42,
@@ -831,7 +879,11 @@ const Login = () => {
                   },
                 }}
               >
-                {getControlLabel("btn_login", "Login")}
+                {isChecking ? (
+                  <CircularProgress size={18} color="inherit" />
+                ) : (
+                  getControlLabel("btn_login", "Login")
+                )}
               </Button>
             </Box>
           </Box>

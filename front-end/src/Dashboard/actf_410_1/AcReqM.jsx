@@ -73,7 +73,6 @@ import {
 } from "../../utils/notification/Notification";
 import { fetchAllVendNoByStatus } from "../../service/ac_vend_base/AcVendBaseService";
 import { fetchBasicDataDropDownByCate } from "../../service/basic_data/basicDataService";
-import { set } from "react-hook-form";
 import ConfirmPopup from "../../features/actf_410_1/page/ConfirmPopup";
 const AcReqM = () => {
   const [data, setData] = useState([]);
@@ -199,45 +198,43 @@ const AcReqM = () => {
       setSelectRows([combinedData?.data[0]]);
     }
   };
-  const fetchPlanMax = async () => {
-    const filters = {
-      factory_code: user?.factory,
-      order_no: selectVwAcSrcorder.order_no,
-      order_seq: selectVwAcSrcorder.order_seq,
-      is_check: "Y",
-    };
-    const response = await fetchPlanMax();
-    return response?.data;
-  };
   //fetch all translation of factory
   const fetchAllTranslations = async () => {
     try {
-      const columns = await fetchTableColumnTranslations(
-        "ACTF_410",
-        "master",
-        "ac_req_m",
-      );
-      const controls = await fetchTableControlTranslations("ACTF_410");
-      const sysMessages = await fetchTableControlTranslations("SYS_MESG");
+      const [columns, controls, sysMessages] = await Promise.all([
+        fetchTableColumnTranslations("ACTF_410", "master", "ac_req_m"),
+        fetchTableControlTranslations("ACTF_410"),
+        fetchTableControlTranslations("SYS_MESG"),
+      ]);
+
+      const mergedComplexColumn = [
+        ...(controls?.data || []),
+        ...(columns?.data || []),
+      ];
+      if (mergedComplexColumn.length > 0)
+        setColumnTranslations(mergedComplexColumn);
+      const mergedControls = [
+        ...(controls?.data || []),
+        ...(sysMessages?.data || []),
+      ];
+      if (mergedControls.length > 0) setControlTranslations(mergedControls);
+    } catch (error) {
+      console.error("Error loading ACTF_410 translations:", error);
+    }
+  };
+
+  const fetchAuthorization = async () => {
+    try {
       const auth = await fetchTablePermission(
         user?.factory,
         user?.department,
         user?.user_code,
-        "ACTF_4101",
+        "ACTF_410",
       );
-
-      const mergedComplexColumn = [...controls?.data, ...columns?.data];
-      if (mergedComplexColumn.length > 0)
-        setColumnTranslations(mergedComplexColumn);
-      const mergedControls = [...controls?.data, ...sysMessages?.data];
-      if (mergedControls.length > 0) {
-        setControlTranslations(mergedControls);
-      }
       if (auth) setAuthorizations(auth?.data);
- 
       return auth?.data || [];
     } catch (error) {
-      console.error(" Error:", error);
+      console.error("Error loading ACTF_410 permission:", error);
       return [];
     }
   };
@@ -637,13 +634,11 @@ const AcReqM = () => {
     }
   };
   useEffect(() => {
-    fetchAllTranslations();
-  }, [language]);
-  useEffect(() => {
     const init = async () => {
-      const authData = await fetchAllTranslations();
+      const translationsPromise = fetchAllTranslations();
+      const authData = await fetchAuthorization();
       await fetchAll(authData);
-      await clearRdTemp(user?.access_token);
+      await Promise.all([translationsPromise, clearRdTemp(user?.access_token)]);
     };
     init();
   }, [language]);

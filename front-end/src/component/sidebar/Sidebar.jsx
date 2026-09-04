@@ -44,6 +44,7 @@ import { useColumnTranslation } from "../../context/ColumnTranslationContext";
 import { fnQuery } from "../../utils/fnQuery";
 import { APP_SHELL } from "../../constants/layout";
 import { NAVIGATION_ITEMS, getNavigationPath } from "../../constants/navigation";
+import { useSite } from "../../context/siteContext";
 
 const ICONS = {
   factory: FactoryOutlinedIcon,
@@ -77,7 +78,8 @@ export default function Sidebar() {
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const location = useLocation();
   const navigate = useNavigate();
-  const { logout, user, getDefaultRoute } = useAuth();
+  const { logout, user, getDefaultRoute, programCodeList } = useAuth();
+  const { siteKey, isChecking } = useSite();
   const { fetchTableControlTranslations, language } = useColumnTranslation();
 
   const [desktopOpen, setDesktopOpen] = React.useState(
@@ -89,16 +91,6 @@ export default function Sidebar() {
   );
   const [controlTranslations, setControlTranslations] = React.useState([]);
   const [currentTime, setCurrentTime] = React.useState(new Date());
-
-  const programCodeList = React.useMemo(
-    () => safeReadJson("programCodeList", []),
-    [user?.user_code],
-  );
-
-  const envLabel = React.useMemo(() => {
-    const activeUrl = localStorage.getItem("activeUrl");
-    return activeUrl === import.meta.env.VITE_API_URL_PROD ? "PROD" : "UAT";
-  }, []);
 
   React.useEffect(() => {
     const timer = window.setInterval(() => setCurrentTime(new Date()), 1000);
@@ -509,12 +501,12 @@ export default function Sidebar() {
               )}
               <Chip
                 size="small"
-                label={envLabel}
+                label={isChecking ? `${siteKey} · checking` : siteKey}
                 sx={{
-                  bgcolor: envLabel === "PROD" ? "#fef2f2" : "#eff6ff",
-                  color: envLabel === "PROD" ? "#b91c1c" : "#1d4ed8",
+                  bgcolor: "rgba(15, 118, 110, 0.08)",
+                  color: "primary.dark",
                   border: "1px solid",
-                  borderColor: envLabel === "PROD" ? "#fecaca" : "#bfdbfe",
+                  borderColor: "rgba(15, 118, 110, 0.25)",
                 }}
               />
             </Box>

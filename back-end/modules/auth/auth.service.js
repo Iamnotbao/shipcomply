@@ -60,7 +60,6 @@ async function loginAsUser(user, t) {
   };
 }
 async function loginAsAdmin(user, t) {
-  console.log("check pass ", user);
   let message = "";
   if (user.user_code !== "admin") {
     message = "user is not admin !";
