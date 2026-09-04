@@ -37,7 +37,6 @@ import ExpandMoreRoundedIcon from "@mui/icons-material/ExpandMoreRounded";
 import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
 import HomeRoundedIcon from "@mui/icons-material/HomeRounded";
 import NavigateNextRoundedIcon from "@mui/icons-material/NavigateNextRounded";
-import CircleIcon from "@mui/icons-material/Circle";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import useAuth from "../../hooks/useAuth";
 import { useColumnTranslation } from "../../context/ColumnTranslationContext";
@@ -283,7 +282,7 @@ export default function Sidebar() {
         )}
       </Box>
 
-      <Divider sx={{ borderColor: "rgba(77, 50, 10, 0.18)" }} />
+      <Divider sx={{ borderColor: "rgba(77, 50, 10, 0.10)" }} />
 
       <Box
         sx={{
@@ -337,13 +336,24 @@ export default function Sidebar() {
                       sx={{
                         minHeight: 42,
                         px: desktopOpen || isMobile ? 1.5 : 1,
-                        borderRadius: 1.5,
+                        borderRadius: 0.75,
                         justifyContent: desktopOpen || isMobile ? "initial" : "center",
-                        color: groupActive ? "#ffffff" : "#3d2b0d",
+                        color: groupActive ? "#24543e" : "#3d2b0d",
+                        boxShadow: groupActive
+                          ? "inset 3px 0 0 #2f6b4f"
+                          : "inset 3px 0 0 transparent",
                         "& .MuiListItemIcon-root": { color: "inherit" },
-                        "&.Mui-selected": { bgcolor: "#2f6b4f" },
-                        "&.Mui-selected:hover": { bgcolor: "#24543e" },
-                        "&:hover": { bgcolor: "rgba(255,255,255,0.30)" },
+                        "&&.Mui-selected": {
+                          bgcolor: "rgba(255,255,255,0.22) !important",
+                          color: "#24543e !important",
+                        },
+                        "&&.Mui-selected .MuiTypography-root, &&.Mui-selected .MuiListItemIcon-root": {
+                          color: "#24543e !important",
+                        },
+                        "&&.Mui-selected:hover": {
+                          bgcolor: "rgba(255,255,255,0.30) !important",
+                        },
+                        "&:hover": { bgcolor: "rgba(255,255,255,0.22)" },
                       }}
                     >
                       <ListItemIcon
@@ -388,19 +398,30 @@ export default function Sidebar() {
                               selected={active}
                               onClick={() => goTo(child)}
                               sx={{
-                                minHeight: 36,
-                                pl: 4.7,
+                                minHeight: 34,
+                                pl: 4.5,
                                 pr: 1.25,
-                                py: 0.5,
-                                borderRadius: 1.5,
-                                color: active ? "#ffffff" : "#5b3a08",
-                                "&.Mui-selected": { bgcolor: "#3a7658" },
-                                "&.Mui-selected:hover": { bgcolor: "#2f6b4f" },
+                                py: 0.45,
+                                borderRadius: 0.5,
+                                color: active ? "#24543e" : "#5b3a08",
+                                boxShadow: active
+                                  ? "inset 2px 0 0 rgba(47,107,79,0.85)"
+                                  : "inset 2px 0 0 transparent",
+                                "&&.Mui-selected": {
+                                  bgcolor: "rgba(255,255,255,0.16) !important",
+                                  color: "#24543e !important",
+                                },
+                                "&&.Mui-selected .MuiTypography-root": {
+                                  color: "#24543e !important",
+                                },
+                                "&&.Mui-selected:hover": {
+                                  bgcolor: "rgba(255,255,255,0.24) !important",
+                                },
+                                "&:hover": {
+                                  bgcolor: "rgba(255,255,255,0.14)",
+                                },
                               }}
                             >
-                              <ListItemIcon sx={{ minWidth: 18, color: "inherit" }}>
-                                <CircleIcon sx={{ fontSize: 5 }} />
-                              </ListItemIcon>
                               <ListItemText
                                 primary={child.label}
                                 primaryTypographyProps={{
@@ -422,7 +443,7 @@ export default function Sidebar() {
         </List>
       </Box>
 
-      <Divider sx={{ borderColor: "rgba(77, 50, 10, 0.18)" }} />
+      <Divider sx={{ borderColor: "rgba(77, 50, 10, 0.10)" }} />
       <Box sx={{ p: 1 }}>
         {(desktopOpen || isMobile) && (
           <Box sx={{ px: 1, py: 1, display: "flex", alignItems: "center", gap: 1 }}>
@@ -490,7 +511,7 @@ export default function Sidebar() {
           "& .MuiDrawer-paper": {
             width: isMobile ? APP_SHELL.drawerWidth : drawerWidth,
             bgcolor: "#e7b65c",
-            borderRight: "1px solid rgba(91, 66, 26, 0.16)",
+            borderRight: "1px solid rgba(91, 66, 26, 0.10)",
             overflowX: "hidden",
             transition: theme.transitions.create("width", {
               duration: theme.transitions.duration.shorter,
