@@ -7,9 +7,12 @@ import {
   Typography,
   Select,
   Checkbox,
+  Collapse,
   CircularProgress,
   Tooltip,
 } from "@mui/material";
+import FilterAltOutlinedIcon from "@mui/icons-material/FilterAltOutlined";
+import KeyboardArrowDownRoundedIcon from "@mui/icons-material/KeyboardArrowDownRounded";
 import { forwardRef, useImperativeHandle, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
@@ -101,6 +104,7 @@ const ToolbarKit = forwardRef(
     const navigation = useNavigate();
     const { t } = useTranslation();
     const [searchValue, setSearchValue] = useState({});
+    const [isFiltersOpen, setIsFiltersOpen] = useState(false);
     useImperativeHandle(
       ref,
       () => ({
@@ -1934,6 +1938,14 @@ const ToolbarKit = forwardRef(
       },
     };
     const tableConfig = table && mapAdd[table] ? mapAdd[table] : null;
+    const hasFilters = Boolean(tableConfig?.filter?.length);
+    const activeFilterCount = Object.values(searchValue).filter(
+      (value) =>
+        value !== "" &&
+        value !== null &&
+        value !== undefined &&
+        (!Array.isArray(value) || value.length > 0),
+    ).length;
     const handleSearch = () => {
       const updateSearch = { ...searchValue };
       if (updateSearch.status !== undefined && updateSearch.status !== "") {
@@ -3072,59 +3084,56 @@ const ToolbarKit = forwardRef(
         {!subTable ? (
           <Box
             sx={{
-              display: "grid",
-              gridTemplateColumns: {
-                xs: "minmax(0, 1fr)",
-                lg: tableConfig?.filter
-                  ? "minmax(0, 1fr) fit-content(46%)"
-                  : "minmax(0, 1fr)",
-              },
+              display: "flex",
+              flexWrap: "wrap",
               width: "100%",
               gap: 1,
-              alignItems: "start",
+              alignItems: "center",
               minWidth: 0,
             }}
           >
-            {tableConfig?.filter && (
-              <Box
+            {hasFilters && (
+              <Button
+                type="button"
+                variant={isFiltersOpen ? "contained" : "outlined"}
+                color="success"
+                size="small"
+                startIcon={<FilterAltOutlinedIcon fontSize="small" />}
+                endIcon={
+                  <KeyboardArrowDownRoundedIcon
+                    fontSize="small"
+                    sx={{
+                      transform: isFiltersOpen
+                        ? "rotate(180deg)"
+                        : "rotate(0deg)",
+                      transition: "transform 160ms ease",
+                    }}
+                  />
+                }
+                aria-expanded={isFiltersOpen}
+                aria-controls={`toolbar-filters-${table}`}
+                onClick={() => setIsFiltersOpen((open) => !open)}
                 sx={{
-                  display: "grid",
-                  gridTemplateColumns:
-                    "repeat(auto-fit, minmax(min(100%, 160px), 1fr))",
-                  gap: 1,
-                  minWidth: 0,
-                  alignItems: "start",
+                  flex: "0 0 auto",
+                  minHeight: 32,
+                  px: 1.25,
+                  whiteSpace: "nowrap",
                 }}
               >
-                {tableConfig.filter.map((f, index) =>
-                  renderSearchField(f, index),
-                )}
-              </Box>
+                {t(getControlLabel("btn_filter", "Filters"))}
+                {activeFilterCount > 0 && ` (${activeFilterCount})`}
+              </Button>
             )}
             <Box
               sx={{
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "flex-end",
-                justifySelf: "end",
-                width: "fit-content",
+                flex: "1 1 560px",
+                ml: "auto",
+                width: "auto",
                 maxWidth: "100%",
                 minWidth: 0,
-                position: "relative",
-                pl: { xs: 0, lg: tableConfig?.filter ? 1.25 : 0 },
-                pt: { xs: tableConfig?.filter ? 1 : 0, lg: 0 },
-                borderLeft: {
-                  xs: 0,
-                  lg: tableConfig?.filter
-                    ? "1px solid rgba(100, 116, 139, 0.32)"
-                    : 0,
-                },
-                borderTop: {
-                  xs: tableConfig?.filter
-                    ? "1px solid rgba(100, 116, 139, 0.32)"
-                    : 0,
-                  lg: 0,
-                },
               }}
             >
               <Box
@@ -3282,6 +3291,36 @@ const ToolbarKit = forwardRef(
                   })}
               </Box>
             </Box>
+            {hasFilters && (
+              <Collapse
+                in={isFiltersOpen}
+                timeout={180}
+                unmountOnExit
+                sx={{ flex: "1 0 100%", width: "100%" }}
+              >
+                <Box
+                  id={`toolbar-filters-${table}`}
+                  sx={{
+                    display: "grid",
+                    gridTemplateColumns:
+                      "repeat(auto-fit, minmax(min(100%, 180px), 1fr))",
+                    alignItems: "start",
+                    gap: 1,
+                    mt: 0.25,
+                    pt: 1,
+                    px: 0.5,
+                    pb: 0.5,
+                    minWidth: 0,
+                    borderTop: "1px solid rgba(100, 116, 139, 0.28)",
+                    bgcolor: "rgba(248, 250, 252, 0.72)",
+                  }}
+                >
+                  {tableConfig.filter.map((f, index) =>
+                    renderSearchField(f, index),
+                  )}
+                </Box>
+              </Collapse>
+            )}
           </Box>
         ) : (
           <Box sx={{ flexGrow: 0.1 }}>
