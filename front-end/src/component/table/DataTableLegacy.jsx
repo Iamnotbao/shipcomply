@@ -2075,6 +2075,7 @@ export default function DataTable({
                   maxHeight: "calc(100vh - 350px)",
                   overflowY: "auto",
                   overflowX: "hidden",
+                  overscrollBehavior: "contain",
                 }}
               >
                 <div
@@ -2113,6 +2114,7 @@ export default function DataTable({
                       : tableHeight || "calc(100vh - 350px)",
                   overflowY: "auto",
                   overflowX: "hidden",
+                  overscrollBehavior: "contain",
                 }}
               >
                 <div
@@ -2148,6 +2150,7 @@ export default function DataTable({
                       : tableHeight || "calc(100vh - 350px)",
                   overflowY: "auto",
                   overflowX: "hidden",
+                  overscrollBehavior: "contain",
                 }}
               >
                 <div
@@ -2355,6 +2358,25 @@ export default function DataTable({
                       !isSubTable && !isPopup
                         ? "0 2px 6px rgba(15, 23, 42, 0.10)"
                         : "none",
+                  },
+                  "& .MuiDataGrid-virtualScroller": {
+                    overscrollBehavior: "contain",
+                    scrollbarWidth: "thin",
+                    scrollbarColor: "rgba(71, 85, 105, 0.48) transparent",
+                  },
+                  "& .MuiDataGrid-virtualScroller::-webkit-scrollbar": {
+                    width: 7,
+                    height: 7,
+                  },
+                  "& .MuiDataGrid-virtualScroller::-webkit-scrollbar-track": {
+                    background: "transparent",
+                  },
+                  "& .MuiDataGrid-virtualScroller::-webkit-scrollbar-thumb": {
+                    backgroundColor: "rgba(71, 85, 105, 0.48)",
+                    borderRadius: 999,
+                  },
+                  "& .MuiDataGrid-virtualScroller::-webkit-scrollbar-thumb:hover": {
+                    backgroundColor: "rgba(51, 65, 85, 0.72)",
                   },
                   "& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within":
                     {
