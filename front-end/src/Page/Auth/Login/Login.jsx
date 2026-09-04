@@ -1,5 +1,4 @@
 import { Alert, Box, CircularProgress, TextField, Typography } from "@mui/material";
-import BackGround from "../../../assets/images/bg3.png";
 import Logo from "../../../assets/images/logo.png";
 import AirportShuttleIcon from "@mui/icons-material/AirportShuttle";
 import Button from "@mui/material/Button";
@@ -32,15 +31,16 @@ import {
 import { AUTH_ERROR_MAP } from "../../../constants/errors/authErrors";
 import { DEFAULT_SITE_KEY } from "../../../config/sites";
 import { useSite } from "../../../context/siteContextStore";
+import { palette } from "../../../theme/appTheme";
 
-// ─── Design tokens — Green + Orange (match Sidebar) ──────────────────────────
-const GREEN = "#1a6b1a";
-const GREEN_MID = "#2d8c30";
-const ORANGE = "#c95f00";
-const ORANGE_MID = "#e07010";
-const BORDER = "#c8dcc8"; // green-tinted border
-const MUTED = "#64748b";
-const LIGHT_BG = "#edf7ed"; // green-tinted light bg
+// ─── Design tokens — shared with the authenticated app shell ────────────────
+const SLATE = palette.secondary;
+const SLATE_DARK = "#40566c";
+const GREEN = palette.primary;
+const GREEN_DARK = palette.primaryDark;
+const BORDER = palette.border;
+const MUTED = palette.muted;
+const LIGHT_BG = "#eef3f7";
 
 // ─── Shared style objects ────────────────────────────────────────────────────
 
@@ -52,7 +52,7 @@ const sectionLabelSx = {
   px: 0.75,
   fontSize: "0.56rem",
   fontWeight: 800,
-  color: GREEN,
+  color: SLATE_DARK,
   textTransform: "uppercase",
   letterSpacing: "0.13em",
   lineHeight: 1,
@@ -73,15 +73,15 @@ const textFieldSx = {
   "& .MuiOutlinedInput-root": {
     borderRadius: "7px",
     fontSize: "0.84rem",
-    color: "#1a1a1a",
-    backgroundColor: "#f6faf6",
+    color: palette.navy,
+    backgroundColor: "#fbfdff",
     "& fieldset": {
       borderColor: BORDER,
       borderWidth: "1.5px",
       transition: "border-color 0.12s",
     },
-    "&:hover fieldset": { borderColor: GREEN_MID },
-    "&.Mui-focused fieldset": { borderColor: GREEN, borderWidth: "2px" },
+    "&:hover fieldset": { borderColor: SLATE },
+    "&.Mui-focused fieldset": { borderColor: SLATE, borderWidth: "1.5px" },
     "&.Mui-focused": { backgroundColor: "#fff" },
   },
   "& .MuiInputBase-input": { padding: "9px 12px" },
@@ -385,12 +385,38 @@ const Login = () => {
       const result = await fnQuery([fetchFactory]);
       const data = result[0]?.data ?? [];
       setDbFactories(data);
-      if (data.length > 0) {
-        setselectDbFactory(
-          data.find((factoryItem) => factoryItem.factory_code === "2210") ||
-            data[0],
-        );
+
+      if (data.length === 0) {
+        setselectDbFactory(null);
+        return;
       }
+
+      setselectDbFactory((previous) => {
+        if (
+          previous?.factory_code &&
+          data.some(
+            (factoryItem) =>
+              factoryItem.factory_code === previous.factory_code,
+          )
+        ) {
+          return previous;
+        }
+
+        const factoryCodeForCurrentSite = Object.entries(
+          FACTORY_ENV_MAP,
+        ).find(([, envs]) =>
+          envs.some((env) => env.value === siteKey),
+        )?.[0];
+
+        return (
+          data.find(
+            (factoryItem) =>
+              factoryItem.factory_code === factoryCodeForCurrentSite,
+          ) ||
+          data.find((factoryItem) => factoryItem.factory_code === "2210") ||
+          data[0]
+        );
+      });
     } catch (err) {
       console.error("fetchDbFactories error", err);
     }
@@ -454,7 +480,7 @@ const Login = () => {
     setSelectFactory({});
     setSelectDepartment({});
     setUserPermissions([]);
-  }, [selectDbFactory, selectSite]);
+  }, [selectDbFactory?.factory_code, selectSite]);
   useEffect(() => {
     if (isHealthy) fetchDep();
   }, [siteKey, isHealthy]);
@@ -495,24 +521,23 @@ const Login = () => {
         sx={{
           position: "relative",
           minHeight: "100vh",
-          backgroundImage: `url(${BackGround})`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
+          background:
+            "linear-gradient(135deg, #e9eef3 0%, #f4f6f8 48%, #eef3f7 100%)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-        }}
-      >
-        {/* Green gradient overlay — match sidebar AppBar green */}
-        <Box
-          sx={{
+          px: 2,
+          py: 3,
+          "&::before": {
+            content: '""',
             position: "absolute",
             inset: 0,
             background:
-              "linear-gradient(135deg, rgba(45, 75, 20, 0.65) 0%, rgba(230, 234, 241, 0.45) 100%)",
-            backdropFilter: "blur(3px)",
-          }}
-        />
+              "radial-gradient(circle at 15% 20%, rgba(85,112,138,0.12), transparent 32%), radial-gradient(circle at 85% 80%, rgba(47,107,79,0.10), transparent 30%)",
+            pointerEvents: "none",
+          },
+        }}
+      >
 
         {/* ── Card ──────────────────────────────────────────────────── */}
         <Box
@@ -524,16 +549,17 @@ const Login = () => {
             zIndex: 1,
             width: { xs: "calc(100% - 32px)", sm: "420px" },
             background: "#fff",
-            borderRadius: "14px",
+            borderRadius: "12px",
             overflow: "hidden",
+            border: `1px solid ${BORDER}`,
             boxShadow:
-              "0 24px 60px rgba(26,107,26,0.35), 0 6px 18px rgba(26,107,26,0.18)",
+              "0 18px 42px rgba(38,56,74,0.16), 0 4px 12px rgba(38,56,74,0.08)",
           }}
         >
-          {/* ── Header — green gradient (match AppBar) ──────────────── */}
+          {/* ── Header — same Slate Blue family as sidebar/table headers ── */}
           <Box
             sx={{
-              background: `linear-gradient(135deg, ${GREEN} 0%, ${GREEN_MID} 100%)`,
+              background: `linear-gradient(135deg, ${SLATE_DARK} 0%, ${SLATE} 100%)`,
               px: 2.5,
               py: 1.8,
               display: "flex",
@@ -628,12 +654,13 @@ const Login = () => {
                       fontWeight: language === opt.value ? 700 : 400,
                       transition: "all 0.12s ease",
                       userSelect: "none",
-                      borderColor: language === opt.value ? GREEN : BORDER,
-                      background: language === opt.value ? GREEN : "#f6faf6",
+                      borderColor: language === opt.value ? SLATE : BORDER,
+                      background:
+                        language === opt.value ? SLATE : "#fbfdff",
                       color: language === opt.value ? "#fff" : MUTED,
                       "&:hover": {
-                        borderColor: GREEN,
-                        color: language === opt.value ? "#fff" : GREEN,
+                        borderColor: SLATE,
+                        color: language === opt.value ? "#fff" : SLATE_DARK,
                       },
                     }}
                   >
@@ -707,7 +734,7 @@ const Login = () => {
                         borderColor:
                           selectedEnv === opt.value ? opt.dotColor : BORDER,
                         background:
-                          selectedEnv === opt.value ? opt.badgeBg : "#f6faf6",
+                          selectedEnv === opt.value ? opt.badgeBg : "#fbfdff",
                         "&:hover": { borderColor: opt.dotColor },
                       }}
                     >
@@ -878,7 +905,7 @@ const Login = () => {
                 sx={{
                   flex: 1,
                   height: 42,
-                  background: `linear-gradient(135deg, ${GREEN} 0%, ${GREEN_MID} 100%)`,
+                  background: `linear-gradient(135deg, ${GREEN_DARK} 0%, ${GREEN} 100%)`,
                   color: "#fff",
                   fontSize: "0.78rem",
                   fontWeight: 700,
@@ -887,8 +914,8 @@ const Login = () => {
                   letterSpacing: "0.02em",
                   boxShadow: "none",
                   "&:hover": {
-                    background: `linear-gradient(135deg, #155015 0%, #267329 100%)`,
-                    boxShadow: "0 4px 12px rgba(26,107,26,0.30)",
+                    background: "linear-gradient(135deg, #1f4a37 0%, #2f6b4f 100%)",
+                    boxShadow: "0 4px 12px rgba(47,107,79,0.24)",
                   },
                 }}
               >
