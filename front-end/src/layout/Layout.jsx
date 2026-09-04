@@ -1,7 +1,7 @@
 import { Alert, Box, Button, LinearProgress, Typography } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../component/sidebar/Sidebar";
-import { useSite } from "../context/siteContext";
+import { useSite } from "../context/siteContextStore";
 import useAuth from "../hooks/useAuth";
 
 export default function Layout() {

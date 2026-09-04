@@ -44,7 +44,7 @@ import { useColumnTranslation } from "../../context/ColumnTranslationContext";
 import { fnQuery } from "../../utils/fnQuery";
 import { APP_SHELL } from "../../constants/layout";
 import { NAVIGATION_ITEMS, getNavigationPath } from "../../constants/navigation";
-import { useSite } from "../../context/siteContext";
+import { useSite } from "../../context/siteContextStore";
 
 const ICONS = {
   factory: FactoryOutlinedIcon,

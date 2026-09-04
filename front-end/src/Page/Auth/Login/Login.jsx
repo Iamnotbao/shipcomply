@@ -31,7 +31,7 @@ import {
 } from "../../../utils/notification/Notification";
 import { AUTH_ERROR_MAP } from "../../../constants/errors/authErrors";
 import { DEFAULT_SITE_KEY } from "../../../config/sites";
-import { useSite } from "../../../context/siteContext";
+import { useSite } from "../../../context/siteContextStore";
 
 // ─── Design tokens — Green + Orange (match Sidebar) ──────────────────────────
 const GREEN = "#1a6b1a";

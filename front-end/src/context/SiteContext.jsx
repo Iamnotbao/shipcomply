@@ -14,7 +14,7 @@ import {
 } from "../config/sites";
 import { showDatabaseUnavailableToast } from "../utils/notification/Notification";
 import { siteHealthQueryOptions } from "../service/siteHealth/siteHealth";
-import { SiteContext } from "./siteContext";
+import { SiteContext } from "./siteContextStore";
 
 const getInitialSite = () => {
   const isAuthEntry =

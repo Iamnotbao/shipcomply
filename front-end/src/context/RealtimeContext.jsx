@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import useAuth from "../hooks/useAuth";
-import { useSite } from "./siteContext";
+import { useSite } from "./siteContextStore";
 import { getSiteEventsUrl } from "../config/sites";
 import { connectToEventStream } from "../service/realtime/sseClient";
 
