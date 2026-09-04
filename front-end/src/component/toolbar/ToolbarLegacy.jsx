@@ -2239,12 +2239,13 @@ const ToolbarKit = forwardRef(
           <Box
             key={index}
             sx={{
-              display: "grid",
               gridColumn: "1 / -1",
-              gridTemplateColumns:
-                "repeat(auto-fit, minmax(min(100%, 360px), 1fr))",
-              gap: 1,
+              display: "flex",
+              flexWrap: "wrap",
               alignItems: "center",
+              justifyContent: "flex-start",
+              columnGap: 2,
+              rowGap: 1,
               minWidth: 0,
               maxWidth: "100%",
             }}
@@ -2260,12 +2261,14 @@ const ToolbarKit = forwardRef(
                     display: "grid",
                     gridTemplateColumns: {
                       xs: "minmax(0, 1fr) auto minmax(0, 1fr)",
-                      sm: "minmax(72px, max-content) 136px auto 136px",
+                      sm: "max-content 136px auto 136px",
                     },
                     alignItems: "center",
-                    gap: 0.75,
+                    columnGap: 0.75,
+                    rowGap: 0.5,
+                    flex: { xs: "1 1 100%", sm: "0 1 auto" },
+                    width: { xs: "100%", sm: "auto" },
                     minWidth: 0,
-                    maxWidth: "100%",
                   }}
                 >
                   <Tooltip title={range.label || ""} placement="top" arrow>
@@ -2274,10 +2277,10 @@ const ToolbarKit = forwardRef(
                       fontWeight="bold"
                       sx={{
                         gridColumn: { xs: "1 / -1", sm: "auto" },
-                        display: "-webkit-box",
+                        maxWidth: { sm: 140 },
+                        whiteSpace: { sm: "nowrap" },
                         overflow: "hidden",
-                        WebkitBoxOrient: "vertical",
-                        WebkitLineClamp: 2,
+                        textOverflow: "ellipsis",
                         lineHeight: 1.2,
                       }}
                     >
@@ -2297,7 +2300,14 @@ const ToolbarKit = forwardRef(
                     }
                     InputLabelProps={{ shrink: true }}
                   />
-                  <Typography sx={{ fontSize: "14px", fontWeight: "bold" }}>
+                  <Typography
+                    aria-hidden="true"
+                    sx={{
+                      fontSize: "14px",
+                      fontWeight: "bold",
+                      textAlign: "center",
+                    }}
+                  >
                     -
                   </Typography>
                   <TextField
