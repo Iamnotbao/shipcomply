@@ -1,11 +1,11 @@
 import { createTheme } from "@mui/material/styles";
 
 const palette = {
-  primary: "#0f766e",
-  primaryDark: "#115e59",
-  primarySoft: "#ccfbf1",
-  primaryTint: "#f0fdfa",
-  secondary: "#4f46e5",
+  primary: "#2e7d32",
+  primaryDark: "#1b5e20",
+  primarySoft: "#c8e6c9",
+  primaryTint: "#f1f8e9",
+  secondary: "#1976d2",
   success: "#15803d",
   warning: "#b45309",
   error: "#b91c1c",
@@ -15,9 +15,9 @@ const palette = {
   muted: "#64748b",
   border: "#e2e8f0",
   surface: "#ffffff",
-  canvas: "#f8fafc",
-  selected: "#dff7f3",
-  selectedHover: "#c9eee8",
+  canvas: "#f4f6f8",
+  selected: "#fff59d",
+  selectedHover: "#ffee58",
   hover: "#f8fafc",
 };
 
@@ -53,17 +53,31 @@ const appTheme = createTheme({
           color: palette.navy,
         },
         "*": { boxSizing: "border-box" },
+        "*::-webkit-scrollbar": {
+          width: 7,
+          height: 7,
+        },
+        "*::-webkit-scrollbar-track": {
+          background: "transparent",
+        },
+        "*::-webkit-scrollbar-thumb": {
+          backgroundColor: "rgba(71, 85, 105, 0.48)",
+          borderRadius: 999,
+        },
+        "*::-webkit-scrollbar-thumb:hover": {
+          backgroundColor: "rgba(51, 65, 85, 0.72)",
+        },
         "input[type='checkbox']": {
           accentColor: palette.primary,
         },
 
         "body .MuiDataGrid-root .MuiDataGrid-columnHeader": {
-          backgroundColor: `${palette.canvas} !important`,
-          color: `${palette.navy} !important`,
-          borderRight: `1px solid ${palette.border} !important`,
+          backgroundColor: "#1976d2 !important",
+          color: "#ffffff !important",
+          borderRight: "1px solid rgba(255,255,255,0.20) !important",
         },
         "body .MuiDataGrid-root .MuiDataGrid-columnHeaderTitle": {
-          color: `${palette.navy} !important`,
+          color: "#ffffff !important",
           fontWeight: "700 !important",
           fontSize: "0.78rem !important",
         },

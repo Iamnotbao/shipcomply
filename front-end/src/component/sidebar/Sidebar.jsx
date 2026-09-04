@@ -243,8 +243,8 @@ export default function Sidebar() {
             borderRadius: 2,
             display: "grid",
             placeItems: "center",
-            bgcolor: "primary.main",
-            color: "common.white",
+            bgcolor: "#2e7d32",
+            color: "#ffffff",
             flexShrink: 0,
           }}
         >
@@ -252,19 +252,37 @@ export default function Sidebar() {
         </Box>
         {(desktopOpen || isMobile) && (
           <Box sx={{ minWidth: 0 }}>
-            <Typography sx={{ fontWeight: 800, color: "common.white", lineHeight: 1.1 }}>
+            <Typography sx={{ fontWeight: 800, color: "#2d210d", lineHeight: 1.1 }}>
               ShipComply
             </Typography>
-            <Typography sx={{ fontSize: "0.7rem", color: "#94a3b8", mt: 0.35 }}>
+            <Typography sx={{ fontSize: "0.7rem", color: "#6b4a16", mt: 0.35 }}>
               Customs Operations
             </Typography>
           </Box>
         )}
       </Box>
 
-      <Divider sx={{ borderColor: "rgba(148, 163, 184, 0.16)" }} />
+      <Divider sx={{ borderColor: "rgba(77, 50, 10, 0.18)" }} />
 
-      <Box sx={{ flex: 1, overflowY: "auto", px: 1, py: 1.25 }}>
+      <Box
+        sx={{
+          flex: 1,
+          overflowY: "auto",
+          px: 1,
+          py: 1.25,
+          scrollbarWidth: "thin",
+          scrollbarColor: "rgba(80, 62, 35, 0.48) transparent",
+          "&::-webkit-scrollbar": { width: 6 },
+          "&::-webkit-scrollbar-track": { background: "transparent" },
+          "&::-webkit-scrollbar-thumb": {
+            backgroundColor: "rgba(80, 62, 35, 0.48)",
+            borderRadius: 999,
+          },
+          "&::-webkit-scrollbar-thumb:hover": {
+            backgroundColor: "rgba(64, 45, 20, 0.72)",
+          },
+        }}
+      >
         <List disablePadding>
           {filteredMenu.map((item) => {
             const hasChildren = Boolean(item.children?.length);
@@ -288,11 +306,11 @@ export default function Sidebar() {
                         px: desktopOpen || isMobile ? 1.5 : 1,
                         borderRadius: 1.5,
                         justifyContent: desktopOpen || isMobile ? "initial" : "center",
-                        color: groupActive ? "#ccfbf1" : "#cbd5e1",
+                        color: groupActive ? "#ffffff" : "#3d2b0d",
                         "& .MuiListItemIcon-root": { color: "inherit" },
-                        "&.Mui-selected": { bgcolor: "rgba(13, 148, 136, 0.20)" },
-                        "&.Mui-selected:hover": { bgcolor: "rgba(13, 148, 136, 0.28)" },
-                        "&:hover": { bgcolor: "rgba(148, 163, 184, 0.10)" },
+                        "&.Mui-selected": { bgcolor: "#2e7d32" },
+                        "&.Mui-selected:hover": { bgcolor: "#256628" },
+                        "&:hover": { bgcolor: "rgba(255,255,255,0.30)" },
                       }}
                     >
                       <ListItemIcon
@@ -342,9 +360,9 @@ export default function Sidebar() {
                                 pr: 1.25,
                                 py: 0.5,
                                 borderRadius: 1.5,
-                                color: active ? "#ccfbf1" : "#94a3b8",
-                                "&.Mui-selected": { bgcolor: "rgba(13, 148, 136, 0.14)" },
-                                "&.Mui-selected:hover": { bgcolor: "rgba(13, 148, 136, 0.22)" },
+                                color: active ? "#ffffff" : "#5b3a08",
+                                "&.Mui-selected": { bgcolor: "#388e3c" },
+                                "&.Mui-selected:hover": { bgcolor: "#2e7d32" },
                               }}
                             >
                               <ListItemIcon sx={{ minWidth: 18, color: "inherit" }}>
@@ -371,7 +389,7 @@ export default function Sidebar() {
         </List>
       </Box>
 
-      <Divider sx={{ borderColor: "rgba(148, 163, 184, 0.16)" }} />
+      <Divider sx={{ borderColor: "rgba(77, 50, 10, 0.18)" }} />
       <Box sx={{ p: 1 }}>
         {(desktopOpen || isMobile) && (
           <Box sx={{ px: 1, py: 1, display: "flex", alignItems: "center", gap: 1 }}>
@@ -381,10 +399,10 @@ export default function Sidebar() {
               {(user?.user_code || "U").slice(0, 2).toUpperCase()}
             </Avatar>
             <Box sx={{ minWidth: 0, flex: 1 }}>
-              <Typography sx={{ color: "#e2e8f0", fontSize: "0.78rem", fontWeight: 700 }} noWrap>
+              <Typography sx={{ color: "#2d210d", fontSize: "0.78rem", fontWeight: 700 }} noWrap>
                 {user?.user_code || "User"}
               </Typography>
-              <Typography sx={{ color: "#94a3b8", fontSize: "0.68rem" }} noWrap>
+              <Typography sx={{ color: "#6b4a16", fontSize: "0.68rem" }} noWrap>
                 {user?.department || user?.factory || "ShipComply"}
               </Typography>
             </Box>
@@ -399,10 +417,10 @@ export default function Sidebar() {
             sx={{
               minHeight: 40,
               borderRadius: 1.5,
-              color: "#94a3b8",
+              color: "#6b4a16",
               justifyContent: desktopOpen || isMobile ? "initial" : "center",
               px: desktopOpen || isMobile ? 1.5 : 1,
-              "&:hover": { color: "#fecaca", bgcolor: "rgba(239,68,68,0.10)" },
+              "&:hover": { color: "#b91c1c", bgcolor: "rgba(255,255,255,0.32)" },
             }}
           >
             <ListItemIcon
@@ -438,8 +456,8 @@ export default function Sidebar() {
           flexShrink: 0,
           "& .MuiDrawer-paper": {
             width: isMobile ? APP_SHELL.drawerWidth : drawerWidth,
-            bgcolor: "#0f172a",
-            borderRight: 0,
+            bgcolor: "#f5a623",
+            borderRight: "1px solid rgba(77, 50, 10, 0.18)",
             overflowX: "hidden",
             transition: theme.transitions.create("width", {
               duration: theme.transitions.duration.shorter,
