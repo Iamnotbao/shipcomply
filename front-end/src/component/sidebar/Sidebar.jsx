@@ -514,7 +514,13 @@ export default function Sidebar() {
             borderColor: "divider",
           }}
         >
-          <Toolbar sx={{ minHeight: `${APP_SHELL.appBarHeight}px !important`, gap: 1.5 }}>
+          <Toolbar
+            sx={{
+              minHeight: `${APP_SHELL.appBarHeight}px !important`,
+              gap: 1.5,
+              position: "relative",
+            }}
+          >
             <IconButton
               size="small"
               onClick={() => setMobileOpen(true)}
@@ -530,10 +536,47 @@ export default function Sidebar() {
             </IconButton>
 
             <Box sx={{ minWidth: 0, flex: 1 }}>
-              <Typography sx={{ fontSize: "0.72rem", color: "text.secondary", fontWeight: 600 }} noWrap>
+              <Typography
+                sx={{ fontSize: "0.72rem", color: "text.secondary", fontWeight: 600 }}
+                noWrap
+              >
                 {user?.factory_name || getControlLabel("lbl_company", "ShipComply")}
               </Typography>
-              <Typography sx={{ fontSize: "1rem", fontWeight: 800, color: "text.primary" }} noWrap>
+              <Typography
+                sx={{
+                  display: { xs: "block", md: "none" },
+                  fontSize: "0.95rem",
+                  fontWeight: 800,
+                  color: "text.primary",
+                }}
+                noWrap
+              >
+                {activeEntry.page?.label || getControlLabel("lbl_home", "Workspace")}
+              </Typography>
+            </Box>
+
+            <Box
+              sx={{
+                display: { xs: "none", md: "block" },
+                position: "absolute",
+                left: "50%",
+                top: "50%",
+                transform: "translate(-50%, -50%)",
+                maxWidth: "42%",
+                px: 2,
+                textAlign: "center",
+                pointerEvents: "none",
+              }}
+            >
+              <Typography
+                sx={{
+                  fontSize: "1rem",
+                  fontWeight: 800,
+                  color: "text.primary",
+                  letterSpacing: "0.005em",
+                }}
+                noWrap
+              >
                 {activeEntry.page?.label || getControlLabel("lbl_home", "Workspace")}
               </Typography>
             </Box>
