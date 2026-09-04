@@ -5,8 +5,8 @@ async function testDB() {
   const response = await factoryReposity.test();
   return response;
 }
-async function getAllFactories(limit,offset) {
-  return await factoryReposity.listAllFactories(limit,offset);
+async function getAllFactories(limit, offset, search) {
+  return await factoryReposity.listAllFactories(limit, offset, search);
 }
 async function getFieldDropdown(
   factory_code,
