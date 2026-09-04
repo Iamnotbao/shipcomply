@@ -3120,12 +3120,13 @@ const ToolbarKit = forwardRef(
     return (
       <Toolbar
         sx={{
-          maxHeight: "250px",
-          overflow: "auto",
+          maxHeight: "none",
+          overflowX: "visible",
+          overflowY: "visible",
           position: isPopup ? "static" : "sticky",
           top: isPopup ? "auto" : "var(--shipcomply-toolbar-sticky-top, 107px)",
           zIndex: isPopup ? "auto" : 7,
-          bgcolor: "rgba(255,255,255,0.98)",
+          bgcolor: "rgba(255,255,255,0.985)",
           borderBottom: isPopup ? 0 : "1px solid",
           borderColor: "divider",
           boxShadow: isPopup ? "none" : "0 4px 10px rgba(15, 23, 42, 0.05)",
