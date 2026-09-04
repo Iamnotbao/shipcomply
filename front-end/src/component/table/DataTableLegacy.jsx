@@ -1932,6 +1932,7 @@ export default function DataTable({
         height: "100%",
         boxSizing: "border-box",
         minWidth: 0,
+        overflowX: "clip",
       }}
     >
       {isToolbar ? (
