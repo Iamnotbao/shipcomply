@@ -2344,23 +2344,36 @@ export default function DataTable({
                   borderColor: "#ccc",
                   width: "100%",
                   overflow: "clip",
+                  // MUI X v8 renders dedicated DataGrid scrollbars.
+                  // Hide the virtual scroller's native scrollbar so only one
+                  // horizontal/vertical scrollbar is visible.
                   "& .MuiDataGrid-virtualScroller": {
-                    scrollbarWidth: "thin",
-                    scrollbarColor: "rgba(71, 85, 105, 0.48) transparent",
+                    scrollbarWidth: "none",
+                    msOverflowStyle: "none",
                   },
                   "& .MuiDataGrid-virtualScroller::-webkit-scrollbar": {
-                    width: 7,
-                    height: 7,
+                    width: 0,
+                    height: 0,
+                    display: "none",
                   },
-                  "& .MuiDataGrid-virtualScroller::-webkit-scrollbar-track": {
+                  "& .MuiDataGrid-scrollbar--horizontal": {
+                    height: "8px !important",
+                  },
+                  "& .MuiDataGrid-scrollbar--horizontal::-webkit-scrollbar": {
+                    height: 8,
+                  },
+                  "& .MuiDataGrid-scrollbar--horizontal::-webkit-scrollbar-track": {
                     background: "transparent",
                   },
-                  "& .MuiDataGrid-virtualScroller::-webkit-scrollbar-thumb": {
+                  "& .MuiDataGrid-scrollbar--horizontal::-webkit-scrollbar-thumb": {
                     backgroundColor: "rgba(71, 85, 105, 0.48)",
                     borderRadius: 999,
                   },
-                  "& .MuiDataGrid-virtualScroller::-webkit-scrollbar-thumb:hover": {
+                  "& .MuiDataGrid-scrollbar--horizontal::-webkit-scrollbar-thumb:hover": {
                     backgroundColor: "rgba(51, 65, 85, 0.72)",
+                  },
+                  "& .MuiDataGrid-scrollbar--vertical": {
+                    width: "8px !important",
                   },
                   "& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within":
                     {
