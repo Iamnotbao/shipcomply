@@ -7,7 +7,7 @@ import {
   Typography,
   Select,
   Checkbox,
-  Collapse,
+  Grow,
   CircularProgress,
   Tooltip,
 } from "@mui/material";
@@ -3086,6 +3086,11 @@ const ToolbarKit = forwardRef(
           display: "flex",
           flexDirection: "column",
           alignItems: "stretch",
+          width: "100%",
+          maxWidth: "100%",
+          minWidth: 0,
+          overflowX: "clip",
+          boxSizing: "border-box",
           minHeight: "0 !important",
           px: { xs: 1, sm: 1.25 },
           py: tableConfig?.filter ? 1 : 0.5,
@@ -3095,13 +3100,24 @@ const ToolbarKit = forwardRef(
           <Box
             sx={{
               display: "flex",
-              flexWrap: "wrap",
+              flexDirection: "column",
               width: "100%",
-              gap: 1,
-              alignItems: "center",
+              maxWidth: "100%",
               minWidth: 0,
             }}
           >
+            <Box
+              sx={{
+                display: "flex",
+                flexWrap: "wrap",
+                width: "100%",
+                maxWidth: "100%",
+                gap: 1,
+                alignItems: "center",
+                minWidth: 0,
+                boxSizing: "border-box",
+              }}
+            >
             {hasFilters && (
               <Button
                 type="button"
@@ -3301,12 +3317,13 @@ const ToolbarKit = forwardRef(
                   })}
               </Box>
             </Box>
+            </Box>
             {hasFilters && (
-              <Collapse
+              <Grow
                 in={isFiltersOpen}
-                timeout={180}
+                timeout={140}
                 unmountOnExit
-                sx={{ flex: "1 0 100%", width: "100%" }}
+                style={{ transformOrigin: "top center" }}
               >
                 <Box
                   id={`toolbar-filters-${table}`}
@@ -3316,11 +3333,15 @@ const ToolbarKit = forwardRef(
                       "repeat(auto-fit, minmax(min(100%, 180px), 1fr))",
                     alignItems: "start",
                     gap: 1,
-                    mt: 0.25,
+                    mt: 0.5,
                     pt: 1,
                     px: 0.5,
                     pb: 0.5,
+                    width: "100%",
+                    maxWidth: "100%",
                     minWidth: 0,
+                    boxSizing: "border-box",
+                    overflowX: "clip",
                     borderTop: "1px solid rgba(100, 116, 139, 0.28)",
                     bgcolor: "rgba(248, 250, 252, 0.72)",
                   }}
@@ -3329,7 +3350,7 @@ const ToolbarKit = forwardRef(
                     renderSearchField(f, index),
                   )}
                 </Box>
-              </Collapse>
+              </Grow>
             )}
           </Box>
         ) : (
