@@ -270,10 +270,12 @@ export default function Sidebar() {
       <Box
         sx={{
           minHeight: APP_SHELL.appBarHeight,
-          px: desktopOpen || isMobile ? 2 : 1,
+          px: desktopOpen || isMobile ? 2 : 0,
           display: "flex",
           alignItems: "center",
-          gap: 1.25,
+          justifyContent:
+            desktopOpen || isMobile ? "flex-start" : "center",
+          gap: desktopOpen || isMobile ? 1.25 : 0,
         }}
       >
         <Tooltip
