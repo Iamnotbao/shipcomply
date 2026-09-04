@@ -1,23 +1,23 @@
 import { createTheme } from "@mui/material/styles";
 
 const palette = {
-  primary: "#2e7d32",
-  primaryDark: "#1b5e20",
-  primarySoft: "#c8e6c9",
-  primaryTint: "#f1f8e9",
-  secondary: "#1976d2",
-  success: "#15803d",
-  warning: "#b45309",
-  error: "#b91c1c",
-  info: "#0369a1",
+  primary: "#2f6b4f",
+  primaryDark: "#24543e",
+  primarySoft: "#d8eadf",
+  primaryTint: "#f1f7f3",
+  secondary: "#55708a",
+  success: "#2f6b4f",
+  warning: "#b66a1e",
+  error: "#b23a3a",
+  info: "#4f718f",
   navy: "#0f172a",
   slate: "#475569",
   muted: "#64748b",
   border: "#e2e8f0",
   surface: "#ffffff",
   canvas: "#f4f6f8",
-  selected: "#fff59d",
-  selectedHover: "#ffee58",
+  selected: "#fff1b8",
+  selectedHover: "#ffe59a",
   hover: "#f8fafc",
 };
 
@@ -72,7 +72,7 @@ const appTheme = createTheme({
         },
 
         "body .MuiDataGrid-root .MuiDataGrid-columnHeader": {
-          backgroundColor: "#1976d2 !important",
+          backgroundColor: "#55708a !important",
           color: "#ffffff !important",
           borderRight: "1px solid rgba(255,255,255,0.20) !important",
         },
@@ -291,11 +291,11 @@ const appTheme = createTheme({
             borderBottom: `1px solid ${palette.border}`,
           },
           "&& .MuiDataGrid-columnHeader": {
-            backgroundColor: `${palette.canvas} !important`,
-            borderRight: `1px solid ${palette.border} !important`,
+            backgroundColor: "#55708a !important",
+            borderRight: "1px solid rgba(255,255,255,0.18) !important",
           },
           "&& .MuiDataGrid-columnHeaderTitle": {
-            color: `${palette.navy} !important`,
+            color: "#ffffff !important",
             fontSize: "0.78rem !important",
             fontWeight: "700 !important",
             letterSpacing: "0.01em",

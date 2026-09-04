@@ -365,11 +365,11 @@ navy/teal dashboard.
 When modernizing the UI, preserve this visual direction unless the user asks for
 a different theme:
 
-- sidebar: warm orange / amber surface with dark readable text
-- active sidebar item: strong green with white text
-- top/header accents: green is acceptable when contrast remains high
-- DataGrid column header: readable blue with white text is preferred
-- selected DataGrid row: light yellow / warm highlight with dark text
+- sidebar: muted amber/sand surface with dark readable text
+- active sidebar item: forest green with white text
+- top/header accents: forest green is acceptable when contrast remains high
+- DataGrid column header: muted slate blue with white text is preferred
+- selected DataGrid row: soft warm yellow with dark text
 - page canvas: light neutral gray
 - keep status colors semantic
 
@@ -393,3 +393,24 @@ Prefer:
 - no always-visible thick gutter unless required for layout stability
 
 Do not hide scrollbars completely.
+
+
+## 20. Sticky navigation and workspace controls
+
+For long dashboard pages:
+
+- the sidebar brand/toggle area remains fixed at the top of the sidebar
+- top-level sidebar groups with children should remain easy to reach while the
+  sidebar list scrolls; sticky group headers are acceptable
+- page breadcrumbs/home path should stay sticky below the main AppBar
+- the active table ToolbarKit should stay sticky below the breadcrumb strip
+  while its table/workspace is being scrolled
+- sticky elements must not overlap each other
+- popup/dialog toolbars should not become viewport-sticky unless explicitly
+  designed for that popup
+- keep z-index values restrained and predictable
+
+On desktop, do not leave a separate hamburger button floating in the content
+header when the sidebar is collapsed. Put the desktop sidebar toggle in the
+sidebar brand/avatar zone. A mobile AppBar menu button is still acceptable
+because the temporary Drawer is otherwise off-screen.

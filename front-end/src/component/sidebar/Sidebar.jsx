@@ -21,6 +21,7 @@ import {
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import MenuRoundedIcon from "@mui/icons-material/MenuRounded";
+import MenuOpenRoundedIcon from "@mui/icons-material/MenuOpenRounded";
 import FactoryOutlinedIcon from "@mui/icons-material/FactoryOutlined";
 import BusinessOutlinedIcon from "@mui/icons-material/BusinessOutlined";
 import PeopleAltOutlinedIcon from "@mui/icons-material/PeopleAltOutlined";
@@ -36,7 +37,6 @@ import ExpandMoreRoundedIcon from "@mui/icons-material/ExpandMoreRounded";
 import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
 import HomeRoundedIcon from "@mui/icons-material/HomeRounded";
 import NavigateNextRoundedIcon from "@mui/icons-material/NavigateNextRounded";
-import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
 import CircleIcon from "@mui/icons-material/Circle";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import useAuth from "../../hooks/useAuth";
@@ -236,20 +236,41 @@ export default function Sidebar() {
           gap: 1.25,
         }}
       >
-        <Box
-          sx={{
-            width: 36,
-            height: 36,
-            borderRadius: 2,
-            display: "grid",
-            placeItems: "center",
-            bgcolor: "#2e7d32",
-            color: "#ffffff",
-            flexShrink: 0,
-          }}
+        <Tooltip
+          title={
+            isMobile
+              ? getControlLabel("lbl_close_navigation", "Close navigation")
+              : desktopOpen
+                ? getControlLabel("lbl_collapse_navigation", "Collapse navigation")
+                : getControlLabel("lbl_expand_navigation", "Expand navigation")
+          }
+          placement="right"
         >
-          <Inventory2OutlinedIcon fontSize="small" />
-        </Box>
+          <IconButton
+            size="small"
+            onClick={() =>
+              isMobile ? setMobileOpen(false) : setDesktopDrawer(!desktopOpen)
+            }
+            aria-label={
+              desktopOpen ? "Collapse navigation" : "Expand navigation"
+            }
+            sx={{
+              width: 36,
+              height: 36,
+              borderRadius: 2,
+              bgcolor: "#2f6b4f",
+              color: "#ffffff",
+              flexShrink: 0,
+              "&:hover": { bgcolor: "#24543e" },
+            }}
+          >
+            {desktopOpen || isMobile ? (
+              <MenuOpenRoundedIcon fontSize="small" />
+            ) : (
+              <MenuRoundedIcon fontSize="small" />
+            )}
+          </IconButton>
+        </Tooltip>
         {(desktopOpen || isMobile) && (
           <Box sx={{ minWidth: 0 }}>
             <Typography sx={{ fontWeight: 800, color: "#2d210d", lineHeight: 1.1 }}>
@@ -293,7 +314,19 @@ export default function Sidebar() {
 
             return (
               <React.Fragment key={item.id}>
-                <ListItem disablePadding sx={{ mb: 0.4 }}>
+                <ListItem
+                  disablePadding
+                  sx={{
+                    mb: 0.4,
+                    ...(hasChildren && {
+                      position: "sticky",
+                      top: 0,
+                      zIndex: 3,
+                      bgcolor: "#e7b65c",
+                      borderRadius: 1.5,
+                    }),
+                  }}
+                >
                   <Tooltip
                     title={!desktopOpen && !isMobile ? item.label : ""}
                     placement="right"
@@ -308,8 +341,8 @@ export default function Sidebar() {
                         justifyContent: desktopOpen || isMobile ? "initial" : "center",
                         color: groupActive ? "#ffffff" : "#3d2b0d",
                         "& .MuiListItemIcon-root": { color: "inherit" },
-                        "&.Mui-selected": { bgcolor: "#2e7d32" },
-                        "&.Mui-selected:hover": { bgcolor: "#256628" },
+                        "&.Mui-selected": { bgcolor: "#2f6b4f" },
+                        "&.Mui-selected:hover": { bgcolor: "#24543e" },
                         "&:hover": { bgcolor: "rgba(255,255,255,0.30)" },
                       }}
                     >
@@ -361,8 +394,8 @@ export default function Sidebar() {
                                 py: 0.5,
                                 borderRadius: 1.5,
                                 color: active ? "#ffffff" : "#5b3a08",
-                                "&.Mui-selected": { bgcolor: "#388e3c" },
-                                "&.Mui-selected:hover": { bgcolor: "#2e7d32" },
+                                "&.Mui-selected": { bgcolor: "#3a7658" },
+                                "&.Mui-selected:hover": { bgcolor: "#2f6b4f" },
                               }}
                             >
                               <ListItemIcon sx={{ minWidth: 18, color: "inherit" }}>
@@ -456,8 +489,8 @@ export default function Sidebar() {
           flexShrink: 0,
           "& .MuiDrawer-paper": {
             width: isMobile ? APP_SHELL.drawerWidth : drawerWidth,
-            bgcolor: "#f5a623",
-            borderRight: "1px solid rgba(77, 50, 10, 0.18)",
+            bgcolor: "#e7b65c",
+            borderRight: "1px solid rgba(91, 66, 26, 0.16)",
             overflowX: "hidden",
             transition: theme.transitions.create("width", {
               duration: theme.transitions.duration.shorter,
@@ -484,11 +517,14 @@ export default function Sidebar() {
           <Toolbar sx={{ minHeight: `${APP_SHELL.appBarHeight}px !important`, gap: 1.5 }}>
             <IconButton
               size="small"
-              onClick={() =>
-                isMobile ? setMobileOpen(true) : setDesktopDrawer(!desktopOpen)
-              }
-              aria-label="Toggle navigation"
-              sx={{ border: "1px solid", borderColor: "divider", borderRadius: 2 }}
+              onClick={() => setMobileOpen(true)}
+              aria-label="Open navigation"
+              sx={{
+                display: { xs: "inline-flex", md: "none" },
+                border: "1px solid",
+                borderColor: "divider",
+                borderRadius: 2,
+              }}
             >
               <MenuRoundedIcon fontSize="small" />
             </IconButton>
@@ -554,11 +590,25 @@ export default function Sidebar() {
             maxWidth: APP_SHELL.contentMaxWidth,
             mx: "auto",
             p: APP_SHELL.contentPadding,
+            "--shipcomply-toolbar-sticky-top": `${APP_SHELL.appBarHeight + 43}px`,
           }}
         >
           <Breadcrumbs
             separator={<NavigateNextRoundedIcon sx={{ fontSize: 15, color: "text.disabled" }} />}
-            sx={{ mb: 1.5, px: 0.25, "& .MuiBreadcrumbs-separator": { mx: 0.45 } }}
+            sx={{
+              position: "sticky",
+              top: APP_SHELL.appBarHeight,
+              zIndex: theme.zIndex.appBar - 1,
+              mb: 1,
+              mx: { xs: -0.5, sm: -0.75 },
+              px: { xs: 0.75, sm: 1 },
+              py: 0.9,
+              bgcolor: "rgba(244, 246, 248, 0.97)",
+              backdropFilter: "blur(8px)",
+              borderBottom: "1px solid",
+              borderColor: "divider",
+              "& .MuiBreadcrumbs-separator": { mx: 0.45 },
+            }}
           >
             <Box
               component="button"
