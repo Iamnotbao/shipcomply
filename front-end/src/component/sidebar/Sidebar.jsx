@@ -354,7 +354,13 @@ export default function Sidebar() {
             const expanded = Boolean(expandedMenus[item.id]);
 
             return (
-              <React.Fragment key={item.id}>
+              <Box
+                key={item.id}
+                sx={{
+                  position: "relative",
+                  mb: hasChildren ? 0.6 : 0.4,
+                }}
+              >
                 <ListItem
                   ref={(node) => {
                     if (node) groupRefs.current.set(item.id, node);
@@ -362,7 +368,7 @@ export default function Sidebar() {
                   }}
                   disablePadding
                   sx={{
-                    mb: 0.4,
+                    mb: hasChildren ? 0 : 0.4,
                     ...(hasChildren && {
                       position: "sticky",
                       top: 0,
@@ -550,7 +556,7 @@ export default function Sidebar() {
                     </List>
                   </Collapse>
                 )}
-              </React.Fragment>
+              </Box>
             );
           })}
         </List>
